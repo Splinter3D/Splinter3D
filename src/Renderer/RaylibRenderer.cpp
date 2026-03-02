@@ -1,7 +1,7 @@
-#include "raylib.h"
-#include "rlgl.h"
+#include <raylib.h>
+#include <rlgl.h>
 
-#include "renderer/RaylibRenderer.hpp"
+#include <Renderer/RaylibRenderer.hpp>
 
 #include <memory>
 #include <vector>

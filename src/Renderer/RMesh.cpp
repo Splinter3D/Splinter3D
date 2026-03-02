@@ -1,6 +1,6 @@
-#include "renderer/RMesh.hpp"
+#include <Renderer/RMesh.hpp>
 
-RMesh RMesh::makeRenderable(const Object3D::OMesh& mesh, Color color)
+renderer::RMesh renderer::RMesh::makeRenderable(const objects3D::OMesh& mesh, Color color)
 {
     RMesh result;
     for (const auto& tri : mesh.triangles) {

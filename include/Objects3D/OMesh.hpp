@@ -1,7 +1,7 @@
 #pragma once
 
-#include "objects3D/OTriangle.hpp"
-#include "objects3D/OVec3.hpp"
+#include <Objects3D/OTriangle.hpp>
+#include <Objects3D/OVec3.hpp>
 
 #include <vector>
 #include <string>

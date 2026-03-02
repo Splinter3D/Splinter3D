@@ -1,6 +1,6 @@
 #pragma once
 
-#include "objects3D/OVec3.hpp"
+#include <Objects3D/OVec3.hpp>
 
 namespace objects3D
 {

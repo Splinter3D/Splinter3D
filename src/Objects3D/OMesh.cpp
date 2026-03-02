@@ -1,4 +1,4 @@
-#include "objects3D/OMesh.hpp"
+#include <Objects3D/OMesh.hpp>
 
 #include <fstream>
 #include <sstream>
@@ -12,5 +12,6 @@ namespace objects3D
         if (!file.is_open()) {
             throw std::runtime_error("Failed to open STL file: " + filename);
         }
+        throw std::runtime_error("OMesh::fromSTL");
     }
 }

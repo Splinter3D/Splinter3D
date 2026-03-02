@@ -6,7 +6,7 @@
 */
 
 #include <iostream>
-#include "renderer/RaylibRenderer.hpp"
+#include <Renderer/RaylibRenderer.hpp>
 
 int main()
 {

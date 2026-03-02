@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IRenderer.hpp"
+#include <Renderer/IRenderer.hpp>
 #include <memory>
 #include <vector>
 

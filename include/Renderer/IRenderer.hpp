@@ -4,9 +4,9 @@
 #include <vector>
 #include <cstdint>
 
-#include "Color.hpp"
-#include "RVec3.hpp"
-#include "RTriangle.hpp"
+#include <Renderer/Color.hpp>
+#include <Renderer/RVec3.hpp>
+#include <Renderer/RTriangle.hpp>
 
 namespace renderer
 {
