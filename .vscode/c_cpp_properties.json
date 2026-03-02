@@ -6,6 +6,7 @@
                 "${workspaceFolder}/include",
                 "${workspaceFolder}/include/**",
                 "${workspaceFolder}/build/vcpkg_installed/x64-linux/include",
+                "${workspaceFolder}/build/vcpkg_installed/arm64-osx/include",
                 "/usr/include",
                 "/usr/include/c++/11",
                 "/usr/include/x86_64-linux-gnu/c++/11"
