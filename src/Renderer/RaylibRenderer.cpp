@@ -1,8 +1,70 @@
+#include <Splinter/Utils/Logger.hpp>
 #include <Renderer/RaylibRenderer.hpp>
+#include <cstdio>
 #include <memory>
+#include <vector>
+#include <cstdarg>
 #include <raylib.h>
 #include <rlgl.h>
-#include <vector>
+
+static void RaylibToLogger([[maybe_unused]] int         logLevel,
+                           [[maybe_unused]] const char* text, [[maybe_unused]] va_list args)
+{
+#if !defined(SPLINTER_DEBUG)
+    return;
+#endif
+
+    char* buf = NULL;
+
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+#endif
+
+    int ret = vasprintf(&buf, text, args);
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+
+    if (ret < 0)
+    {
+        return;
+    }
+
+    const char* lvl = "INFO";
+    switch (logLevel)
+    {
+        case LOG_TRACE:
+            lvl = "TRACE";
+            break;
+        case LOG_DEBUG:
+            lvl = "DEBUG";
+            break;
+        case LOG_INFO:
+            lvl = "INFO";
+            break;
+        case LOG_WARNING:
+            lvl = "WARN";
+            break;
+        case LOG_ERROR:
+            lvl = "ERROR";
+            break;
+        case LOG_FATAL:
+            lvl = "FATAL";
+            break;
+        default:
+            break;
+    }
+
+    splinter::utils::clog("[raylib ", lvl, "] ", buf);
+    std::free(buf);
+}
 
 namespace renderer
 {
@@ -18,6 +80,7 @@ namespace renderer
     {
         impl_->cfg = cfg;
 
+        SetTraceLogCallback(RaylibToLogger);
         SetConfigFlags(FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT);
         InitWindow(cfg.width, cfg.height, cfg.title.c_str());
         SetTargetFPS(cfg.target_fps);
