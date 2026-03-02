@@ -1,0 +1,85 @@
+# -----------------------------------------
+# .clang-format — C++ Allman, 4 espaces
+# -----------------------------------------
+BasedOnStyle: LLVM
+Language: Cpp
+
+# ---------- Indentation / Tabs ----------
+UseTab: Never
+IndentWidth: 4
+TabWidth: 4
+ContinuationIndentWidth: 4
+
+# ---------- Longueur de ligne ----------
+ColumnLimit: 0   # Pas de limite
+
+# ---------- Accolades (Allman) ----------
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: true
+  AfterControlStatement: Always     # if/while/for -> accolade à la ligne
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true              # + insère une ligne après l’accolade ouvrante du namespace
+  AfterStruct: true
+  AfterUnion: true
+  BeforeCatch: true
+  BeforeElse: true
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+
+# ---------- Accolades obligatoires ----------
+# Force des accolades même pour les statements d'une ligne
+# RequireBraces: All
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortBlocksOnASingleLine: Never
+
+# ---------- Espaces / Parenthèses / Opérateurs ----------
+SpaceBeforeParens: ControlStatements  # "if (x)" mais "func(x)"
+SpaceInEmptyParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+SpacesInAngles: false
+SpacesInCStyleCastParentheses: false
+SpaceAfterCStyleCast: true
+SpaceBeforeAssignmentOperators: true
+# Favorise des espaces autour des opérateurs binaires (comportement par défaut de clang-format)
+
+# Espaces dans blocs/initializers sur une ligne p.ex. "{ return 0; }"
+SpaceInEmptyBlock: true
+SpacesInContainerLiterals: true
+Cpp11BracedListStyle: true
+
+# ---------- Namespaces ----------
+NamespaceIndentation: All
+CompactNamespaces: false
+FixNamespaceComments: true          # Ajoute/normalise "// namespace X" à la fermeture
+
+# ---------- Switch / case ----------
+IndentCaseLabels: true              # Indente "case" à +1 niveau
+IndentCaseBlocks: false             # Évite un niveau supplémentaire dans les blocks de case
+# BreakBeforeCaseLabels: false
+
+# ---------- Alignements utiles ----------
+AlignConsecutiveMacros: true
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignAfterOpenBracket: Align
+
+# ---------- Includes ----------
+SortIncludes: true
+IncludeBlocks: Regroup
+
+# ---------- Divers ----------
+PointerAlignment: Left
+DerivePointerAlignment: false
+AlwaysBreakAfterReturnType: None
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+BreakConstructorInitializers: BeforeComma
+AllowAllParametersOfDeclarationOnNextLine: true
+EmptyLineBeforeAccessModifier: Always
+SeparateDefinitionBlocks: Always

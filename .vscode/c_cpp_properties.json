@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/include",
+                "${workspaceFolder}/include/**",
+                "${workspaceFolder}/build/vcpkg_installed/x64-linux/include",
+                "${workspaceFolder}/build/vcpkg_installed/arm64-osx/include",
+                "/usr/include",
+                "/usr/include/c++/11",
+                "/usr/include/x86_64-linux-gnu/c++/11"
+            ],
+            "defines": [
+                "SPLINTER_DEBUG=0"
+            ],
+            "compilerPath": "/usr/bin/g++",
+            "cppStandard": "c++23",
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json"
+        }
+    ],
+    "version": 4
+}

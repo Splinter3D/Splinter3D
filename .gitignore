@@ -1,3 +1,6 @@
+*
+!*.*
+
 # Prerequisites
 *.d
 
@@ -39,3 +42,19 @@
 
 # debug information files
 *.dwo
+
+# build folder
+/build/
+
+# ide folders
+/.idea/
+
+# MacOS
+DS_Store
+
+# Dependencies
+vcpkg/
+
+!/scripts/
+!/scripts/build.sh.d
+!/scripts/style.sh.d
