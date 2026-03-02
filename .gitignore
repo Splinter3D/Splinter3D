@@ -56,6 +56,11 @@ DS_Store
 # Dependencies
 vcpkg/
 
+# Locale lang
+ACTIVE_LANG
+*.mo
+
+# Scripts
 !/scripts/
 !/scripts/build.sh.d
 !/scripts/style.sh.d

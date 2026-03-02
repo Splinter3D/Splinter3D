@@ -7,12 +7,15 @@
 
 #include <Objects3D/OMesh.hpp>
 #include <Renderer/RaylibRenderer.hpp>
+#include <Splinter/Utils/Locale.hpp>
 #include <Splinter/Utils/Logger.hpp>
 #include <cstdarg>
 #include <cstdio>
 #include <iostream>
 #include <raylib.h>
 #include <string>
+
+#define _(String) gettext(String)
 
 static void RaylibToLogger([[maybe_unused]] int         logLevel,
                            [[maybe_unused]] const char* text, [[maybe_unused]] va_list args)
@@ -75,6 +78,12 @@ static void RaylibToLogger([[maybe_unused]] int         logLevel,
 
 int main()
 {
+    splinter::utils::Locale::init("splinter3D", "./locale");
+
+    std::cout << _("Play") << std::endl;
+    std::cout << _("Settings") << std::endl;
+    std::cout << _("Quit") << std::endl;
+
     SetTraceLogCallback(RaylibToLogger);
     renderer::Config         cfg{1280, 720, "Prototype 3D Slicer", 60};
     renderer::RaylibRenderer renderer(cfg);

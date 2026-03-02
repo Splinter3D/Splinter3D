@@ -4,6 +4,7 @@
   "builtin-baseline": "71564059eef734919d637badaed57258d62087a1",
   "dependencies": [
     "raylib",
-    "glfw3"
+    "glfw3",
+    "gettext"
   ]
 }
