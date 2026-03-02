@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 function _print_helper () {
     cat << EOF
 USAGE:
-    $0    builds splinter project
+    $0    builds splinter3D project
 
 ARGUMENTS:
     $0 [-h|--help]    displays this message

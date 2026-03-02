@@ -21,6 +21,6 @@ function _fclean()
 {
     _clean
     rm -rf ./*.so ./*.dylib ./*.dll ./*.lib ./*.exp ./*.a ./*.ilk ./*.pdb \
-        splinter_unit_tests splinter_unit_tests.exe splinter splinter.exe \
+        splinter3D_unit_tests splinter3D_unit_tests.exe splinter3D splinter3D.exe \
         unit_tests plugins code_coverage.txt unit_tests-*.profraw unit_tests.profdata vgcore* cmake-build-debug
 }
