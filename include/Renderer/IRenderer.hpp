@@ -5,7 +5,8 @@
 #include <cstdint>
 
 #include <Renderer/Color.hpp>
-#include <Renderer/Vec3.hpp>
+#include <Renderer/RVec3.hpp>
+#include <Renderer/RTriangle.hpp>
 
 namespace renderer
 {
@@ -15,14 +16,6 @@ namespace renderer
         int height{1080};
         std::string title{"Renderer"};
         int target_fps{60};
-    };
-
-    struct Triangle
-    {
-        Vec3 v0;
-        Vec3 v1;
-        Vec3 v2;
-        Color color;
     };
 
     enum class Key
@@ -49,8 +42,8 @@ namespace renderer
         virtual void begin3D() = 0;
         virtual void end3D() = 0;
 
-        virtual void drawTriangle(Triangle& tri) = 0;
-        virtual void drawTriangles(std::vector<Triangle>& tris) = 0;
+        virtual void drawTriangle(RTriangle& tri) = 0;
+        virtual void drawTriangles(std::vector<RTriangle>& tris) = 0;
 
         virtual void drawGrid(int slices, float spacing) = 0;
         virtual void drawAxis(float size) = 0;
