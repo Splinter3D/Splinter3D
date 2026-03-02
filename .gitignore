@@ -50,4 +50,7 @@
 # MacOS
 DS_Store
 
+# Dependencies
+vcpkg/
+
 !/scripts/build.sh.d

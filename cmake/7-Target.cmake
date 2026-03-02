@@ -11,6 +11,10 @@ endif()
 add_executable(${SPLINTER_TARGET_NAME} ${SRC_SPLINTER})
 target_include_directories(${SPLINTER_TARGET_NAME} PRIVATE ${INCLUDE_SPLINTER})
 
+if(DEFINED THIRD_PARTY_LIBS)
+    target_link_libraries(${SPLINTER_TARGET_NAME} PRIVATE ${THIRD_PARTY_LIBS})
+endif()
+
 #######################################
 
 apply_compiler_warnings(${SPLINTER_TARGET_NAME})

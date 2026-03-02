@@ -3,16 +3,32 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 . "$SCRIPT_DIR/io.sh"
 
+function _safe_realpath() {
+    local default
+
+    if [ -n "${1:-}" ]; then
+        if rp=$(realpath "${1}" 2>/dev/null); then
+            default="${rp}"
+        else
+            default="$(realpath "$(dirname "${1}")")/vcpkg"
+        fi
+    else
+        default="$(pwd)/vcpkg"
+    fi
+
+    printf '%s' "${default}"
+}
+
 function _clone_vcpkg() {
     local dest="${1:-}"
     local default
-    default=$(realpath "${VCPKG_ROOT}")
+    default=$(_safe_realpath "${VCPKG_ROOT:-}")
 
     if [ -z "${dest}" ]; then
         dest=$( _prompt "Where to install vcpkg? (default: ${default})" )
         dest="${dest:-$default}"
     fi
-    dest=$(realpath "${dest}")
+    dest=$(_safe_realpath "${dest}")
     dest="${dest%/}"
     if [[ "${dest}" != */vcpkg ]]; then
         dest="${dest}/vcpkg"
@@ -73,13 +89,13 @@ function _install_and_bootstrap_vcpkg() {
 function _set_vcpkg_targets() {
     _info "Setting VCPKG targets"
     if [ -z "${VCPKG_ROOT:-}" ]; then
-        VCPKG_ROOT="$HOME/vcpkg"
+        VCPKG_ROOT="$(pwd)/vcpkg"
         _info "VCPKG_ROOT not set; defaulting to ${VCPKG_ROOT}"
     else
         local rp
-        rp=$(realpath "$VCPKG_ROOT")
+        rp=$(_safe_realpath "$VCPKG_ROOT")
         if [ "$VCPKG_ROOT" != "${rp}" ]; then
-            VCPKG_ROOT=$(realpath "${rp}")
+            VCPKG_ROOT="${rp}"
             _info "Expanded VCPKG_ROOT to ${VCPKG_ROOT}"
         fi
     fi
