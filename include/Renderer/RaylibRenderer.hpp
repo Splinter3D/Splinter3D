@@ -24,8 +24,9 @@ namespace renderer
         void begin3D() override;
         void end3D() override;
 
-        void drawTriangle(RTriangle& tri) override;
-        void drawMesh(RMesh& mesh) override;
+        void drawTriangle(const geometry::Triangle& tri, Color color) override;
+        void drawMesh(const geometry::Mesh& mesh, Color color) override;
+        void drawObject(const RenderObject& obj, Color color) override;
 
         void drawGrid(int slices, float spacing) override;
         void drawAxis(float size) override;
@@ -43,12 +44,12 @@ namespace renderer
 
         bool  isKeyDown(Key key) const override;
         bool  isMouseButtonDown(int button) const;
-        RVec3 getMouseDelta() const;
+        geometry::Vec3 getMouseDelta() const;
 
       private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
 
-        void ensureCCW(RVec3& v0, RVec3& v1, RVec3& v2, RVec3& cameraPos);
+        void ensureCCW(geometry::Triangle& tri, geometry::Vec3 cameraPos);
     };
 } // namespace renderer
