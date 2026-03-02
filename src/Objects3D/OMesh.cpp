@@ -3,6 +3,8 @@
 #include <sstream>
 #include <stdexcept>
 
+#include <Renderer/RMesh.hpp>
+
 namespace objects3D
 {
     OMesh OMesh::fromSTL(const std::string& filename)
@@ -109,4 +111,35 @@ namespace objects3D
         }
         return mesh;
     }
+
+    void OMesh::attachRenderer(renderer::RMesh* rmesh)
+    {
+        observers.push_back(rmesh);
+    }
+
+    void OMesh::detachRenderer(renderer::RMesh* rmesh)
+    {
+        observers.erase(std::remove(observers.begin(), observers.end(), rmesh), observers.end());
+    }
+
+    void OMesh::notifyChange() const
+    {
+        for (auto* r : observers) r->updateFromOMesh();
+    }
+
+    void OMesh::scale(float percentage)
+    {
+        float factor = percentage / 100.0f;
+        for (auto& tri : triangles)
+        {
+            for (int i = 0; i < 3; ++i)
+            {
+                tri.vertices[i].x *= factor;
+                tri.vertices[i].y *= factor;
+                tri.vertices[i].z *= factor;
+            }
+        }
+        notifyChange();
+    }
+
 } // namespace objects3D

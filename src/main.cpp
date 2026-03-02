@@ -15,7 +15,7 @@ int main()
     renderer::RaylibRenderer renderer(cfg);
 
     objects3D::OMesh mesh  = objects3D::OMesh::fromSTL("assets/stl/ascii/cube.stl");
-    renderer::RMesh  rmesh = renderer::RMesh::fromOMesh(mesh, {255, 0, 0, 255});
+    renderer::RMesh  rmesh = renderer::RMesh::fromOMesh(&mesh, {255, 0, 0, 255});
 
     while (!renderer.shouldClose())
     {

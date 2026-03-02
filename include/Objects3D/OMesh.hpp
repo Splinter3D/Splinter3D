@@ -2,8 +2,11 @@
 
 #include <Objects3D/OTriangle.hpp>
 #include <Objects3D/OVec3.hpp>
+
 #include <string>
 #include <vector>
+
+namespace renderer { class RMesh; } // forward declaration
 
 namespace objects3D
 {
@@ -23,7 +26,31 @@ namespace objects3D
          */
         static OMesh fromSTL(const std::string& filename);
 
+        /**
+         * @brief Attaches a renderer's RMesh to this OMesh for synchronization. When the OMesh is modified, it will notify all attached RMeshes.
+         */
+        void attachRenderer(renderer::RMesh* rmesh);
+
+        /**
+         * @brief Detaches a renderer's RMesh from this OMesh, stopping synchronization.
+         */
+        void detachRenderer(renderer::RMesh* rmesh);
+
+        /**
+         * @brief Notifies all attached RMeshes that the OMesh has changed.
+         */
+        void notifyChange() const;
+
+        /**
+         * @brief Scales the OMesh by a given percentage. This method multiplies the coordinates of all vertices in the mesh by a scaling factor derived from the percentage. After scaling, it calls notifyChange() to update any attached renderers.
+         * @param percentage The percentage to scale the mesh by (e.g., 150 for 150%).
+         */
+        void scale(float percentage);
+
       private:
+
+        std::vector<renderer::RMesh*> observers;
+
         /**
          * @brief Reads an ASCII STL file and constructs an OMesh.
          * @details The ASCII STL format consists of lines of text where each triangle is defined by three "vertex" lines containing the vertex coordinates. The method reads the file line by line, extracts vertex data, and assembles triangles accordingly.
