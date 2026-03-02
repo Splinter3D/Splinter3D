@@ -1,8 +1,70 @@
 #include <Renderer/RaylibRenderer.hpp>
+#include <Splinter3D/Utils/Logger.hpp>
+#include <cstdarg>
+#include <cstdio>
 #include <memory>
 #include <raylib.h>
 #include <rlgl.h>
 #include <vector>
+
+static void RaylibToLogger([[maybe_unused]] int         logLevel,
+                           [[maybe_unused]] const char* text, [[maybe_unused]] va_list args)
+{
+#if !defined(SPLINTER3D_DEBUG)
+    return;
+#endif
+
+    char* buf = NULL;
+
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+#endif
+
+    int ret = vasprintf(&buf, text, args);
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+
+    if (ret < 0)
+    {
+        return;
+    }
+
+    const char* lvl = "INFO";
+    switch (logLevel)
+    {
+        case LOG_TRACE:
+            lvl = "TRACE";
+            break;
+        case LOG_DEBUG:
+            lvl = "DEBUG";
+            break;
+        case LOG_INFO:
+            lvl = "INFO";
+            break;
+        case LOG_WARNING:
+            lvl = "WARN";
+            break;
+        case LOG_ERROR:
+            lvl = "ERROR";
+            break;
+        case LOG_FATAL:
+            lvl = "FATAL";
+            break;
+        default:
+            break;
+    }
+
+    splinter3D::utils::clog("[raylib ", lvl, "] ", buf);
+    std::free(buf);
+}
 
 namespace renderer
 {
@@ -18,6 +80,7 @@ namespace renderer
     {
         impl_->cfg = cfg;
 
+        SetTraceLogCallback(RaylibToLogger);
         SetConfigFlags(FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE);
         InitWindow(cfg.width, cfg.height, cfg.title.c_str());
         SetWindowMinSize(640, 360);
@@ -45,17 +108,12 @@ namespace renderer
         return ::Color{c.r, c.g, c.b, c.a};
     }
 
-    inline ::Vector3 toRaylibVec3(const renderer::RVec3& v)
-    {
-        return ::Vector3{v.x, v.y, v.z};
-    }
-
-    inline std::vector<::Vector3> toRaylibVec3(const std::vector<RVec3>& vecs)
+    inline std::vector<::Vector3> toRaylibVec3(const std::vector<geometry::Vec3>& vecs)
     {
         std::vector<::Vector3> result;
         result.reserve(vecs.size());
         for (auto& v : vecs)
-            result.push_back(toRaylibVec3(v));
+            result.push_back(v.toRaylib());
         return result;
     }
 
@@ -105,14 +163,14 @@ namespace renderer
         UpdateCamera(&impl_->camera, CAMERA_FREE);
     }
 
-    void RaylibRenderer::setCameraPosition(const RVec3& position)
+    void RaylibRenderer::setCameraPosition(const geometry::Vec3& position)
     {
-        impl_->camera.position = toRaylibVec3(position);
+        impl_->camera.position = position.toRaylib();
     }
 
-    void RaylibRenderer::setCameraTarget(const RVec3& target)
+    void RaylibRenderer::setCameraTarget(const geometry::Vec3& target)
     {
-        impl_->camera.target = toRaylibVec3(target);
+        impl_->camera.target = target.toRaylib();
     }
 
     void RaylibRenderer::setCameraFov(float fovY)
@@ -135,10 +193,10 @@ namespace renderer
         return IsMouseButtonDown(button);
     }
 
-    RVec3 RaylibRenderer::getMouseDelta() const
+    geometry::Vec3 RaylibRenderer::getMouseDelta() const
     {
         Vector2 delta = GetMouseDelta();
-        return RVec3(delta.x, delta.y, 0.0f);
+        return geometry::Vec3(delta.x, delta.y, 0.0f);
     }
 
     // ------------------------
@@ -157,38 +215,51 @@ namespace renderer
         DrawLine3D({0, 0, 0}, {0, 0, size}, ::BLUE);
     }
 
-    void RaylibRenderer::ensureCCW(RVec3& v0, RVec3& v1, RVec3& v2, RVec3& cameraPos)
+    void RaylibRenderer::ensureCCW(geometry::Triangle& tri, geometry::Vec3 cameraPos)
     {
-        RVec3 normal = renderer::RVec3::cross(v1 - v0, v2 - v0);
-        RVec3 camDir = renderer::RVec3{cameraPos.x, cameraPos.y, cameraPos.z} - v0;
-        float dot    = renderer::RVec3::dotProduct(normal, camDir);
+        geometry::Vec3 v0     = tri.vertices[0];
+        geometry::Vec3 v1     = tri.vertices[1];
+        geometry::Vec3 v2     = tri.vertices[2];
+        geometry::Vec3 normal = geometry::Vec3::cross(v1 - v0, v2 - v0);
+        geometry::Vec3 camDir = geometry::Vec3{cameraPos.x, cameraPos.y, cameraPos.z} - v0;
+        float          dot    = geometry::Vec3::dotProduct(normal, camDir);
         if (dot < 0)
         {
             // swap two vertices to make CCW
             std::swap(v1, v2);
         }
+        tri.vertices[1] = v1;
+        tri.vertices[2] = v2;
     }
 
-    void RaylibRenderer::drawTriangle(RTriangle& tri)
+    void RaylibRenderer::drawTriangle(const geometry::Triangle& tri, Color color)
     {
         rlDisableBackfaceCulling();
-        RVec3 cameraPos = {impl_->camera.position.x, impl_->camera.position.y, impl_->camera.position.z};
-        ensureCCW(tri.v0, tri.v1, tri.v2, cameraPos);
+        // geometry::Vec3 cameraPos = {impl_->camera.position.x, impl_->camera.position.y, impl_->camera.position.z};
+        // ensureCCW(tri, cameraPos);
 
         DrawTriangle3D(
-            toRaylibVec3(tri.v0),
-            toRaylibVec3(tri.v1),
-            toRaylibVec3(tri.v2),
-            toRaylibColor(tri.color));
+            tri.vertices[0].toRaylib(),
+            tri.vertices[1].toRaylib(),
+            tri.vertices[2].toRaylib(),
+            toRaylibColor(color));
 
         rlEnableBackfaceCulling();
     }
 
-    void RaylibRenderer::drawMesh(RMesh& mesh)
+    void RaylibRenderer::drawMesh(const geometry::Mesh& mesh, Color color)
     {
         for (auto& tri : mesh.triangles)
         {
-            drawTriangle(tri);
+            drawTriangle(tri, color);
         }
+    }
+
+    void RaylibRenderer::drawObject(const RenderObject& obj, Color color)
+    {
+        rlPushMatrix();
+        rlMultMatrixf(MatrixToFloat(obj.modelMatrix));
+        drawMesh(*obj.object->mesh, color);
+        rlPopMatrix();
     }
 } // namespace renderer

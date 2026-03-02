@@ -24,10 +24,10 @@ message(STATUS "INFO: C++ standard set to ${CMAKE_CXX_STANDARD}")
 
 #######################################
 
-option(ENABLE_DEBUG "Enable SPLINTER_DEBUG macro" OFF)
+option(ENABLE_DEBUG "Enable SPLINTER3D_DEBUG macro" OFF)
 if(ENABLE_DEBUG)
-    add_compile_definitions(SPLINTER_DEBUG=1)
-    message(STATUS "INFO: SPLINTER_DEBUG enabled")
+    add_compile_definitions(SPLINTER3D_DEBUG=1)
+    message(STATUS "INFO: SPLINTER3D_DEBUG enabled")
 endif()
 
 #######################################
