@@ -25,7 +25,8 @@ namespace objects3D
 
       private:
         /**
-         * @brief Reads an ASCII STL file and constructs an OMesh. The ASCII STL format consists of lines of text, where each triangle is defined by three "vertex" lines containing the vertex coordinates. The method reads the file line by line, extracts vertex data, and assembles triangles accordingly.
+         * @brief Reads an ASCII STL file and constructs an OMesh.
+         * @details The ASCII STL format consists of lines of text where each triangle is defined by three "vertex" lines containing the vertex coordinates. The method reads the file line by line, extracts vertex data, and assembles triangles accordingly.
          * @param file An open ifstream positioned at the start of the ASCII STL data.
          * @return An OMesh containing the triangles from the STL file.
          */
@@ -34,6 +35,13 @@ namespace objects3D
         /**
          * @brief Reads a binary STL file and constructs an OMesh.
          * @param file An open ifstream positioned at the start of the binary STL data (after the header).
+         * @details The binary STL format consists of:
+         * - An 80-byte header (ignored)
+         * - A 4-byte unsigned integer indicating the number of triangles
+         * - For each triangle:
+         *   - 12 bytes for the normal vector (3 floats)
+         *   - 36 bytes for the vertices (3 vertices x 3 floats each)
+         *   - 2 bytes for attribute data (ignored)
          * @return An OMesh containing the triangles from the STL file.
          */
         static OMesh fromBinarySTL(std::ifstream& file);

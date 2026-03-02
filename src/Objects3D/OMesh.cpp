@@ -25,11 +25,6 @@ namespace objects3D
         }
     }
 
-    /**
-     * The ASCII STL format consists of:
-     * lines of text where each triangle is defined by three "vertex" lines containing the vertex coordinates.
-     * The method reads the file line by line, extracts vertex data, and assembles triangles accordingly.
-     */
     OMesh OMesh::fromAsciiSTL(std::ifstream& file)
     {
         OMesh       mesh;
@@ -69,15 +64,6 @@ namespace objects3D
         return mesh;
     }
 
-    /**
-     * The binary STL format consists of:
-     * - An 80-byte header (ignored)
-     * - A 4-byte unsigned integer indicating the number of triangles
-     * - For each triangle:
-     *   - 12 bytes for the normal vector (3 floats)
-     *   - 36 bytes for the vertices (3 vertices x 3 floats each)
-     *   - 2 bytes for attribute data (ignored)
-     */
     OMesh OMesh::fromBinarySTL(std::ifstream& file)
     {
         OMesh mesh;
