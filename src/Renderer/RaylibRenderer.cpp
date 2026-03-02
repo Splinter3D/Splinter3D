@@ -1,11 +1,11 @@
-#include <Splinter/Utils/Logger.hpp>
 #include <Renderer/RaylibRenderer.hpp>
+#include <Splinter/Utils/Logger.hpp>
+#include <cstdarg>
 #include <cstdio>
 #include <memory>
-#include <vector>
-#include <cstdarg>
 #include <raylib.h>
 #include <rlgl.h>
+#include <vector>
 
 static void RaylibToLogger([[maybe_unused]] int         logLevel,
                            [[maybe_unused]] const char* text, [[maybe_unused]] va_list args)
