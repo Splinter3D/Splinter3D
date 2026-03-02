@@ -18,8 +18,9 @@ namespace renderer
     {
         impl_->cfg = cfg;
 
-        SetConfigFlags(FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT);
+        SetConfigFlags(FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE);
         InitWindow(cfg.width, cfg.height, cfg.title.c_str());
+        SetWindowMinSize(640, 360);
         SetTargetFPS(cfg.target_fps);
         SetExitKey(0);
 
@@ -100,8 +101,28 @@ namespace renderer
 
     void RaylibRenderer::updateCamera(float dt)
     {
-        UpdateCamera(&impl_->camera, CAMERA_ORBITAL);
         (void) dt;
+        UpdateCamera(&impl_->camera, CAMERA_FREE);
+    }
+
+    void RaylibRenderer::setCameraPosition(const RVec3& position)
+    {
+        impl_->camera.position = toRaylibVec3(position);
+    }
+
+    void RaylibRenderer::setCameraTarget(const RVec3& target)
+    {
+        impl_->camera.target = toRaylibVec3(target);
+    }
+
+    void RaylibRenderer::setCameraFov(float fovY)
+    {
+        impl_->camera.fovy = fovY;
+    }
+
+    float RaylibRenderer::getCameraFov() const
+    {
+        return impl_->camera.fovy;
     }
 
     bool RaylibRenderer::isKeyDown(Key key) const

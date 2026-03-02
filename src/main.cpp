@@ -7,6 +7,8 @@
 
 #include <Objects3D/OMesh.hpp>
 #include <Renderer/RaylibRenderer.hpp>
+#include <algorithm>
+#include <cmath>
 #include <functional>
 #include <iostream>
 #include <string>
@@ -14,6 +16,7 @@
 #include <vector>
 
 #include <raylib.h>
+#include <raymath.h>
 
 #define RAYGUI_IMPLEMENTATION
 #if defined(__GNUC__)
@@ -105,6 +108,120 @@ class CenteredToolbar
 
 namespace
 {
+    struct MeshBounds
+    {
+        renderer::RVec3 min{};
+        renderer::RVec3 max{};
+        bool            valid{false};
+    };
+
+    MeshBounds computeMeshBounds(const objects3D::OMesh& mesh)
+    {
+        MeshBounds bounds;
+        for (const auto& triangle : mesh.triangles)
+        {
+            for (const auto& vertex : triangle.vertices)
+            {
+                renderer::RVec3 current{vertex.x, vertex.y, vertex.z};
+                if (!bounds.valid)
+                {
+                    bounds.min  = current;
+                    bounds.max  = current;
+                    bounds.valid = true;
+                }
+                else
+                {
+                    bounds.min.x = std::min(bounds.min.x, current.x);
+                    bounds.min.y = std::min(bounds.min.y, current.y);
+                    bounds.min.z = std::min(bounds.min.z, current.z);
+
+                    bounds.max.x = std::max(bounds.max.x, current.x);
+                    bounds.max.y = std::max(bounds.max.y, current.y);
+                    bounds.max.z = std::max(bounds.max.z, current.z);
+                }
+            }
+        }
+        return bounds;
+    }
+
+    renderer::RVec3 computeBoundsCenter(const MeshBounds& bounds)
+    {
+        return renderer::RVec3{
+            (bounds.min.x + bounds.max.x) * 0.5f,
+            (bounds.min.y + bounds.max.y) * 0.5f,
+            (bounds.min.z + bounds.max.z) * 0.5f};
+    }
+
+    float computeBoundsRadius(const MeshBounds& bounds)
+    {
+        const float dx = bounds.max.x - bounds.min.x;
+        const float dy = bounds.max.y - bounds.min.y;
+        const float dz = bounds.max.z - bounds.min.z;
+        return 0.5f * std::sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
+    void frameCameraOnMesh(renderer::RaylibRenderer& renderer, const objects3D::OMesh& mesh)
+    {
+        const MeshBounds bounds = computeMeshBounds(mesh);
+        if (!bounds.valid)
+            return;
+
+        const renderer::RVec3 center = computeBoundsCenter(bounds);
+        renderer.setCameraTarget(center);
+
+        const float radius = std::max(computeBoundsRadius(bounds), 0.5f);
+        const float screenWidth  = static_cast<float>(GetScreenWidth());
+        const float screenHeight = static_cast<float>(GetScreenHeight());
+        const float aspect       = (screenHeight > 0.0f) ? (screenWidth / screenHeight) : 1.0f;
+
+        const float fovYRad     = renderer.getCameraFov() * DEG2RAD;
+        const float tanHalfFovY = std::max(std::tan(fovYRad * 0.5f), 0.001f);
+        float       distanceY   = radius / tanHalfFovY;
+
+        float distanceX = distanceY;
+        if (aspect > 0.0f)
+        {
+            const float fovXRad     = 2.0f * std::atan(std::tan(fovYRad * 0.5f) * aspect);
+            const float tanHalfFovX = std::max(std::tan(fovXRad * 0.5f), 0.001f);
+            distanceX               = radius / tanHalfFovX;
+        }
+
+        const float distance = std::max(distanceX, distanceY) * 1.2f;
+        const Vector3 direction = Vector3Normalize(Vector3{1.4f, 1.0f, 1.3f});
+
+        renderer::RVec3 position{
+            center.x + direction.x * distance,
+            center.y + direction.y * distance,
+            center.z + direction.z * distance};
+        renderer.setCameraPosition(position);
+    }
+
+    struct WindowState
+    {
+        int windowedWidth;
+        int windowedHeight;
+    };
+
+    void rememberWindowedSize(WindowState& state)
+    {
+        state.windowedWidth  = GetScreenWidth();
+        state.windowedHeight = GetScreenHeight();
+    }
+
+    void toggleFullscreen(WindowState& state)
+    {
+        if (IsWindowFullscreen())
+        {
+            ToggleFullscreen();
+            SetWindowSize(state.windowedWidth, state.windowedHeight);
+        }
+        else
+        {
+            rememberWindowedSize(state);
+            ToggleFullscreen();
+        }
+    }
+
     Texture2D createToolbarIcon(const std::function<void(Image&)>& painter)
     {
         constexpr int iconSize = 64;
@@ -137,8 +254,12 @@ int main()
     renderer::Config         cfg{1280, 720, "Prototype 3D Slicer", 60};
     renderer::RaylibRenderer renderer(cfg);
 
-    objects3D::OMesh mesh  = objects3D::OMesh::fromSTL("assets/stl/ascii/cube.stl");
+    objects3D::OMesh mesh  = objects3D::OMesh::fromSTL("assets/stl/binary/Farfetchd.stl");
     renderer::RMesh  rmesh = renderer::RMesh::fromOMesh(mesh, {255, 0, 0, 255});
+
+    frameCameraOnMesh(renderer, mesh);
+
+    WindowState windowState{GetScreenWidth(), GetScreenHeight()};
 
     CenteredToolbar toolbar(18.0f, 52.0f, 14.0f);
 
@@ -191,7 +312,7 @@ int main()
         }));
     toolbarButtons.emplace_back(makeToolbarButton(
         "settings",
-        []() { std::cout << "[Toolbar] Settings bouton\n"; },
+        []() { std::cout << "[Toolbar] Resize bouton\n"; },
         [](Image& image) {
             const Color accent{155, 89, 182, 255};
             ImageDrawRectangle(&image, 12, 29, 40, 6, accent);
@@ -201,9 +322,7 @@ int main()
 
     while (!renderer.shouldClose())
     {
-        float dt = renderer.beginFrame();
-
-        renderer.updateCamera(dt);
+        renderer.beginFrame();
 
         // Start 3D mode
         renderer.begin3D();
@@ -215,6 +334,12 @@ int main()
         renderer.end3D();
         toolbar.draw(toolbarButtons);
         renderer.endFrame();
+
+        if (IsKeyPressed(KEY_F11))
+            toggleFullscreen(windowState);
+
+        if (IsWindowResized() && !IsWindowFullscreen())
+            rememberWindowedSize(windowState);
     }
 
     for (ToolbarButton& button : toolbarButtons)

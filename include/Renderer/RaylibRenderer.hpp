@@ -34,6 +34,10 @@ namespace renderer
         // Camera
         // --------------------
         void updateCamera(float deltaTime);
+        void setCameraPosition(const RVec3& position);
+        void setCameraTarget(const RVec3& target);
+        void setCameraFov(float fovY);
+        float getCameraFov() const;
 
         // --------------------
         // Window / input
