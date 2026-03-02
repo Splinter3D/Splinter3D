@@ -46,11 +46,11 @@ namespace renderer
         return ::Color{c.r, c.g, c.b, c.a};
     }
 
-    inline ::Vector3 toRaylibVec3(const renderer::Vec3 &v) {
+    inline ::Vector3 toRaylibVec3(const renderer::RVec3 &v) {
         return ::Vector3{v.x, v.y, v.z};
     }
 
-    inline std::vector<::Vector3> toRaylibVec3(const std::vector<Vec3>& vecs) {
+    inline std::vector<::Vector3> toRaylibVec3(const std::vector<RVec3>& vecs) {
         std::vector<::Vector3> result;
         result.reserve(vecs.size());
         for (auto &v : vecs) result.push_back(toRaylibVec3(v));
@@ -113,10 +113,10 @@ namespace renderer
         return IsMouseButtonDown(button);
     }
 
-    Vec3 RaylibRenderer::getMouseDelta() const
+    RVec3 RaylibRenderer::getMouseDelta() const
     {
         Vector2 delta = GetMouseDelta();
-        return {delta.x, delta.y, 0.0f};
+        return RVec3(delta.x, delta.y, 0.0f);
     }
 
     // ------------------------
@@ -135,18 +135,18 @@ namespace renderer
         DrawLine3D({0,0,0}, {0,0,size}, ::BLUE);
     }
 
-    void ensureCCW(Vec3& v0, Vec3& v1, Vec3& v2, Vector3 cameraPos)
+    void ensureCCW(RVec3& v0, RVec3& v1, RVec3& v2, Vector3 cameraPos)
     {
-        Vec3 normal = renderer::Vec3::cross(v1 - v0, v2 - v0);
-        Vec3 camDir = renderer::Vec3{cameraPos.x, cameraPos.y, cameraPos.z} - v0;
-        float dot = renderer::Vec3::dotProduct(normal, camDir);
+        RVec3 normal = renderer::RVec3::cross(v1 - v0, v2 - v0);
+        RVec3 camDir = renderer::RVec3{cameraPos.x, cameraPos.y, cameraPos.z} - v0;
+        float dot = renderer::RVec3::dotProduct(normal, camDir);
         if (dot < 0) {
             // swap two vertices to make CCW
             std::swap(v1, v2);
         }
     }
 
-    void RaylibRenderer::drawTriangle(Triangle &tri)
+    void RaylibRenderer::drawTriangle(RTriangle &tri)
     {
         // Disable culling so triangle is always visible
         rlDisableBackfaceCulling();
@@ -162,7 +162,7 @@ namespace renderer
         rlEnableBackfaceCulling();
     }
 
-    void RaylibRenderer::drawTriangles(std::vector<Triangle> &tris)
+    void RaylibRenderer::drawTriangles(std::vector<RTriangle> &tris)
     {
         for (auto &tri : tris) drawTriangle(tri);
     }

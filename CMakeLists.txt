@@ -16,23 +16,37 @@ find_package(glfw3 CONFIG REQUIRED)
 # =========================
 # Renderer library
 # =========================
-add_library(protoype_renderer SHARED
+add_library(prototype_renderer SHARED
     renderer/src/RaylibRenderer.cpp
 )
 
-target_include_directories(protoype_renderer
+target_include_directories(prototype_renderer
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/renderer/include
 )
 
-target_link_libraries(protoype_renderer
+target_link_libraries(prototype_renderer
     PUBLIC
         raylib
         glfw
 )
 
-add_library(protoype::renderer ALIAS protoype_renderer)
+add_library(prototype::renderer ALIAS prototype_renderer)
 
+
+# =========================
+# Objects3D library
+# =========================
+add_library(prototype_objects3D SHARED
+    objects3D/src/OMesh.cpp
+)
+
+target_include_directories(prototype_objects3D
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/objects3D/include
+)
+
+add_library(prototype::objects3D ALIAS prototype_objects3D)
 
 # =========================
 # Main executable
@@ -43,7 +57,8 @@ add_executable(Prototype
 
 target_link_libraries(Prototype
     PRIVATE
-        protoype::renderer
+        prototype::renderer
+        prototype::objects3D
 )
 
 target_compile_options(Prototype PRIVATE

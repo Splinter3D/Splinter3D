@@ -24,8 +24,8 @@ namespace renderer
         void begin3D() override;
         void end3D() override;
 
-        void drawTriangle(Triangle& tri) override;
-        void drawTriangles(std::vector<Triangle>& tris) override;
+        void drawTriangle(RTriangle& tri) override;
+        void drawTriangles(std::vector<RTriangle>& tris) override;
 
         void drawGrid(int slices, float spacing) override;
         void drawAxis(float size) override;
@@ -43,7 +43,7 @@ namespace renderer
 
         bool isKeyDown(Key key) const override;
         bool isMouseButtonDown(int button) const;
-        Vec3 getMouseDelta() const;
+        RVec3 getMouseDelta() const;
 
       private:
         struct Impl;
