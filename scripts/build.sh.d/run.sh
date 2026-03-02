@@ -16,6 +16,7 @@ ARGUMENTS:
     $0 [-f|--fclean]  fclean the project
     $0 [-t|--tests]   run unit tests
     $0 [-r|--re]      fclean then rebuild (release)
+    $0 [-g|--rd]      fclean then rebuild (debug)
 EOF
 }
 
@@ -61,6 +62,11 @@ function _run () {
             -r|--re)
                 _fclean
                 _all
+                exit 0
+                ;;
+            -g|--rd)
+                _fclean
+                _debug
                 exit 0
                 ;;
             *)
