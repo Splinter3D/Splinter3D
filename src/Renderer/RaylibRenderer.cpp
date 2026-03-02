@@ -135,7 +135,7 @@ namespace renderer
         DrawLine3D({0,0,0}, {0,0,size}, ::BLUE);
     }
 
-    void ensureCCW(RVec3& v0, RVec3& v1, RVec3& v2, Vector3 cameraPos)
+    void RaylibRenderer::ensureCCW(RVec3& v0, RVec3& v1, RVec3& v2, RVec3& cameraPos)
     {
         RVec3 normal = renderer::RVec3::cross(v1 - v0, v2 - v0);
         RVec3 camDir = renderer::RVec3{cameraPos.x, cameraPos.y, cameraPos.z} - v0;
@@ -148,9 +148,9 @@ namespace renderer
 
     void RaylibRenderer::drawTriangle(RTriangle &tri)
     {
-        // Disable culling so triangle is always visible
         rlDisableBackfaceCulling();
-        ensureCCW(tri.v0, tri.v1, tri.v2, impl_->camera.position);
+        RVec3 cameraPos = {impl_->camera.position.x, impl_->camera.position.y, impl_->camera.position.z};
+        ensureCCW(tri.v0, tri.v1, tri.v2, cameraPos);
 
         DrawTriangle3D(
             toRaylibVec3(tri.v0),

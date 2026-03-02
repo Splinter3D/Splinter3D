@@ -48,5 +48,7 @@ namespace renderer
       private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
+
+        void ensureCCW(RVec3& v0, RVec3& v1, RVec3& v2, RVec3& cameraPos);
     };
 }
