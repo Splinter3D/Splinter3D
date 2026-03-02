@@ -1,2 +1,2 @@
 # Prototype
-A quick prototype of our slicer (MVP)
+A quick prototype of our slicer

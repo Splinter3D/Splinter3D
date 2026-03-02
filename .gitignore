@@ -39,3 +39,9 @@
 
 # debug information files
 *.dwo
+
+#Build folder
+build/
+
+# Dependencies
+vcpkg/
