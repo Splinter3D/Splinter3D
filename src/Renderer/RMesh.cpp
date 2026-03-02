@@ -1,15 +1,14 @@
 #include <Renderer/RMesh.hpp>
 
-renderer::RMesh renderer::RMesh::makeRenderable(const objects3D::OMesh& mesh, Color color)
+renderer::RMesh renderer::RMesh::fromOMesh(const objects3D::OMesh& mesh, Color color)
 {
     RMesh result;
-    for (const auto& tri : mesh.triangles) {
-        result.triangles.push_back({
-            .v0 = {tri.v0.x, tri.v0.y, tri.v0.z},
-            .v1 = {tri.v1.x, tri.v1.y, tri.v1.z},
-            .v2 = {tri.v2.x, tri.v2.y, tri.v2.z},
-            .color = color
-        });
+    for (const auto& tri : mesh.triangles)
+    {
+        result.triangles.push_back({.v0    = {tri.vertices[0].x, tri.vertices[0].y, tri.vertices[0].z},
+                                    .v1    = {tri.vertices[1].x, tri.vertices[1].y, tri.vertices[1].z},
+                                    .v2    = {tri.vertices[2].x, tri.vertices[2].y, tri.vertices[2].z},
+                                    .color = color});
     }
     return result;
 }

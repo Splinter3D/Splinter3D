@@ -25,7 +25,7 @@ namespace renderer
         void end3D() override;
 
         void drawTriangle(RTriangle& tri) override;
-        void drawTriangles(std::vector<RTriangle>& tris) override;
+        void drawMesh(RMesh& mesh) override;
 
         void drawGrid(int slices, float spacing) override;
         void drawAxis(float size) override;
@@ -41,8 +41,8 @@ namespace renderer
         bool shouldClose() const override;
         void requestClose() override;
 
-        bool isKeyDown(Key key) const override;
-        bool isMouseButtonDown(int button) const;
+        bool  isKeyDown(Key key) const override;
+        bool  isMouseButtonDown(int button) const;
         RVec3 getMouseDelta() const;
 
       private:
@@ -51,4 +51,4 @@ namespace renderer
 
         void ensureCCW(RVec3& v0, RVec3& v1, RVec3& v2, RVec3& cameraPos);
     };
-}
+} // namespace renderer

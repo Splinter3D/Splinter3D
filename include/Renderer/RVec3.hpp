@@ -8,8 +8,11 @@ namespace renderer
         float y;
         float z;
 
-        RVec3() : x(0), y(0), z(0) {}
-        RVec3(float X, float Y, float Z) : x(X), y(Y), z(Z) {}
+        RVec3() : x(0), y(0), z(0)
+        { }
+
+        RVec3(float X, float Y, float Z) : x(X), y(Y), z(Z)
+        { }
 
         RVec3 operator-(const RVec3& other) const
         {
@@ -21,8 +24,7 @@ namespace renderer
             return RVec3(
                 a.y * b.z - a.z * b.y,
                 a.z * b.x - a.x * b.z,
-                a.x * b.y - a.y * b.x
-            );
+                a.x * b.y - a.y * b.x);
         }
 
         static float dotProduct(const RVec3& a, const RVec3& b)
@@ -30,4 +32,4 @@ namespace renderer
             return a.x * b.x + a.y * b.y + a.z * b.z;
         }
     };
-}
+} // namespace renderer

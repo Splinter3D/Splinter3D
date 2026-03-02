@@ -8,8 +8,11 @@ namespace objects3D
         float y;
         float z;
 
-        OVec3() : x(0), y(0), z(0) {}
-        OVec3(float X, float Y, float Z) : x(X), y(Y), z(Z) {}
+        OVec3() : x(0), y(0), z(0)
+        { }
+
+        OVec3(float X, float Y, float Z) : x(X), y(Y), z(Z)
+        { }
 
         OVec3 operator-(const OVec3& other) const
         {
@@ -21,8 +24,7 @@ namespace objects3D
             return OVec3(
                 a.y * b.z - a.z * b.y,
                 a.z * b.x - a.x * b.z,
-                a.x * b.y - a.y * b.x
-            );
+                a.x * b.y - a.y * b.x);
         }
 
         static float dotProduct(const OVec3& a, const OVec3& b)
@@ -30,4 +32,4 @@ namespace objects3D
             return a.x * b.x + a.y * b.y + a.z * b.z;
         }
     };
-}
+} // namespace objects3D

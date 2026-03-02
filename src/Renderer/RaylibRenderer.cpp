@@ -1,18 +1,16 @@
+#include <Renderer/RaylibRenderer.hpp>
+#include <memory>
 #include <raylib.h>
 #include <rlgl.h>
-
-#include <Renderer/RaylibRenderer.hpp>
-
-#include <memory>
 #include <vector>
 
 namespace renderer
 {
     struct RaylibRenderer::Impl
     {
-        Config cfg;
+        Config   cfg;
         Camera3D camera{};
-        bool exitRequested{false};
+        bool     exitRequested{false};
     };
 
     RaylibRenderer::RaylibRenderer(const Config& cfg)
@@ -30,8 +28,7 @@ namespace renderer
             .target     = {0.0f, 0.0f, 0.0f},
             .up         = {0.0f, 1.0f, 0.0f},
             .fovy       = 45.0f,
-            .projection = CAMERA_PERSPECTIVE
-        };
+            .projection = CAMERA_PERSPECTIVE};
     }
 
     RaylibRenderer::~RaylibRenderer()
@@ -42,18 +39,22 @@ namespace renderer
     // --------------------------
     // Helpers: convert to Raylib
     // --------------------------
-    inline ::Color toRaylibColor(const renderer::Color &c) {
+    inline ::Color toRaylibColor(const renderer::Color& c)
+    {
         return ::Color{c.r, c.g, c.b, c.a};
     }
 
-    inline ::Vector3 toRaylibVec3(const renderer::RVec3 &v) {
+    inline ::Vector3 toRaylibVec3(const renderer::RVec3& v)
+    {
         return ::Vector3{v.x, v.y, v.z};
     }
 
-    inline std::vector<::Vector3> toRaylibVec3(const std::vector<RVec3>& vecs) {
+    inline std::vector<::Vector3> toRaylibVec3(const std::vector<RVec3>& vecs)
+    {
         std::vector<::Vector3> result;
         result.reserve(vecs.size());
-        for (auto &v : vecs) result.push_back(toRaylibVec3(v));
+        for (auto& v : vecs)
+            result.push_back(toRaylibVec3(v));
         return result;
     }
 
@@ -100,7 +101,7 @@ namespace renderer
     void RaylibRenderer::updateCamera(float dt)
     {
         UpdateCamera(&impl_->camera, CAMERA_ORBITAL);
-        (void)dt;
+        (void) dt;
     }
 
     bool RaylibRenderer::isKeyDown(Key key) const
@@ -130,23 +131,24 @@ namespace renderer
 
     void RaylibRenderer::drawAxis(float size)
     {
-        DrawLine3D({0,0,0}, {size,0,0}, ::RED);
-        DrawLine3D({0,0,0}, {0,size,0}, ::GREEN);
-        DrawLine3D({0,0,0}, {0,0,size}, ::BLUE);
+        DrawLine3D({0, 0, 0}, {size, 0, 0}, ::RED);
+        DrawLine3D({0, 0, 0}, {0, size, 0}, ::GREEN);
+        DrawLine3D({0, 0, 0}, {0, 0, size}, ::BLUE);
     }
 
     void RaylibRenderer::ensureCCW(RVec3& v0, RVec3& v1, RVec3& v2, RVec3& cameraPos)
     {
         RVec3 normal = renderer::RVec3::cross(v1 - v0, v2 - v0);
         RVec3 camDir = renderer::RVec3{cameraPos.x, cameraPos.y, cameraPos.z} - v0;
-        float dot = renderer::RVec3::dotProduct(normal, camDir);
-        if (dot < 0) {
+        float dot    = renderer::RVec3::dotProduct(normal, camDir);
+        if (dot < 0)
+        {
             // swap two vertices to make CCW
             std::swap(v1, v2);
         }
     }
 
-    void RaylibRenderer::drawTriangle(RTriangle &tri)
+    void RaylibRenderer::drawTriangle(RTriangle& tri)
     {
         rlDisableBackfaceCulling();
         RVec3 cameraPos = {impl_->camera.position.x, impl_->camera.position.y, impl_->camera.position.z};
@@ -156,14 +158,16 @@ namespace renderer
             toRaylibVec3(tri.v0),
             toRaylibVec3(tri.v1),
             toRaylibVec3(tri.v2),
-            toRaylibColor(tri.color)
-        );
+            toRaylibColor(tri.color));
 
         rlEnableBackfaceCulling();
     }
 
-    void RaylibRenderer::drawTriangles(std::vector<RTriangle> &tris)
+    void RaylibRenderer::drawMesh(RMesh& mesh)
     {
-        for (auto &tri : tris) drawTriangle(tri);
+        for (auto& tri : mesh.triangles)
+        {
+            drawTriangle(tri);
+        }
     }
-}
+} // namespace renderer
