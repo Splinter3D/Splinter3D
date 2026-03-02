@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(splinter-project LANGUAGES CXX)
+project(splinter3D-project LANGUAGES CXX)
 
 ########################################
 

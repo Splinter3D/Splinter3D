@@ -27,11 +27,11 @@ function _configure_and_build() {
     fi
     "${cmake_cmd[@]}" || _error "cmake configuration failed" "check CMake output above"
 
-    _info "building target splinter with ${build_system}..."
-    if _run_build_tool "${build_system}" "splinter"; then
-        _success "compiled splinter"
+    _info "building target splinter3D with ${build_system}..."
+    if _run_build_tool "${build_system}" "splinter3D"; then
+        _success "compiled splinter3D"
         exit 0
     else
-        _error "compilation error" "failed to compile splinter"
+        _error "compilation error" "failed to compile splinter3D"
     fi
 }
