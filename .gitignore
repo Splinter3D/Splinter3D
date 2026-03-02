@@ -48,7 +48,6 @@
 
 # ide folders
 /.idea/
-/.vscode/
 
 # MacOS
 DS_Store
@@ -56,4 +55,6 @@ DS_Store
 # Dependencies
 vcpkg/
 
+!/scripts/
 !/scripts/build.sh.d
+!/scripts/style.sh.d
