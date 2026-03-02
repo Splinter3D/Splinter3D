@@ -39,3 +39,15 @@
 
 # debug information files
 *.dwo
+
+# build folder
+/build/
+
+# ide folders
+/.idea/
+/.vscode/
+
+# MacOS
+DS_Store
+
+!/scripts/build.sh.d
