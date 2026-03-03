@@ -118,9 +118,13 @@ $generators = @(
 $selectedGenerator = $null
 # verify toolchain exists
 if (-not (Test-Path $toolchain)) {
-    Write-Warning "vcpkg toolchain file not found at $toolchain"
-    Write-Warning "If you expect a full vcpkg repo here, ensure you cloned the repository (not only downloaded vcpkg.exe)."
-    Fail "vcpkg toolchain file missing"
+  Write-Warning "vcpkg toolchain file not found at $toolchain"
+  Write-Warning "If you expect a full vcpkg repo here, ensure you cloned the repository (not only downloaded vcpkg.exe)."
+  Fail "vcpkg toolchain file missing"
+} else {
+  Write-Host "Toolchain file present: $toolchain"
+  Write-Host "First lines of toolchain file (for diagnostics):"
+  Get-Content -Path $toolchain -TotalCount 8 | ForEach-Object { Write-Host "  $_" }
 }
 
 foreach ($gen in $generators) {
@@ -129,16 +133,29 @@ foreach ($gen in $generators) {
   if (Test-Path $candidateBuild) { Remove-Item -Recurse -Force $candidateBuild -ErrorAction SilentlyContinue }
   New-Item -ItemType Directory -Path $candidateBuild | Out-Null
 
-  $cmakeArgs = @('-S', $RepoRoot, '-B', $candidateBuild) + $gen.Args + @('-DCMAKE_TOOLCHAIN_FILE=' + $toolchain, '-DCMAKE_BUILD_TYPE=Release', '-DCMAKE_INSTALL_PREFIX=' + $InstallPrefix)
+  # Create an initial cache file to avoid passing complex -D arguments which can be mis-parsed
+  $initFile = Join-Path $candidateBuild 'vcpkg_init.cmake'
+  $initContents = @(
+    "set(CMAKE_TOOLCHAIN_FILE \"$toolchain\" CACHE STRING \"Vcpkg toolchain\")",
+    "set(CMAKE_INSTALL_PREFIX \"$InstallPrefix\" CACHE PATH \"Install prefix\")",
+    "set(CMAKE_BUILD_TYPE \"Release\" CACHE STRING \"Build type\")"
+  )
+  Set-Content -Path $initFile -Value $initContents -Encoding UTF8
+
+  $cmakeArgs = @('-S', $RepoRoot, '-B', $candidateBuild) + $gen.Args + @('-C', $initFile)
   Write-Host "Trying generator: $($gen.Name)"
   Write-Host "$cmakeExe $($cmakeArgs -join ' ')"
-  & $cmakeExe @cmakeArgs
-  if ($LASTEXITCODE -eq 0) {
+  # Use Start-Process to avoid PowerShell argument parsing oddities and capture output
+  $proc = Start-Process -FilePath $cmakeExe -ArgumentList $cmakeArgs -NoNewWindow -PassThru -Wait -RedirectStandardOutput "$candidateBuild\cmake_configure.stdout.txt" -RedirectStandardError "$candidateBuild\cmake_configure.stderr.txt"
+  $exit = $proc.ExitCode
+  Get-Content "$candidateBuild\cmake_configure.stdout.txt" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "cmake> $_" }
+  Get-Content "$candidateBuild\cmake_configure.stderr.txt" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "cmake-err> $_" }
+  if ($exit -eq 0) {
     $selectedGenerator = $gen.Name
     $buildDir = $candidateBuild
     break
   } else {
-    Write-Warning "Generator $($gen.Name) failed with exit code $LASTEXITCODE"
+    Write-Warning "Generator $($gen.Name) failed with exit code $exit"
   }
 }
 

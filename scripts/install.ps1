@@ -9,6 +9,11 @@ param(
 function Run-As-Administrator {
     $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
     $principal = New-Object Security.Principal.WindowsPrincipal($currentUser)
+    # In CI environments we must not attempt elevation
+    if ($env:GITHUB_ACTIONS -eq 'true' -or $env:CI -eq 'true') {
+        Write-Host "CI runner detected - skipping elevation"
+        return
+    }
 
     if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
         Write-Host "Restarting script as administrator..."
@@ -132,4 +137,7 @@ Write-Host "Installation complete. Cleaning temporary files."
 Remove-Item -Recurse -Force $tmp
 
 Write-Host "Done."
-Read-Host -Prompt "Press ENTER to exit"
+# Avoid interactive pause in CI
+if (-not ($env:GITHUB_ACTIONS -eq 'true' -or $env:CI -eq 'true')) {
+    Read-Host -Prompt "Press ENTER to exit"
+}
