@@ -12,8 +12,6 @@
 #include <Renderer/RenderObject.hpp>
 #include <Splinter3D/Utils/Locale.hpp>
 
-#define _(String) gettext(String)
-
 #define RAYGUI_IMPLEMENTATION
 #if defined(__GNUC__)
 #pragma GCC diagnostic push
@@ -36,9 +34,9 @@ int main()
 {
     splinter3D::utils::Locale::init("splinter3D", "./locale");
 
-    // splinter::utils::Locale::setLanguage("fr");
-    // splinter::utils::Locale::setLanguage("es");
-    // splinter::utils::Locale::setLanguage("de");
+    // splinter3D::utils::Locale::setLanguage("fr");
+    // splinter3D::utils::Locale::setLanguage("es");
+    // splinter3D::utils::Locale::setLanguage("de");
 
     std::cout << _("Play") << std::endl;
     std::cout << _("Settings") << std::endl;
