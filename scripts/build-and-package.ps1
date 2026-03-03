@@ -79,8 +79,17 @@ if (-not $DryRun) {
       Log("Cloning vcpkg into $VcpkgDir... (attempt $attempt/$maxAttempts)")
       $cloneLog = Join-Path $vcpkgParent ("git_clone_attempt_${attempt}.log")
       try {
-        & git clone $cloneUrl $VcpkgDir 2>&1 | Tee-Object -FilePath $cloneLog
+        # Capture git output so we can write it to the log file and reprint it in gray
+        $gitOutput = & git clone $cloneUrl $VcpkgDir 2>&1
         $gitExit = $LASTEXITCODE
+        if ($gitOutput) {
+          $gitOutput | Out-File -FilePath $cloneLog -Encoding utf8
+          foreach ($line in $gitOutput) {
+            Write-Host $line -ForegroundColor DarkGray
+          }
+        } else {
+          New-Item -Path $cloneLog -ItemType File -Force | Out-Null
+        }
       } catch {
         $_ | Out-File -FilePath $cloneLog -Append -Encoding utf8
         $gitExit = 1
@@ -286,6 +295,10 @@ foreach ($gen in $generators) {
     Write-Host "DryRun: wrote init file and dumped bytes in $candidateBuild; skipping CMake configure/build"
     exit 0
   }
+  # Compute parallelism based on available CPU cores to speed up builds
+  $procCount = [Environment]::ProcessorCount
+  if (-not $procCount -or $procCount -lt 1) { $procCount = 1 }
+  $parallel = $procCount
 
   $cmakeArgs = @('-S', $RepoRoot, '-B', $candidateBuild) + $gen.Args + @('-C', $initFile)
   Write-Host "Trying generator: $($gen.Name)"
@@ -293,9 +306,15 @@ foreach ($gen in $generators) {
   $argString = ($cmakeArgs | ForEach-Object {
     if ($_ -match '\s') { '"' + $_ + '"' } else { $_ }
   }) -join ' '
-  Write-Host "$cmakeExe $argString"
-  # Use Start-Process with a single argument string and capture output
-  $proc = Start-Process -FilePath $cmakeExe -ArgumentList $argString -NoNewWindow -PassThru -Wait -RedirectStandardOutput "$candidateBuild\cmake_configure.stdout.txt" -RedirectStandardError "$candidateBuild\cmake_configure.stderr.txt"
+  Log("$cmakeExe $argString")
+  # Time the configure step and capture output to files
+  $cfgStart = Get-Date
+  $cfgOut = Join-Path $candidateBuild 'cmake_configure.stdout.txt'
+  $cfgErr = Join-Path $candidateBuild 'cmake_configure.stderr.txt'
+  $proc = Start-Process -FilePath $cmakeExe -ArgumentList $argString -NoNewWindow -PassThru -Wait -RedirectStandardOutput $cfgOut -RedirectStandardError $cfgErr
+  $cfgEnd = Get-Date
+  $cfgDuration = $cfgEnd - $cfgStart
+  Log("CMake configure duration: $($cfgDuration.ToString())")
   $exit = $proc.ExitCode
   Get-Content "$candidateBuild\cmake_configure.stdout.txt" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "cmake> $_" }
   Get-Content "$candidateBuild\cmake_configure.stderr.txt" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "cmake-err> $_" }
@@ -314,10 +333,12 @@ Write-Host "Selected generator: $selectedGenerator (build dir: $buildDir)"
 
 Write-Host "Building and installing..."
   if ($selectedGenerator -eq 'Ninja') {
-    & $cmakeExe --build $buildDir --config Release --parallel 4
+    Log("Building with Ninja using $parallel parallel jobs")
+    & $cmakeExe --build $buildDir --config Release --parallel $parallel
     if ($LASTEXITCODE -ne 0) { Fail "Build/install failed (Ninja)" }
   } else {
-    & $cmakeExe --build $buildDir --config Release --target INSTALL -- /m:4
+    Log("Building with MSBuild using $parallel parallel jobs")
+    & $cmakeExe --build $buildDir --config Release --target INSTALL -- /m:$parallel
     if ($LASTEXITCODE -ne 0) { Fail "Build/install failed (MSBuild)" }
   }
 
