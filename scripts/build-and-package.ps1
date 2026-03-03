@@ -54,17 +54,27 @@ if (-not $InstallPrefix) { $InstallPrefix = Join-Path $OutDir "staging" }
 
 # Ensure vcpkg exists and is bootstrapped (clone full repo and bootstrap like Windows-Install)
 if (-not (Test-Path $VcpkgDir)) {
-  $parentDir = Split-Path $RepoRoot -Parent
-  Set-Location $parentDir
-  Write-Host "Cloning vcpkg into $parentDir\vcpkg..."
-  git clone https://github.com/microsoft/vcpkg.git || Fail "Failed to clone vcpkg"
-  $VcpkgDir = Join-Path $parentDir 'vcpkg'
+  $vcpkgParent = Split-Path $VcpkgDir -Parent
+  if (-not (Test-Path $vcpkgParent)) { New-Item -ItemType Directory -Path $vcpkgParent | Out-Null }
+  Set-Location $vcpkgParent
+  Write-Host "Cloning vcpkg into $VcpkgDir..."
+  git clone https://github.com/microsoft/vcpkg.git $VcpkgDir || Fail "Failed to clone vcpkg into $VcpkgDir"
 }
 
 Push-Location $VcpkgDir
 Write-Host "Bootstrapping vcpkg..."
 & .\bootstrap-vcpkg.bat || Fail "vcpkg bootstrap failed"
 & .\vcpkg integrate install || Write-Warning "vcpkg integrate install failed"
+
+# Diagnostic: list vcpkg scripts folder so CI logs show its contents
+$scriptsDir = Join-Path $VcpkgDir 'scripts\buildsystems'
+Write-Host "vcpkg dir: $VcpkgDir"
+if (Test-Path $scriptsDir) {
+    Write-Host "Listing $scriptsDir contents:"
+    Get-ChildItem -Path $scriptsDir | ForEach-Object { Write-Host " - $($_.Name)" }
+} else {
+    Write-Warning "$scriptsDir does not exist after bootstrap"
+}
 
 Write-Host "Installing vcpkg dependencies (manifest-aware)..."
 try {
