@@ -36,15 +36,7 @@ int main()
 {
     splinter3D::utils::Locale::init("splinter3D", "./locale");
 
-    // splinter::utils::Locale::setLanguage("fr");
-    // splinter::utils::Locale::setLanguage("es");
-    // splinter::utils::Locale::setLanguage("de");
-
-    std::cout << _("Play") << std::endl;
-    std::cout << _("Settings") << std::endl;
-    std::cout << _("Quit") << std::endl;
-
-    renderer::Config         cfg{1280, 720, "Prototype 3D Slicer", 60};
+    renderer::Config         cfg{1270, 720, "Prototype 3D Slicer", 60};
     renderer::RaylibRenderer renderer(cfg);
 
     objects3D::Object3D    obj = objects3D::Object3D::fromSTL("assets/stl/binary/cube.stl");
@@ -62,6 +54,7 @@ int main()
     {
         float dt = renderer.beginFrame();
         renderer.updateCamera(dt);
+        toolbar.update(renderer);
 
         renderer.begin3D();
 

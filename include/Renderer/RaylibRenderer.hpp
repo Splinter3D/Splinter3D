@@ -1,11 +1,63 @@
 #pragma once
 
 #include <Renderer/IRenderer.hpp>
+#include <map>
 #include <memory>
+#include <variant>
 #include <vector>
 
 namespace renderer
 {
+
+    struct LineCmd
+    {
+        geometry::Vec3 start;
+        geometry::Vec3 end;
+        Color          color;
+    };
+
+    struct GridCmd
+    {
+        int   slices;
+        float spacing;
+    };
+
+    struct TriangleCmd
+    {
+        geometry::Triangle tri;
+        Color              color;
+        Matrix             modelMatrix;
+    };
+
+    struct RectCmd
+    {
+        float x, y, w, h;
+        Color color;
+    };
+
+    struct RectLinesCmd
+    {
+        float x, y, w, h;
+        Color color;
+    };
+
+    struct TextureCmd
+    {
+        const ITexture* texture;
+        Rectangle       src;
+        Rectangle       dest;
+    };
+
+    struct TextCmd
+    {
+        std::string text;
+        int         x, y;
+        int         fontSize;
+        Color       color;
+    };
+
+    using DrawCmd = std::variant<RectCmd, RectLinesCmd, TextureCmd, TextCmd, LineCmd, GridCmd, TriangleCmd>;
+
     struct RaylibTexture : ITexture
     {
         Texture2D tex{};
@@ -15,7 +67,9 @@ namespace renderer
     {
       public:
         explicit RaylibRenderer(const Config& cfg = {});
-        ~RaylibRenderer() override;
+        ~RaylibRenderer();
+
+        mutable std::map<Layer, std::vector<DrawCmd>> drawQueue_;
 
         // --------------------
         // Frame lifecycle
@@ -30,24 +84,31 @@ namespace renderer
         // --------------------
         void      drawGuiComponent(const gui::IGuiComponent& component) const override;
         ITexture* createIcon(int width, int height, const std::function<void(void* canvas)>& painter) override;
-        void      drawTexture(const ITexture* texture, float x, float y, float width, float height) const override;
+        void      drawTexture(const ITexture* texture, float x, float y, float width, float height, Layer layer = Layer::UI) const override;
+        void      drawButton(float x, float y, float width, float height, const ITexture* icon, const std::function<void()>& onClick, Layer layer = Layer::UI) const override;
+        void      drawPanel(float x, float y, float w, float h, Layer layer = Layer::Overlay) const override;
+        void      drawText(const char* text, float x, float y, int fontSize, Layer layer = Layer::UI) const override;
+        void      drawRectangle(float x, float y, float width, float height, Color color, Layer layer = Layer::UI) const override;
+        void      drawRectangleLines(float x, float y, float width, float height, Color color, Layer layer = Layer::UI) const override;
+        float     measureTextWidth(const char* text, int fontSize) const override;
 
-        void drawButton(float x, float y, float width, float height, const ITexture* icon, const std::function<void()>& onClick) const override;
+        void* getCanvas() const override;
 
         // Specific icon painters
         void drawImportIcon(void* canvas) override;
         void drawExportIcon(void* canvas) override;
         void drawSliceIcon(void* canvas) override;
+        void drawScaleIcon(void* canvas) override;
         void drawPreviewIcon(void* canvas) override;
 
         // --------------------
         // Drawing 3D
         // --------------------
-        void drawTriangle(const geometry::Triangle& tri, Color color) override;
-        void drawMesh(const geometry::Mesh& mesh, Color color) override;
-        void drawObject(const RenderObject& obj, Color color) override;
-        void drawGrid(int slices, float spacing) override;
-        void drawAxis(float size) override;
+        void drawTriangle(const geometry::Triangle& tri, Color color, Layer layer = Layer::UI) override;
+        void drawMesh(const geometry::Mesh& mesh, Color color, Layer layer = Layer::UI) override;
+        void drawObject(const RenderObject& obj, Color color, Layer layer = Layer::UI) override;
+        void drawGrid(int slices, float spacing, Layer layer = Layer::UI) override;
+        void drawAxis(float size, Layer layer = Layer::UI) override;
 
         // --------------------
         // Camera
@@ -68,8 +129,12 @@ namespace renderer
         int            getScreenWidth() const override;
         int            getScreenHeight() const override;
         bool           isKeyDown(Key key) const override;
+        bool           isKeyPressed(Key key) const override;
         bool           isMouseButtonDown(int button) const override;
+        bool           isMouseButtonPressed(int button) const override;
+        geometry::Vec3 getMousePosition() const override;
         geometry::Vec3 getMouseDelta() const override;
+        float          getDeltaTime() const override;
 
       private:
         struct Impl;

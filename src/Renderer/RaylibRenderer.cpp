@@ -148,11 +148,60 @@ namespace renderer
 
     void RaylibRenderer::end3D()
     {
+        for (auto& cmd : drawQueue_[Layer::World])
+        {
+            std::visit([](auto&& c) {
+                using T = std::decay_t<decltype(c)>;
+                if constexpr (std::is_same_v<T, TriangleCmd>)
+                {
+                    rlPushMatrix();
+                    rlMultMatrixf(MatrixToFloat(c.modelMatrix));
+                    rlDisableBackfaceCulling();
+                    DrawTriangle3D(
+                        c.tri.vertices[0].toRaylib(),
+                        c.tri.vertices[1].toRaylib(),
+                        c.tri.vertices[2].toRaylib(),
+                        toRaylibColor(c.color));
+                    rlEnableBackfaceCulling();
+                    rlPopMatrix();
+                }
+                else if constexpr (std::is_same_v<T, LineCmd>)
+                    DrawLine3D(c.start.toRaylib(), c.end.toRaylib(), toRaylibColor(c.color));
+                else if constexpr (std::is_same_v<T, GridCmd>)
+                    DrawGrid(c.slices, c.spacing);
+            },
+                       cmd);
+        }
+        drawQueue_[Layer::World].clear();
         EndMode3D();
     }
 
     void RaylibRenderer::endFrame()
     {
+        for (Layer layer : {Layer::UI, Layer::Overlay, Layer::Debug})
+        {
+            for (auto& cmd : drawQueue_[layer])
+            {
+                std::visit([](auto&& c) {
+                    using T = std::decay_t<decltype(c)>;
+                    if constexpr (std::is_same_v<T, RectCmd>)
+                        DrawRectangleRec({c.x, c.y, c.w, c.h}, toRaylibColor(c.color));
+                    else if constexpr (std::is_same_v<T, RectLinesCmd>)
+                        DrawRectangleLinesEx({c.x, c.y, c.w, c.h}, 1.0f, toRaylibColor(c.color));
+                    else if constexpr (std::is_same_v<T, TextureCmd>)
+                    {
+                        const auto* rt = static_cast<const RaylibTexture*>(c.texture);
+                        if (!rt)
+                            return;
+                        DrawTexturePro(rt->tex, c.src, c.dest, {0, 0}, 0.0f, ::WHITE);
+                    }
+                    else if constexpr (std::is_same_v<T, TextCmd>)
+                        DrawText(c.text.c_str(), c.x, c.y, c.fontSize, toRaylibColor(c.color));
+                },
+                           cmd);
+            }
+            drawQueue_[layer].clear();
+        }
         EndDrawing();
     }
 
@@ -174,9 +223,25 @@ namespace renderer
         return IsKeyDown(static_cast<int>(key));
     }
 
+    bool RaylibRenderer::isKeyPressed(Key key) const
+    {
+        return IsKeyPressed(static_cast<int>(key));
+    }
+
     bool RaylibRenderer::isMouseButtonDown(int button) const
     {
         return IsMouseButtonDown(button);
+    }
+
+    bool RaylibRenderer::isMouseButtonPressed(int button) const
+    {
+        return IsMouseButtonPressed(button);
+    }
+
+    geometry::Vec3 RaylibRenderer::getMousePosition() const
+    {
+        Vector2 position = GetMousePosition();
+        return geometry::Vec3(position.x, position.y, 0.0f);
     }
 
     geometry::Vec3 RaylibRenderer::getMouseDelta() const
@@ -193,6 +258,11 @@ namespace renderer
     int RaylibRenderer::getScreenHeight() const
     {
         return GetScreenHeight();
+    }
+
+    float RaylibRenderer::getDeltaTime() const
+    {
+        return GetFrameTime();
     }
 
 #pragma endregion
@@ -270,7 +340,7 @@ namespace renderer
         return icon;
     }
 
-    void RaylibRenderer::drawTexture(const ITexture* texture, float x, float y, float width, float height) const
+    void RaylibRenderer::drawTexture(const ITexture* texture, float x, float y, float width, float height, Layer layer) const
     {
         const RaylibTexture* rt = static_cast<const RaylibTexture*>(texture);
         if (!rt)
@@ -278,12 +348,12 @@ namespace renderer
 
         Rectangle src  = {0.0f, 0.0f, static_cast<float>(rt->tex.width), static_cast<float>(rt->tex.height)};
         Rectangle dest = {x, y, width, height};
-        DrawTexturePro(rt->tex, src, dest, {0, 0}, 0.0f, ::WHITE);
+        drawQueue_[layer].push_back(TextureCmd{texture, src, dest});
     }
 
     void RaylibRenderer::drawButton(float x, float y, float width, float height,
                                     const renderer::ITexture*    icon,
-                                    const std::function<void()>& onClick) const
+                                    const std::function<void()>& onClick, Layer layer) const
     {
         Rectangle rect{x, y, width, height};
 
@@ -296,8 +366,38 @@ namespace renderer
         if (icon)
         {
             float iconSize = width * 0.55f;
-            this->drawTexture(icon, x + (width - iconSize) * 0.5f, y + (height - iconSize) * 0.5f, iconSize, iconSize);
+            this->drawTexture(icon, x + (width - iconSize) * 0.5f, y + (height - iconSize) * 0.5f, iconSize, iconSize, layer);
         }
+    }
+
+    void RaylibRenderer::drawPanel(float x, float y, float w, float h, Layer layer) const
+    {
+        drawQueue_[layer].push_back(RectCmd{x, y, w, h, Color{40, 40, 40, 255}});
+    }
+
+    void RaylibRenderer::drawText(const char* text, float x, float y, int fontSize, Layer layer) const
+    {
+        drawQueue_[layer].push_back(TextCmd{text, (int) x, (int) y, fontSize, Palette::Secondary});
+    }
+
+    float RaylibRenderer::measureTextWidth(const char* text, int fontSize) const
+    {
+        return static_cast<float>(MeasureText(text, fontSize));
+    }
+
+    void RaylibRenderer::drawRectangle(float x, float y, float width, float height, Color color, Layer layer) const
+    {
+        drawQueue_[layer].push_back(RectCmd{x, y, width, height, color});
+    }
+
+    void RaylibRenderer::drawRectangleLines(float x, float y, float width, float height, Color color, Layer layer) const
+    {
+        drawQueue_[layer].push_back(RectLinesCmd{x, y, width, height, color});
+    }
+
+    void* RaylibRenderer::getCanvas() const
+    {
+        return nullptr; // Not needed for raylib since we draw directly on textures
     }
 
 #pragma endregion
@@ -338,19 +438,73 @@ namespace renderer
         ImageDrawCircle(img, 32, 32, 4, {255, 255, 255, 255});
     }
 
+    void RaylibRenderer::drawScaleIcon(void* canvas)
+    {
+        Image* img = static_cast<Image*>(canvas);
+
+        const ::Color outline{236, 240, 241, 255};
+        const ::Color accent{255, 193, 7, 255}; // warm yellow/orange
+
+        // Draw central square
+        Rectangle rec = {20, 20, 24, 24};
+        ImageDrawRectangleLines(img, rec, 1, outline);
+
+        // Arrow size parameters
+        const int centerX     = 32;
+        const int centerY     = 32;
+        const int arrowLength = 12;
+        const int arrowWidth  = 6;
+
+        // ---- TOP arrow ----
+        ImageDrawLine(img, centerX, 20, centerX, 20 - arrowLength, accent);
+        ImageDrawTriangle(
+            img,
+            {centerX, 20 - arrowLength - 6},
+            {centerX - arrowWidth, 20 - arrowLength},
+            {centerX + arrowWidth, 20 - arrowLength},
+            accent);
+
+        // ---- BOTTOM arrow ----
+        ImageDrawLine(img, centerX, 44, centerX, 44 + arrowLength, accent);
+        ImageDrawTriangle(
+            img,
+            {centerX, 44 + arrowLength + 6},
+            {centerX - arrowWidth, 44 + arrowLength},
+            {centerX + arrowWidth, 44 + arrowLength},
+            accent);
+
+        // ---- LEFT arrow ----
+        ImageDrawLine(img, 20, centerY, 20 - arrowLength, centerY, accent);
+        ImageDrawTriangle(
+            img,
+            {20 - arrowLength - 6, centerY},
+            {20 - arrowLength, centerY - arrowWidth},
+            {20 - arrowLength, centerY + arrowWidth},
+            accent);
+
+        // ---- RIGHT arrow ----
+        ImageDrawLine(img, 44, centerY, 44 + arrowLength, centerY, accent);
+        ImageDrawTriangle(
+            img,
+            {44 + arrowLength + 6, centerY},
+            {44 + arrowLength, centerY - arrowWidth},
+            {44 + arrowLength, centerY + arrowWidth},
+            accent);
+    }
+
 #pragma endregion
 #pragma region "3D DRAWING"
 
-    void RaylibRenderer::drawGrid(int slices, float spacing)
+    void RaylibRenderer::drawGrid(int slices, float spacing, Layer layer)
     {
-        DrawGrid(slices, spacing);
+        drawQueue_[layer].push_back(GridCmd{slices, spacing});
     }
 
-    void RaylibRenderer::drawAxis(float size)
+    void RaylibRenderer::drawAxis(float size, Layer layer)
     {
-        DrawLine3D({0, 0, 0}, {size, 0, 0}, ::RED);
-        DrawLine3D({0, 0, 0}, {0, size, 0}, ::GREEN);
-        DrawLine3D({0, 0, 0}, {0, 0, size}, ::BLUE);
+        drawQueue_[layer].push_back(LineCmd{{0, 0, 0}, {size, 0, 0}, RED});
+        drawQueue_[layer].push_back(LineCmd{{0, 0, 0}, {0, size, 0}, GREEN});
+        drawQueue_[layer].push_back(LineCmd{{0, 0, 0}, {0, 0, size}, BLUE});
     }
 
     void RaylibRenderer::ensureCCW(geometry::Triangle& tri, geometry::Vec3 cameraPos)
@@ -370,34 +524,25 @@ namespace renderer
         tri.vertices[2] = v2;
     }
 
-    void RaylibRenderer::drawTriangle(const geometry::Triangle& tri, Color color)
+    void RaylibRenderer::drawTriangle(const geometry::Triangle& tri, Color color, Layer layer)
     {
-        rlDisableBackfaceCulling();
-        // geometry::Vec3 cameraPos = {impl_->camera.position.x, impl_->camera.position.y, impl_->camera.position.z};
-        // ensureCCW(tri, cameraPos);
-
-        DrawTriangle3D(
-            tri.vertices[0].toRaylib(),
-            tri.vertices[1].toRaylib(),
-            tri.vertices[2].toRaylib(),
-            toRaylibColor(color));
-
-        rlEnableBackfaceCulling();
+        drawQueue_[layer].push_back(TriangleCmd{tri, color, Matrix()});
     }
 
-    void RaylibRenderer::drawMesh(const geometry::Mesh& mesh, Color color)
+    void RaylibRenderer::drawMesh(const geometry::Mesh& mesh, Color color, Layer layer)
     {
         for (auto& tri : mesh.triangles)
         {
-            drawTriangle(tri, color);
+            drawTriangle(tri, color, layer);
         }
     }
 
-    void RaylibRenderer::drawObject(const RenderObject& obj, Color color)
+    void RaylibRenderer::drawObject(const RenderObject& obj, Color color, Layer layer)
     {
-        rlPushMatrix();
-        rlMultMatrixf(MatrixToFloat(obj.modelMatrix));
-        drawMesh(*obj.object->mesh, color);
-        rlPopMatrix();
+        for (auto& tri : obj.object->mesh->triangles)
+        {
+            TriangleCmd cmd{tri, color, obj.modelMatrix};
+            drawQueue_[layer].push_back(cmd);
+        }
     }
 } // namespace renderer
