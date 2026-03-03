@@ -49,6 +49,8 @@ namespace renderer
         void  setCameraTarget(const geometry::Vec3& target);
         void  setCameraFov(float fovY);
         float getCameraFov() const;
+        void  setOrbitDistance(float d);
+        void  setOrbitAngles(float yaw, float pitch);
 
         // --------------------
         // Window / input

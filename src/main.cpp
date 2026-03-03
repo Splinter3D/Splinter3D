@@ -32,14 +32,12 @@ int main()
     renderer::Config         cfg{1280, 720, "Prototype 3D Slicer", 60};
     renderer::RaylibRenderer renderer(cfg);
 
-    objects3D::Object3D    obj = objects3D::Object3D::fromSTL("assets/stl/binary/cube.stl");
+    objects3D::Object3D    obj = objects3D::Object3D::fromSTL("assets/stl/binary/magnolia_binary.stl");
     renderer::RenderObject rObj;
     rObj.bind(obj);
 
     auto meshBounds = geometry::meshutils::computeMeshBounds(*obj.mesh);
-    // geometry::Vec3 meshCenter = geometry::meshutils::computeBoundsCenter(meshBounds);
 
-    // Frame camera on mesh
     geometry::meshutils::frameCameraOnMesh(renderer, meshBounds);
 
     gui::CenteredToolbar toolbar(18.0f, 52.0f, 14.0f);

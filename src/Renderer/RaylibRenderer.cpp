@@ -72,7 +72,12 @@ namespace renderer
     {
         Config   cfg;
         Camera3D camera{};
-        bool     exitRequested{false};
+
+        float yaw      = 0.0f;
+        float pitch    = 0.0f;
+        float distance = 5.0f;
+
+        bool exitRequested{false};
     };
 
     RaylibRenderer::RaylibRenderer(const Config& cfg)
@@ -161,24 +166,20 @@ namespace renderer
     {
         (void) dt;
 
-        static float distance = 10.0f;
-        static float yaw      = 0.5f;
-        static float pitch    = 0.5f;
-
         if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
         {
             Vector2 delta = GetMouseDelta();
-            yaw -= delta.x * 0.01f;
-            pitch -= delta.y * 0.01f;
+            impl_->yaw -= delta.x * 0.01f;
+            impl_->pitch -= delta.y * 0.01f;
         }
 
-        distance -= GetMouseWheelMove();
-        distance = std::max(distance, 1.0f);
+        impl_->distance -= GetMouseWheelMove();
+        impl_->distance = std::max(impl_->distance, 1.0f);
 
         impl_->camera.position = {
-            impl_->camera.target.x + distance * cosf(pitch) * sinf(yaw),
-            impl_->camera.target.y + distance * sinf(pitch),
-            impl_->camera.target.z + distance * cosf(pitch) * cosf(yaw)};
+            impl_->camera.target.x + impl_->distance * cosf(impl_->pitch) * sinf(impl_->yaw),
+            impl_->camera.target.y + impl_->distance * sinf(impl_->pitch),
+            impl_->camera.target.z + impl_->distance * cosf(impl_->pitch) * cosf(impl_->yaw)};
         UpdateCamera(&impl_->camera, CAMERA_CUSTOM);
     }
 
@@ -200,6 +201,17 @@ namespace renderer
     float RaylibRenderer::getCameraFov() const
     {
         return impl_->camera.fovy;
+    }
+
+    void RaylibRenderer::setOrbitDistance(float d)
+    {
+        impl_->distance = d;
+    }
+
+    void RaylibRenderer::setOrbitAngles(float yaw, float pitch)
+    {
+        impl_->yaw   = yaw;
+        impl_->pitch = pitch;
     }
 
     bool RaylibRenderer::isKeyDown(Key key) const

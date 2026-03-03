@@ -63,32 +63,10 @@ namespace geometry::meshutils
         geometry::Vec3 center = computeBoundsCenter(bounds);
         renderer.setCameraTarget(center);
 
-        float radius = std::max(computeBoundsRadius(bounds), 0.5f);
+        float radius   = std::max(computeBoundsRadius(bounds), 0.5f);
+        float distance = radius * 2.0f;
 
-        const float screenWidth  = static_cast<float>(GetScreenWidth());
-        const float screenHeight = static_cast<float>(GetScreenHeight());
-        const float aspect       = (screenHeight > 0.0f) ? (screenWidth / screenHeight) : 1.0f;
-
-        float fovYRad     = renderer.getCameraFov() * DEG2RAD;
-        float tanHalfFovY = std::max(std::tan(fovYRad * 0.5f), 0.001f);
-        float distanceY   = radius / tanHalfFovY;
-
-        float distanceX = distanceY;
-        if (aspect > 0.0f)
-        {
-            float fovXRad     = 2.0f * std::atan(std::tan(fovYRad * 0.5f) * aspect);
-            float tanHalfFovX = std::max(std::tan(fovXRad * 0.5f), 0.001f);
-            distanceX         = radius / tanHalfFovX;
-        }
-
-        float distance = std::max(distanceX, distanceY) * 1.2f;
-
-        Vector3        direction = Vector3Normalize(Vector3{1.4f, 1.0f, 1.3f});
-        geometry::Vec3 position{
-            center.x + direction.x * distance,
-            center.y + direction.y * distance,
-            center.z + direction.z * distance};
-
-        renderer.setCameraPosition(position);
+        renderer.setOrbitDistance(distance);
+        renderer.setOrbitAngles(0.8f, 0.6f);
     }
 } // namespace geometry::meshutils
