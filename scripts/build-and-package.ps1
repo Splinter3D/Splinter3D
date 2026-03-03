@@ -52,17 +52,19 @@ if (-not (Test-Path $OutDir)) { New-Item -ItemType Directory -Force -Path $OutDi
 
 if (-not $InstallPrefix) { $InstallPrefix = Join-Path $OutDir "staging" }
 
-# Ensure vcpkg exists and is bootstrapped
+# Ensure vcpkg exists and is bootstrapped (clone full repo and bootstrap like Windows-Install)
 if (-not (Test-Path $VcpkgDir)) {
-    Write-Host "Cloning vcpkg into $VcpkgDir..."
-    git clone https://github.com/microsoft/vcpkg.git $VcpkgDir || Fail "Failed to clone vcpkg"
+  $parentDir = Split-Path $RepoRoot -Parent
+  Set-Location $parentDir
+  Write-Host "Cloning vcpkg into $parentDir\vcpkg..."
+  git clone https://github.com/microsoft/vcpkg.git || Fail "Failed to clone vcpkg"
+  $VcpkgDir = Join-Path $parentDir 'vcpkg'
 }
 
 Push-Location $VcpkgDir
-if (-not (Test-Path "$VcpkgDir\vcpkg.exe")) {
-    Write-Host "Bootstrapping vcpkg..."
-    & .\bootstrap-vcpkg.bat || Fail "vcpkg bootstrap failed"
-}
+Write-Host "Bootstrapping vcpkg..."
+& .\bootstrap-vcpkg.bat || Fail "vcpkg bootstrap failed"
+& .\vcpkg integrate install || Write-Warning "vcpkg integrate install failed"
 
 Write-Host "Installing vcpkg dependencies (manifest-aware)..."
 try {
