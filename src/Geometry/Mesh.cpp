@@ -1,11 +1,11 @@
-#include <Objects3D/OMesh.hpp>
+#include <Geometry/Mesh.hpp>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
 
-namespace objects3D
+namespace geometry
 {
-    OMesh OMesh::fromSTL(const std::string& filename)
+    Mesh Mesh::fromSTL(const std::string& filename)
     {
         std::ifstream file(filename, std::ios::binary);
         if (!file.is_open())
@@ -25,10 +25,10 @@ namespace objects3D
         }
     }
 
-    OMesh OMesh::fromAsciiSTL(std::ifstream& file)
+    Mesh Mesh::fromAsciiSTL(std::ifstream& file)
     {
-        OMesh       mesh;
-        OTriangle   currentTri;
+        Mesh        mesh;
+        Triangle    currentTri;
         int         vertexCount = 0;
         std::string line;
 
@@ -45,7 +45,7 @@ namespace objects3D
                 if (keyword != "vertex")
                     continue; // skip malformed lines
 
-                currentTri.vertices[vertexCount] = OVec3(x, y, z);
+                currentTri.vertices[vertexCount] = Vec3(x, y, z);
                 vertexCount++;
 
                 if (vertexCount == 3)
@@ -64,9 +64,9 @@ namespace objects3D
         return mesh;
     }
 
-    OMesh OMesh::fromBinarySTL(std::ifstream& file)
+    Mesh Mesh::fromBinarySTL(std::ifstream& file)
     {
-        OMesh mesh;
+        Mesh mesh;
 
         // Read and ignore the 80-byte header
         char header[80];
@@ -86,13 +86,13 @@ namespace objects3D
                 throw std::runtime_error("Unexpected EOF reading normal");
 
             // Read the vertices
-            OTriangle tri;
-            float     vertex[3];
+            Triangle tri;
+            float    vertex[3];
             for (int v = 0; v < 3; ++v)
             {
                 if (!file.read(reinterpret_cast<char*>(vertex), sizeof(vertex)))
                     throw std::runtime_error("Unexpected EOF reading vertex");
-                tri.vertices[v] = OVec3(vertex[0], vertex[1], vertex[2]);
+                tri.vertices[v] = Vec3(vertex[0], vertex[1], vertex[2]);
             }
 
             // Read and ignore the 2-byte attribute data
@@ -109,4 +109,4 @@ namespace objects3D
         }
         return mesh;
     }
-} // namespace objects3D
+} // namespace geometry

@@ -1,13 +1,13 @@
 #######################################
 
-file(GLOB_RECURSE SRC_SPLINTER "src/*.cpp")
-if(NOT SRC_SPLINTER)
+file(GLOB_RECURSE SRC_SPLINTER3D "src/*.cpp")
+if(NOT SRC_SPLINTER3D)
     message(FATAL_ERROR "No source files found under src/ — check path or globs.")
 endif()
 
 #######################################
 
-set(INCLUDE_SPLINTER
+set(INCLUDE_SPLINTER3D
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
@@ -24,6 +24,9 @@ if(NOT MSGFMT_EXECUTABLE)
 endif()
 
 file(GLOB_RECURSE PO_FILES "locale/*/LC_MESSAGES/*.po")
+# Exclude English (default language) - not needed for translation
+list(FILTER PO_FILES EXCLUDE REGEX "locale/en/")
+
 list(LENGTH PO_FILES PO_COUNT)
 message(STATUS "INFO: found ${PO_COUNT} translation files (*.po) in locale/")
 if(PO_FILES)

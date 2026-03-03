@@ -1,9 +1,10 @@
 #pragma once
 
+#include <Geometry/Mesh.hpp>
+#include <Geometry/Triangle.hpp>
+#include <Geometry/Vec3.hpp>
 #include <Renderer/Color.hpp>
-#include <Renderer/RMesh.hpp>
-#include <Renderer/RTriangle.hpp>
-#include <Renderer/RVec3.hpp>
+#include <Renderer/RenderObject.hpp>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -73,8 +74,11 @@ namespace renderer
         virtual void begin3D() = 0;
         virtual void end3D()   = 0;
 
-        virtual void drawTriangle(RTriangle& tri) = 0;
-        virtual void drawMesh(RMesh& mesh)        = 0;
+        // Drawing primitives
+        virtual void drawTriangle(const geometry::Triangle& tri, Color color) = 0;
+        virtual void drawMesh(const geometry::Mesh& mesh, Color color)        = 0;
+
+        virtual void drawObject(const RenderObject& obj, Color color) = 0;
 
         virtual void drawGrid(int slices, float spacing) = 0;
         virtual void drawAxis(float size)                = 0;

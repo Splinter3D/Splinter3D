@@ -12,7 +12,7 @@
                 "/usr/include/x86_64-linux-gnu/c++/11"
             ],
             "defines": [
-                "SPLINTER_DEBUG=0"
+                "SPLINTER3D_DEBUG=0"
             ],
             "compilerPath": "/usr/bin/g++",
             "cppStandard": "c++23",

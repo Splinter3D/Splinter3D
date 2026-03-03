@@ -3719,10 +3719,10 @@ int GuiScrollPanel(Rectangle bounds, const char* text, Rectangle content, Vector
     int       horizontalScrollBarWidth = hasHorizontalScrollBar ? GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH) : 0;
     int       verticalScrollBarWidth   = hasVerticalScrollBar ? GuiGetStyle(LISTVIEW, SCROLLBAR_WIDTH) : 0;
     Rectangle horizontalScrollBar      = {
-        (float) ((GuiGetStyle(LISTVIEW, SCROLLBAR_SIDE) == SCROLLBAR_LEFT_SIDE) ? (float) bounds.x + verticalScrollBarWidth : (float) bounds.x) + GuiGetStyle(DEFAULT, BORDER_WIDTH),
-        (float) bounds.y + bounds.height - horizontalScrollBarWidth - GuiGetStyle(DEFAULT, BORDER_WIDTH),
-        (float) bounds.width - verticalScrollBarWidth - 2 * GuiGetStyle(DEFAULT, BORDER_WIDTH),
-        (float) horizontalScrollBarWidth};
+             (float) ((GuiGetStyle(LISTVIEW, SCROLLBAR_SIDE) == SCROLLBAR_LEFT_SIDE) ? (float) bounds.x + verticalScrollBarWidth : (float) bounds.x) + GuiGetStyle(DEFAULT, BORDER_WIDTH),
+             (float) bounds.y + bounds.height - horizontalScrollBarWidth - GuiGetStyle(DEFAULT, BORDER_WIDTH),
+             (float) bounds.width - verticalScrollBarWidth - 2 * GuiGetStyle(DEFAULT, BORDER_WIDTH),
+             (float) horizontalScrollBarWidth};
     Rectangle verticalScrollBar = {
         (float) ((GuiGetStyle(LISTVIEW, SCROLLBAR_SIDE) == SCROLLBAR_LEFT_SIDE) ? (float) bounds.x + GuiGetStyle(DEFAULT, BORDER_WIDTH) : (float) bounds.x + bounds.width - verticalScrollBarWidth - GuiGetStyle(DEFAULT, BORDER_WIDTH)),
         (float) bounds.y + GuiGetStyle(DEFAULT, BORDER_WIDTH),
@@ -7637,10 +7637,10 @@ static int GuiScrollBar(Rectangle bounds, int value, int minValue, int maxValue)
         // Make sure the slider won't get outside of the scrollbar
         sliderSize = (sliderSize >= scrollbar.height) ? ((int) scrollbar.height - 2) : sliderSize;
         slider     = RAYGUI_CLITERAL(Rectangle){
-            bounds.x + GuiGetStyle(SCROLLBAR, BORDER_WIDTH) + GuiGetStyle(SCROLLBAR, SCROLL_SLIDER_PADDING),
-            scrollbar.y + (int) (((float) (value - minValue) / valueRange) * (scrollbar.height - sliderSize)),
-            bounds.width - 2 * (GuiGetStyle(SCROLLBAR, BORDER_WIDTH) + GuiGetStyle(SCROLLBAR, SCROLL_SLIDER_PADDING)),
-            (float) sliderSize};
+                bounds.x + GuiGetStyle(SCROLLBAR, BORDER_WIDTH) + GuiGetStyle(SCROLLBAR, SCROLL_SLIDER_PADDING),
+                scrollbar.y + (int) (((float) (value - minValue) / valueRange) * (scrollbar.height - sliderSize)),
+                bounds.width - 2 * (GuiGetStyle(SCROLLBAR, BORDER_WIDTH) + GuiGetStyle(SCROLLBAR, SCROLL_SLIDER_PADDING)),
+                (float) sliderSize};
     }
     else // horizontal
     {
@@ -7650,10 +7650,10 @@ static int GuiScrollBar(Rectangle bounds, int value, int minValue, int maxValue)
         // Make sure the slider won't get outside of the scrollbar
         sliderSize = (sliderSize >= scrollbar.width) ? ((int) scrollbar.width - 2) : sliderSize;
         slider     = RAYGUI_CLITERAL(Rectangle){
-            scrollbar.x + (int) (((float) (value - minValue) / valueRange) * (scrollbar.width - sliderSize)),
-            bounds.y + GuiGetStyle(SCROLLBAR, BORDER_WIDTH) + GuiGetStyle(SCROLLBAR, SCROLL_SLIDER_PADDING),
-            (float) sliderSize,
-            bounds.height - 2 * (GuiGetStyle(SCROLLBAR, BORDER_WIDTH) + GuiGetStyle(SCROLLBAR, SCROLL_SLIDER_PADDING))};
+                scrollbar.x + (int) (((float) (value - minValue) / valueRange) * (scrollbar.width - sliderSize)),
+                bounds.y + GuiGetStyle(SCROLLBAR, BORDER_WIDTH) + GuiGetStyle(SCROLLBAR, SCROLL_SLIDER_PADDING),
+                (float) sliderSize,
+                bounds.height - 2 * (GuiGetStyle(SCROLLBAR, BORDER_WIDTH) + GuiGetStyle(SCROLLBAR, SCROLL_SLIDER_PADDING))};
     }
 
     // Update control

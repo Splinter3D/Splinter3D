@@ -23,3 +23,12 @@ repos:
       # - id: pretty-format-json
       #   args: ['--autofix']
       # - id: check-json
+
+  - repo: local
+    hooks:
+      - id: check-style
+        name: check-style
+        entry: bash -c 'scripts/style.sh --fix'
+        language: system
+        pass_filenames: false
+        always_run: true

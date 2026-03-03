@@ -11,16 +11,16 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <iostream>
 #include <libintl.h>
 #include <locale.h>
 #include <string>
-#include <iostream>
 
 namespace splinter::utils
 {
     class Locale
     {
-    public:
+      public:
         /**
          * @brief Initialize i18n with system locale detection
          *
@@ -36,34 +36,44 @@ namespace splinter::utils
          */
         static void init(const char* domainName, const char* localePath)
         {
-            s_domain = domainName;
+            s_domain     = domainName;
             s_localePath = localePath;
 
             // Always detect language from system environment/API
             // (not from ACTIVE_LANG file, which should only be updated by setLanguage())
             std::string active = detectSystemLanguage();
-            if (!hasTranslation(active.c_str())) {
+            if (!hasTranslation(active.c_str()))
+            {
                 active = "en"; // fallback to English
             }
 
-            // Create or update ACTIVE_LANG file with detected language
-            std::string activeFile = std::string(localePath) + "/ACTIVE_LANG";
+            // Create or update ACTIVE_LANG file in source locale/ directory
+            // (always in ./locale/, regardless of localePath used for .mo files)
+            std::string   sourceLocaleDir = "./locale";
+            std::string   activeFile      = sourceLocaleDir + "/ACTIVE_LANG";
             std::ofstream ofs(activeFile, std::ios::trunc);
-            if (ofs.good()) {
+            if (ofs.good())
+            {
                 ofs << active << std::endl;
                 ofs.close();
             }
 
             const std::string full = fullLocaleFor(active.c_str());
-            if (!full.empty()) {
-                if (setlocale(LC_ALL, full.c_str()) == nullptr) {
+            if (!full.empty())
+            {
+                if (setlocale(LC_ALL, full.c_str()) == nullptr)
+                {
                     std::cerr << "[Locale::init] setlocale failed for " << full << std::endl;
                     setlocale(LC_ALL, "");
                     setenv("LANGUAGE", active.c_str(), 1);
-                } else {
+                }
+                else
+                {
                     setenv("LANGUAGE", active.c_str(), 1);
                 }
-            } else {
+            }
+            else
+            {
                 setlocale(LC_ALL, "");
                 setenv("LANGUAGE", active.c_str(), 1);
             }
@@ -87,30 +97,39 @@ namespace splinter::utils
          */
         static void init(const char* domainName, const char* localePath, const char* forceLang)
         {
-            s_domain = domainName;
+            s_domain     = domainName;
             s_localePath = localePath;
 
             std::string active = validateLanguage(forceLang);
 
-            // Save to ACTIVE_LANG
-            std::string activeFile = std::string(localePath) + "/ACTIVE_LANG";
+            // Save to ACTIVE_LANG in source locale/ directory
+            // (always in ./locale/, regardless of localePath used for .mo files)
+            std::string   sourceLocaleDir = "./locale";
+            std::string   activeFile      = sourceLocaleDir + "/ACTIVE_LANG";
             std::ofstream ofs(activeFile, std::ios::trunc);
-            if (ofs.good()) {
+            if (ofs.good())
+            {
                 ofs << active << std::endl;
                 ofs.close();
             }
 
             // Apply the language
             const std::string full = fullLocaleFor(active.c_str());
-            if (!full.empty()) {
-                if (setlocale(LC_ALL, full.c_str()) == nullptr) {
+            if (!full.empty())
+            {
+                if (setlocale(LC_ALL, full.c_str()) == nullptr)
+                {
                     std::cerr << "[Locale::init(forced)] setlocale failed for " << full << std::endl;
                     setlocale(LC_ALL, "");
                     setenv("LANGUAGE", active.c_str(), 1);
-                } else {
+                }
+                else
+                {
                     setenv("LANGUAGE", active.c_str(), 1);
                 }
-            } else {
+            }
+            else
+            {
                 setlocale(LC_ALL, "");
                 setenv("LANGUAGE", active.c_str(), 1);
             }
@@ -145,23 +164,28 @@ namespace splinter::utils
             // Validate the language (with fallback to English)
             std::string validLang = validateLanguage(langCode);
 
-            // Save to ACTIVE_LANG file
-            if (!s_localePath.empty()) {
-                std::string activeFile = s_localePath + "/ACTIVE_LANG";
-                std::ofstream ofs(activeFile, std::ios::trunc);
-                if (ofs.good()) {
-                    ofs << validLang << std::endl;
-                    ofs.close();
-                }
+            // Save to ACTIVE_LANG file in source locale/ directory
+            // (always in ./locale/, regardless of localePath used for .mo files)
+            std::string   sourceLocaleDir = "./locale";
+            std::string   activeFile      = sourceLocaleDir + "/ACTIVE_LANG";
+            std::ofstream ofs(activeFile, std::ios::trunc);
+            if (ofs.good())
+            {
+                ofs << validLang << std::endl;
+                ofs.close();
             }
 
             // Apply language by setting the C locale and LANGUAGE for gettext
             const std::string full = fullLocaleFor(validLang.c_str());
-            if (!full.empty()) {
-                if (setlocale(LC_ALL, full.c_str()) == nullptr) {
+            if (!full.empty())
+            {
+                if (setlocale(LC_ALL, full.c_str()) == nullptr)
+                {
                     setlocale(LC_ALL, "");
                 }
-            } else {
+            }
+            else
+            {
                 setlocale(LC_ALL, "");
             }
 
@@ -188,8 +212,8 @@ namespace splinter::utils
             std::cerr << "[Locale::setLanguage] Current domain: " << (currentDomain ? currentDomain : "none") << std::endl;
         }
 
-    private:
-        static constexpr const char* SUPPORTED_LANGS[] = {"fr", "en", "es", "de"};
+      private:
+        static constexpr const char* SUPPORTED_LANGS[]   = {"fr", "en", "es", "de"};
         static constexpr size_t      NUM_SUPPORTED_LANGS = 4;
         static std::string           s_domain;
         static std::string           s_localePath;
@@ -205,7 +229,7 @@ namespace splinter::utils
             if (lang == nullptr || lang[0] == '\0')
                 return false;
 
-            std::string dir = s_localePath + "/" + lang + "/LC_MESSAGES";
+            std::string   dir = s_localePath + "/" + lang + "/LC_MESSAGES";
             std::ifstream test(dir + "/" + s_domain + ".mo");
             return test.good();
         }
@@ -372,13 +396,20 @@ namespace splinter::utils
                 return std::string();
 
             std::string l = lang;
-            for (char &c : l) if (c >= 'A' && c <= 'Z') c = c - 'A' + 'a';
-            if (l.size() >= 2) l = l.substr(0,2);
+            for (char& c : l)
+                if (c >= 'A' && c <= 'Z')
+                    c = c - 'A' + 'a';
+            if (l.size() >= 2)
+                l = l.substr(0, 2);
 
-            if (l == "fr") return "fr_FR.UTF-8";
-            if (l == "en") return "en_US.UTF-8";
-            if (l == "es") return "es_ES.UTF-8";
-            if (l == "de") return "de_DE.UTF-8";
+            if (l == "fr")
+                return "fr_FR.UTF-8";
+            if (l == "en")
+                return "en_US.UTF-8";
+            if (l == "es")
+                return "es_ES.UTF-8";
+            if (l == "de")
+                return "de_DE.UTF-8";
 
             return std::string();
         }

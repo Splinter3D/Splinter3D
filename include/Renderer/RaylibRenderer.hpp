@@ -24,16 +24,33 @@ namespace renderer
         void begin3D() override;
         void end3D() override;
 
-        void drawTriangle(RTriangle& tri) override;
-        void drawMesh(RMesh& mesh) override;
+        // --------------------
+        // Drawing primitives
+        // --------------------
+        void drawTriangle(const geometry::Triangle& tri, Color color) override;
+        void drawMesh(const geometry::Mesh& mesh, Color color) override;
 
+        // --------------------
+        // RenderObject
+        // --------------------
+        void drawObject(const RenderObject& obj, Color color) override;
+
+        // --------------------
+        // Helpers
+        // --------------------
         void drawGrid(int slices, float spacing) override;
         void drawAxis(float size) override;
 
         // --------------------
         // Camera
         // --------------------
-        void updateCamera(float deltaTime);
+        void  updateCamera(float deltaTime);
+        void  setCameraPosition(const geometry::Vec3& position);
+        void  setCameraTarget(const geometry::Vec3& target);
+        void  setCameraFov(float fovY);
+        float getCameraFov() const;
+        void  setOrbitDistance(float d);
+        void  setOrbitAngles(float yaw, float pitch);
 
         // --------------------
         // Window / input
@@ -41,14 +58,14 @@ namespace renderer
         bool shouldClose() const override;
         void requestClose() override;
 
-        bool  isKeyDown(Key key) const override;
-        bool  isMouseButtonDown(int button) const;
-        RVec3 getMouseDelta() const;
+        bool           isKeyDown(Key key) const override;
+        bool           isMouseButtonDown(int button) const;
+        geometry::Vec3 getMouseDelta() const;
 
       private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
 
-        void ensureCCW(RVec3& v0, RVec3& v1, RVec3& v2, RVec3& cameraPos);
+        void ensureCCW(geometry::Triangle& tri, geometry::Vec3 cameraPos);
     };
 } // namespace renderer
