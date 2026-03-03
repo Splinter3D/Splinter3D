@@ -68,11 +68,11 @@ namespace splinter3D::utils
  * @brief Prints a message to given output.
  * @param args The arguments to print.
  */
-#define __S3D_LOGGER_FUNCS_FACTORY(FNAME)                                                                                                \
-    template <typename... Args>                                                                                                          \
-    static inline void SPLINTER3D_API FNAME(Args&&... args) noexcept(noexcept(Logger::getInstance().FNAME(std::forward<Args>(args)...))) \
-    {                                                                                                                                    \
-        Logger::getInstance().FNAME(std::forward<Args>(args)...);                                                                        \
+#define __S3D_LOGGER_FUNCS_FACTORY(FNAME)                                                                                 \
+    template <typename... Args>                                                                                           \
+    static inline void FNAME(Args&&... args) noexcept(noexcept(Logger::getInstance().FNAME(std::forward<Args>(args)...))) \
+    {                                                                                                                     \
+        Logger::getInstance().FNAME(std::forward<Args>(args)...);                                                         \
     }
 
     __S3D_LOGGER_FUNCS_FACTORY(cout)
