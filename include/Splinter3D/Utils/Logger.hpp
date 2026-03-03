@@ -17,8 +17,6 @@ namespace splinter3D::utils
      */
     class Logger : public Singleton<Logger>
     {
-        friend class Singleton;
-
       public:
         /**
          * @brief Prints a message to standard output.
@@ -56,11 +54,13 @@ namespace splinter3D::utils
         }
 
       protected:
-        constexpr explicit Logger() = default;
-        ~Logger() noexcept          = default;
+        constexpr explicit Logger() noexcept = default;
+        ~Logger() noexcept                   = default;
 
       private:
         std::mutex _mtx;
+
+        friend class Singleton<Logger>;
     };
 
     /**
