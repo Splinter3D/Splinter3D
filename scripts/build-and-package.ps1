@@ -135,10 +135,11 @@ foreach ($gen in $generators) {
 
   # Create an initial cache file to avoid passing complex -D arguments which can be mis-parsed
   $initFile = Join-Path $candidateBuild 'vcpkg_init.cmake'
+  # Use backtick to escape double quotes so $toolchain and $InstallPrefix expand correctly
   $initContents = @(
-    "set(CMAKE_TOOLCHAIN_FILE \"$toolchain\" CACHE STRING \"Vcpkg toolchain\")",
-    "set(CMAKE_INSTALL_PREFIX \"$InstallPrefix\" CACHE PATH \"Install prefix\")",
-    "set(CMAKE_BUILD_TYPE \"Release\" CACHE STRING \"Build type\")"
+    "set(CMAKE_TOOLCHAIN_FILE `"$toolchain`" CACHE STRING `"Vcpkg toolchain`")",
+    "set(CMAKE_INSTALL_PREFIX `"$InstallPrefix`" CACHE PATH `"Install prefix`")",
+    "set(CMAKE_BUILD_TYPE `"Release`" CACHE STRING `"Build type`")"
   )
   Set-Content -Path $initFile -Value $initContents -Encoding UTF8
 
