@@ -66,17 +66,24 @@ if (-not (Test-Path "$VcpkgDir\vcpkg.exe")) {
 
 Write-Host "Installing vcpkg dependencies (manifest-aware)..."
 try {
-    $vcpkgExe = (Join-Path $VcpkgDir 'vcpkg.exe')
-    if (Test-Path (Join-Path $RepoRoot 'vcpkg.json')) {
-        Write-Host "Found vcpkg.json in repository root; running manifest install"
-        Push-Location $RepoRoot
-        & $vcpkgExe install --manifest || Write-Warning "vcpkg manifest install failed; continuing"
-        Pop-Location
+  $vcpkgExe = (Join-Path $VcpkgDir 'vcpkg.exe')
+  if (Test-Path (Join-Path $RepoRoot 'vcpkg.json')) {
+    # Check if this vcpkg supports manifest mode
+    $help = & $vcpkgExe help install 2>&1 | Out-String
+    if ($help -match '--manifest') {
+      Write-Host "Found vcpkg.json and vcpkg supports manifest mode; running manifest install"
+      Push-Location $RepoRoot
+      & $vcpkgExe install --manifest
+      if ($LASTEXITCODE -ne 0) { Write-Warning "vcpkg manifest install failed with exit code $LASTEXITCODE; continuing" }
+      Pop-Location
     } else {
-        Write-Host "No vcpkg.json found; skipping manifest install. If you need classic installs, list ports explicitly."
+      Write-Warning "vcpkg executable does not support '--manifest'; skipping manifest install."
     }
+  } else {
+    Write-Host "No vcpkg.json found; skipping manifest install. If you need classic installs, list ports explicitly."
+  }
 } catch {
-    Write-Warning "vcpkg install step failed; continuing. Error: $_"
+  Write-Warning "vcpkg install step failed; continuing. Error: $_"
 }
 Pop-Location
 
@@ -97,13 +104,26 @@ $generators = @(
 )
 
 $selectedGenerator = $null
+# verify toolchain exists
+if (-not (Test-Path $toolchain)) {
+    Write-Warning "vcpkg toolchain file not found at $toolchain"
+    Write-Warning "If you expect a full vcpkg repo here, ensure you cloned the repository (not only downloaded vcpkg.exe)."
+    Fail "vcpkg toolchain file missing"
+}
+
 foreach ($gen in $generators) {
-  $cmakeArgs = @('-S', $RepoRoot, '-B', $buildDir) + $gen.Args + @('-DCMAKE_TOOLCHAIN_FILE=' + $toolchain, '-DCMAKE_BUILD_TYPE=Release', '-DCMAKE_INSTALL_PREFIX=' + $InstallPrefix)
+  $sanitized = ($gen.Name -replace '[^A-Za-z0-9_-]', '_')
+  $candidateBuild = Join-Path $RepoRoot ("build_$sanitized")
+  if (Test-Path $candidateBuild) { Remove-Item -Recurse -Force $candidateBuild -ErrorAction SilentlyContinue }
+  New-Item -ItemType Directory -Path $candidateBuild | Out-Null
+
+  $cmakeArgs = @('-S', $RepoRoot, '-B', $candidateBuild) + $gen.Args + @('-DCMAKE_TOOLCHAIN_FILE=' + $toolchain, '-DCMAKE_BUILD_TYPE=Release', '-DCMAKE_INSTALL_PREFIX=' + $InstallPrefix)
   Write-Host "Trying generator: $($gen.Name)"
   Write-Host "$cmakeExe $($cmakeArgs -join ' ')"
   & $cmakeExe @cmakeArgs
   if ($LASTEXITCODE -eq 0) {
     $selectedGenerator = $gen.Name
+    $buildDir = $candidateBuild
     break
   } else {
     Write-Warning "Generator $($gen.Name) failed with exit code $LASTEXITCODE"
@@ -112,7 +132,7 @@ foreach ($gen in $generators) {
 
 if (-not $selectedGenerator) { Fail "CMake configuration failed for all candidate generators" }
 
-Write-Host "Selected generator: $selectedGenerator"
+Write-Host "Selected generator: $selectedGenerator (build dir: $buildDir)"
 
 Write-Host "Building and installing..."
 if ($selectedGenerator -eq 'Ninja') {
