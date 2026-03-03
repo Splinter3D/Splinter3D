@@ -64,11 +64,21 @@ if (-not (Test-Path "$VcpkgDir\vcpkg.exe")) {
     & .\bootstrap-vcpkg.bat || Fail "vcpkg bootstrap failed"
 }
 
-Write-Host "Installing vcpkg manifest dependencies (if present)..."
+Write-Host "Installing vcpkg dependencies (manifest-aware)..."
 try {
-    & .\vcpkg.exe install --triplet $Triplet --manifest
+  $vcpkgHelp = & .\vcpkg.exe help install 2>&1
+  if ($vcpkgHelp -match '--manifest') {
+    Write-Host "vcpkg supports manifest mode; running manifest install"
+    Push-Location $RepoRoot
+    & $VcpkgDir\vcpkg.exe install --manifest || Write-Warning "vcpkg manifest install failed; continuing"
+    Pop-Location
+  } else {
+    Write-Host "vcpkg does not support manifest mode; falling back to classic install (triplet: $Triplet)"
+    # Attempt a best-effort classic install. This will only work if ports are specified.
+    & $VcpkgDir\vcpkg.exe install --triplet $Triplet || Write-Warning "vcpkg classic install failed or no ports specified; continuing"
+  }
 } catch {
-    Write-Warning "vcpkg manifest install failed or no manifest; continuing. Error: $_"
+  Write-Warning "vcpkg install step failed; continuing. Error: $_"
 }
 Pop-Location
 
@@ -80,24 +90,42 @@ New-Item -ItemType Directory -Path $buildDir | Out-Null
 $toolchain = Join-Path $VcpkgDir "scripts\buildsystems\vcpkg.cmake"
 if (-not (Test-Path $toolchain)) { Fail "vcpkg toolchain not found at $toolchain" }
 
-Write-Host "Configuring CMake..."
+Write-Host "Configuring CMake with generator fallback..."
 $cmakeExe = "cmake"
-$cmakeArgs = @(
-    "-S", "`"$RepoRoot`"",
-    "-B", "`"$buildDir`"",
-    "-G", '"Visual Studio 17 2022"',
-    "-A", "x64",
-    "-DCMAKE_TOOLCHAIN_FILE=$toolchain",
-    "-DCMAKE_BUILD_TYPE=Release",
-    "-DCMAKE_INSTALL_PREFIX=$InstallPrefix"
+$generators = @(
+  @{ Name = 'Visual Studio 17 2022'; Args = @('-G', 'Visual Studio 17 2022', '-A', 'x64') },
+  @{ Name = 'Visual Studio 16 2019'; Args = @('-G', 'Visual Studio 16 2019', '-A', 'x64') },
+  @{ Name = 'Ninja'; Args = @('-G', 'Ninja') }
 )
 
-$cmakeCmd = "$cmakeExe $($cmakeArgs -join ' ')"
-Write-Host $cmakeCmd
-& $cmakeExe $cmakeArgs || Fail "CMake configuration failed"
+$selectedGenerator = $null
+foreach ($gen in $generators) {
+  $cmakeArgs = @(
+    '-S', $RepoRoot,
+    '-B', $buildDir,
+    $gen.Args + @('-DCMAKE_TOOLCHAIN_FILE=' + $toolchain, '-DCMAKE_BUILD_TYPE=Release', '-DCMAKE_INSTALL_PREFIX=' + $InstallPrefix)
+  ) -join ' '
+  Write-Host "Trying generator: $($gen.Name)"
+  Write-Host "$cmakeExe $cmakeArgs"
+  try {
+    & $cmakeExe $cmakeArgs
+    $selectedGenerator = $gen.Name
+    break
+  } catch {
+    Write-Warning "Generator $($gen.Name) failed: $_"
+  }
+}
+
+if (-not $selectedGenerator) { Fail "CMake configuration failed for all candidate generators" }
+
+Write-Host "Selected generator: $selectedGenerator"
 
 Write-Host "Building and installing..."
-& $cmakeExe --build $buildDir --config Release --target INSTALL -- -m:4 || Fail "Build/install failed"
+if ($selectedGenerator -eq 'Ninja') {
+  & $cmakeExe --build $buildDir --config Release --parallel 4 || Fail "Build/install failed"
+} else {
+  & $cmakeExe --build $buildDir --config Release --target INSTALL -- -m:4 || Fail "Build/install failed"
+}
 
 if ($UseCPack) {
     Write-Host "Running CPack (requires NSIS or other packager)"

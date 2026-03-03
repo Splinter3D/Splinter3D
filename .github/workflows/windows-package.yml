@@ -1,4 +1,4 @@
-name: Build Windows package (staging)
+name: Build Windows package
 
 on:
   push:
@@ -28,12 +28,9 @@ jobs:
           }
         shell: pwsh
 
-      - name: Run build-and-package (staging)
+      - name: Run build-and-package
         if: always()
-        run: |
-          pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/build-and-package.ps1 \
-            -OutDir "${{ runner.temp }}\output" \
-            -VcpkgDir "${{ runner.temp }}\vcpkg"
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/build-and-package.ps1 -OutDir "${{ runner.temp }}\output" -VcpkgDir "${{ runner.temp }}\vcpkg"
         shell: pwsh
 
       - name: Upload packaged artifact
