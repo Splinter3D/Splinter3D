@@ -76,47 +76,26 @@ if (Test-Path $scriptsDir) {
     Write-Warning "$scriptsDir does not exist after bootstrap"
 }
 
-Write-Host "Installing vcpkg dependencies (manifest-aware)..."
-try {
-  $vcpkgExe = (Join-Path $VcpkgDir 'vcpkg.exe')
-  $manifestFailed = $false
-  if (Test-Path (Join-Path $RepoRoot 'vcpkg.json')) {
-    # Check if this vcpkg supports manifest mode
-    $help = & $vcpkgExe help install 2>&1 | Out-String
-    if ($help -match '--manifest') {
-      Write-Host "Found vcpkg.json and vcpkg supports manifest mode; running manifest install"
-      Push-Location $RepoRoot
-      & $vcpkgExe install --manifest
-      if ($LASTEXITCODE -ne 0) { Write-Warning "vcpkg manifest install failed with exit code $LASTEXITCODE"; $manifestFailed = $true }
-      Pop-Location
-    } else {
-      Write-Warning "vcpkg executable does not support '--manifest'; skipping manifest install."
-      $manifestFailed = $true
-    }
-  } else {
-    Write-Host "No vcpkg.json found; skipping manifest install. If you need classic installs, list ports explicitly."
-  }
-
-  # If manifest install failed, try classic installs per dependency listed in vcpkg.json
-  if ($manifestFailed -and (Test-Path (Join-Path $RepoRoot 'vcpkg.json'))) {
-    try {
-      Write-Host "Attempting fallback: classic vcpkg install per dependency from vcpkg.json"
-      $json = Get-Content (Join-Path $RepoRoot 'vcpkg.json') -Raw | ConvertFrom-Json
-      if ($json.dependencies) {
-        foreach ($dep in $json.dependencies) {
-          Write-Host "Installing $dep via vcpkg classic mode"
-          & $vcpkgExe install $dep --triplet $Triplet
-          if ($LASTEXITCODE -ne 0) { Write-Warning "vcpkg install $dep failed with exit code $LASTEXITCODE; continuing" }
-        }
-      } else {
-        Write-Warning "No dependencies array found in vcpkg.json"
+Write-Host "Installing vcpkg dependencies (classic mode per vcpkg.json)..."
+$vcpkgExe = (Join-Path $VcpkgDir 'vcpkg.exe')
+if (Test-Path (Join-Path $RepoRoot 'vcpkg.json')) {
+  try {
+    Write-Host "Using classic vcpkg install for dependencies listed in vcpkg.json"
+    $json = Get-Content (Join-Path $RepoRoot 'vcpkg.json') -Raw | ConvertFrom-Json
+    if ($json.dependencies) {
+      foreach ($dep in $json.dependencies) {
+        Write-Host "Installing $dep via vcpkg classic mode"
+        & $vcpkgExe install $dep --triplet $Triplet
+        if ($LASTEXITCODE -ne 0) { Write-Warning "vcpkg install $dep failed with exit code $LASTEXITCODE; continuing" }
       }
-    } catch {
-      Write-Warning "Fallback classic vcpkg install failed: $_"
+    } else {
+      Write-Host "No dependencies array found in vcpkg.json"
     }
+  } catch {
+    Write-Warning "vcpkg classic install failed: $_"
   }
-} catch {
-  Write-Warning "vcpkg install step failed; continuing. Error: $_"
+} else {
+  Write-Host "No vcpkg.json found; skipping dependency installs."
 }
 Pop-Location
 
@@ -166,7 +145,9 @@ foreach ($gen in $generators) {
     'set(CMAKE_INSTALL_PREFIX "' + $installPosix + '" CACHE PATH "Install prefix")',
     'set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type")'
   )
-  Set-Content -Path $initFile -Value $initContents -Encoding UTF8
+  # Write the initial cache file without a UTF-8 BOM so CMake can parse it reliably
+  $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+  [System.IO.File]::WriteAllLines($initFile, $initContents, $utf8NoBom)
 
   $cmakeArgs = @('-S', $RepoRoot, '-B', $candidateBuild) + $gen.Args + @('-C', $initFile)
   Write-Host "Trying generator: $($gen.Name)"
