@@ -63,34 +63,21 @@ namespace splinter3D::utils
         friend class Singleton<Logger>;
     };
 
-    /**
-     * @brief Prints a message to standard output.
-     * @param args The arguments to print.
-     */
-    template <typename... Args>
-    static inline void cout(Args&&... args)
-    {
-        Logger::getInstance().cout(std::forward<Args>(args)...);
+/**
+ * @brief Prints a message to given output.
+ * @param args The arguments to print.
+ */
+#define __S3D_LOGGER_FUNCS_FACTORY(FNAME)                                                                                 \
+    template <typename... Args>                                                                                           \
+    static inline void FNAME(Args&&... args) noexcept(noexcept(Logger::getInstance().FNAME(std::forward<Args>(args)...))) \
+    {                                                                                                                     \
+        Logger::getInstance().FNAME(std::forward<Args>(args)...);                                                         \
     }
 
-    /**
-     * @brief Prints a message to standard error.
-     * @param args The arguments to print.
-     */
-    template <typename... Args>
-    static inline void clog(Args&&... args)
-    {
-        Logger::getInstance().clog(std::forward<Args>(args)...);
-    }
+    __S3D_LOGGER_FUNCS_FACTORY(cout)
+    __S3D_LOGGER_FUNCS_FACTORY(cerr)
+    __S3D_LOGGER_FUNCS_FACTORY(clog)
 
-    /**
-     * @brief Prints a message to standard error.
-     * @param args The arguments to print.
-     */
-    template <typename... Args>
-    static inline void cerr(Args&&... args)
-    {
-        Logger::getInstance().cerr(std::forward<Args>(args)...);
-    }
+#undef __S3D_LOGGER_FUNCS_FACTORY
 
 } // namespace splinter3D::utils
