@@ -20,4 +20,16 @@ endif()
 apply_compiler_warnings(${SPLINTER_TARGET_NAME})
 apply_linker_optimizations(${SPLINTER_TARGET_NAME})
 
+# Ensure translations are built before splinter executable
+if(TARGET translations)
+    add_dependencies(${SPLINTER_TARGET_NAME} translations)
+
+    # Copy .mo files to source tree locale/ directory for dev
+    add_custom_command(TARGET ${SPLINTER_TARGET_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_CURRENT_BINARY_DIR}/locale"
+            "${CMAKE_CURRENT_SOURCE_DIR}/locale"
+    )
+endif()
+
 #######################################
