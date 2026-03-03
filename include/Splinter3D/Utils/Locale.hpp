@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <Splinter3D/Utils/Logger.hpp>
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
@@ -16,7 +17,7 @@
 #include <locale.h>
 #include <string>
 
-namespace splinter::utils
+namespace splinter3D::utils
 {
     class Locale
     {
@@ -63,7 +64,7 @@ namespace splinter::utils
             {
                 if (setlocale(LC_ALL, full.c_str()) == nullptr)
                 {
-                    std::cerr << "[Locale::init] setlocale failed for " << full << std::endl;
+                    clog("[Locale::init] setlocale failed for ", full);
                     setlocale(LC_ALL, "");
                     setenv("LANGUAGE", active.c_str(), 1);
                 }
@@ -82,10 +83,10 @@ namespace splinter::utils
             bind_textdomain_codeset(domainName, "UTF-8");
             textdomain(domainName);
 
-            std::cerr << "[Locale::init] Domain: " << domainName << std::endl;
-            std::cerr << "[Locale::init] Path: " << localePath << std::endl;
-            std::cerr << "[Locale::init] Detected language from system: " << active << std::endl;
-            std::cerr << "[Locale::init] bindtextdomain result: " << bindtextdomain(domainName, nullptr) << std::endl;
+            clog("[Locale::init] Domain: ", domainName);
+            clog("[Locale::init] Path: ", localePath);
+            clog("[Locale::init] Detected language from system: ", active);
+            clog("[Locale::init] bindtextdomain result: ", bindtextdomain(domainName, nullptr));
         }
 
         /**
@@ -119,7 +120,7 @@ namespace splinter::utils
             {
                 if (setlocale(LC_ALL, full.c_str()) == nullptr)
                 {
-                    std::cerr << "[Locale::init(forced)] setlocale failed for " << full << std::endl;
+                    clog("[Locale::init(forced)] setlocale failed for ", full);
                     setlocale(LC_ALL, "");
                     setenv("LANGUAGE", active.c_str(), 1);
                 }
@@ -138,9 +139,9 @@ namespace splinter::utils
             bind_textdomain_codeset(domainName, "UTF-8");
             textdomain(domainName);
 
-            std::cerr << "[Locale::init(forced)] Domain: " << domainName << std::endl;
-            std::cerr << "[Locale::init(forced)] Path: " << localePath << std::endl;
-            std::cerr << "[Locale::init(forced)] Active language: " << active << std::endl;
+            clog("[Locale::init(forced)] Domain: ", domainName);
+            clog("[Locale::init(forced)] Path: ", localePath);
+            clog("[Locale::init(forced)] Active language: ", active);
         }
 
         /**
@@ -206,10 +207,10 @@ namespace splinter::utils
                 }
             }
 
-            std::cerr << "[Locale::setLanguage] Requested: " << langCode << std::endl;
-            std::cerr << "[Locale::setLanguage] Validated to: " << validLang << std::endl;
-            std::cerr << "[Locale::setLanguage] Saved to ACTIVE_LANG" << std::endl;
-            std::cerr << "[Locale::setLanguage] Current domain: " << (currentDomain ? currentDomain : "none") << std::endl;
+            clog("[Locale::setLanguage] Requested: ", langCode);
+            clog("[Locale::setLanguage] Validated to: ", validLang);
+            clog("[Locale::setLanguage] Saved to ACTIVE_LANG");
+            clog("[Locale::setLanguage] Current domain: ", (currentDomain ? currentDomain : "none"));
         }
 
       private:
@@ -244,7 +245,7 @@ namespace splinter::utils
             const char* lang = std::getenv("LANG");
             if (lang != nullptr && lang[0] != '\0')
             {
-                std::cerr << "[Locale::detectSystemLanguage] Found LANG: " << lang << std::endl;
+                clog("[Locale::detectSystemLanguage] Found LANG: ", lang);
                 return extractLanguageCode(lang);
             }
 
@@ -252,7 +253,7 @@ namespace splinter::utils
             const char* lc_all = std::getenv("LC_ALL");
             if (lc_all != nullptr && lc_all[0] != '\0')
             {
-                std::cerr << "[Locale::detectSystemLanguage] Found LC_ALL: " << lc_all << std::endl;
+                clog("[Locale::detectSystemLanguage] Found LC_ALL: ", lc_all);
                 return extractLanguageCode(lc_all);
             }
 
@@ -260,7 +261,7 @@ namespace splinter::utils
             const char* language = std::getenv("LANGUAGE");
             if (language != nullptr && language[0] != '\0')
             {
-                std::cerr << "[Locale::detectSystemLanguage] Found LANGUAGE: " << language << std::endl;
+                clog("[Locale::detectSystemLanguage] Found LANGUAGE: ", language);
                 return extractLanguageCode(language);
             }
 
@@ -270,12 +271,12 @@ namespace splinter::utils
             const char* windows_lang = std::getenv("USERLANG");
             if (windows_lang != nullptr && windows_lang[0] != '\0')
             {
-                std::cerr << "[Locale::detectSystemLanguage] Found USERLANG: " << windows_lang << std::endl;
+                clog("[Locale::detectSystemLanguage] Found USERLANG: ", windows_lang);
                 return extractLanguageCode(windows_lang);
             }
 
             // Default to English
-            std::cerr << "[Locale::detectSystemLanguage] No locale found, defaulting to English" << std::endl;
+            clog("[Locale::detectSystemLanguage] No locale found, defaulting to English");
             return "en";
         }
 
@@ -320,18 +321,18 @@ namespace splinter::utils
                     }
                 }
 
-                std::cerr << "[Locale::extractLanguageCode] From locale '" << locale << "' extracted: " << langCode << std::endl;
+                clog("[Locale::extractLanguageCode] From locale '", locale, "' extracted: ", langCode);
 
                 // Check if this language is supported
                 for (const char* supported : SUPPORTED_LANGS)
                 {
                     if (langCode == supported)
                     {
-                        std::cerr << "[Locale::extractLanguageCode] Language '" << langCode << "' is supported" << std::endl;
+                        clog("[Locale::extractLanguageCode] Language '", langCode, "' is supported");
                         return langCode;
                     }
                 }
-                std::cerr << "[Locale::extractLanguageCode] Language '" << langCode << "' is NOT supported, falling back to English" << std::endl;
+                clog("[Locale::extractLanguageCode] Language '", langCode, "' is NOT supported, falling back to English");
             }
 
             // Not a supported language, fallback to English
@@ -367,20 +368,20 @@ namespace splinter::utils
                 lowercase = lowercase.substr(0, 2);
             }
 
-            std::cerr << "[Locale::validateLanguage] Input: '" << langCode << "' -> Lowercase: '" << lowercase << "'" << std::endl;
+            clog("[Locale::validateLanguage] Input: '", langCode, "' -> Lowercase: '", lowercase, "'");
 
             // Check if this language is supported
             for (const char* supported : SUPPORTED_LANGS)
             {
                 if (lowercase == supported)
                 {
-                    std::cerr << "[Locale::validateLanguage] Language '" << lowercase << "' is supported" << std::endl;
+                    clog("[Locale::validateLanguage] Language '", lowercase, "' is supported");
                     return lowercase;
                 }
             }
 
             // Not a supported language, fallback to English
-            std::cerr << "[Locale::validateLanguage] Language '" << lowercase << "' is NOT supported, falling back to English" << std::endl;
+            clog("[Locale::validateLanguage] Language '", lowercase, "' is NOT supported, falling back to English");
             return "en";
         }
 
@@ -419,6 +420,6 @@ namespace splinter::utils
     std::string Locale::s_domain;
     std::string Locale::s_localePath;
 
-} // namespace splinter::utils
+} // namespace splinter3D::utils
 
 #define _(String) gettext(String)

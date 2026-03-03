@@ -34,7 +34,7 @@
 
 int main()
 {
-    splinter::utils::Locale::init("splinter3D", "./locale");
+    splinter3D::utils::Locale::init("splinter3D", "./locale");
 
     // splinter::utils::Locale::setLanguage("fr");
     // splinter::utils::Locale::setLanguage("es");
