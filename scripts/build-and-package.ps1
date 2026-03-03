@@ -162,9 +162,9 @@ foreach ($gen in $generators) {
   $toolchainPosix = $toolchain -replace '\\','/'
   $installPosix = $InstallPrefix -replace '\\','/'
   $initContents = @(
-    "set(CMAKE_TOOLCHAIN_FILE \"$toolchainPosix\" CACHE STRING \"Vcpkg toolchain\")",
-    "set(CMAKE_INSTALL_PREFIX \"$installPosix\" CACHE PATH \"Install prefix\")",
-    "set(CMAKE_BUILD_TYPE \"Release\" CACHE STRING \"Build type\")"
+    'set(CMAKE_TOOLCHAIN_FILE "' + $toolchainPosix + '" CACHE STRING "Vcpkg toolchain")',
+    'set(CMAKE_INSTALL_PREFIX "' + $installPosix + '" CACHE PATH "Install prefix")',
+    'set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type")'
   )
   Set-Content -Path $initFile -Value $initContents -Encoding UTF8
 
