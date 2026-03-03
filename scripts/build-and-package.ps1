@@ -44,6 +44,17 @@ function Fail($msg) {
     exit 1
 }
 
+# Simple timestamped logger used for clearer CI logs
+function Log($msg, [string]$level = 'INFO') {
+  $t = Get-Date -Format o
+  if ($level -in @('WARN','WARNING')) {
+    Write-Warning "[$t] [$level] $msg"
+  } elseif ($level -eq 'ERROR') {
+    Write-Error "[$t] [$level] $msg"
+  } else {
+    Write-Host "[$t] [$level] $msg"
+  }
+}
 Write-Host "build-and-package.ps1 starting"
 Write-Host "RepoRoot: $RepoRoot"
 Write-Host "VcpkgDir: $VcpkgDir"
@@ -65,13 +76,21 @@ if (-not $DryRun) {
     $cloned = $false
     while (-not $cloned -and $attempt -lt $maxAttempts) {
       $attempt++
-      Write-Host "Cloning vcpkg into $VcpkgDir... (attempt $attempt/$maxAttempts)"
-      git clone $cloneUrl $VcpkgDir
-      if ($LASTEXITCODE -eq 0 -and (Test-Path $VcpkgDir)) { $cloned = $true; break }
-      Write-Warning "git clone exited with code $LASTEXITCODE."
+      Log("Cloning vcpkg into $VcpkgDir... (attempt $attempt/$maxAttempts)")
+      $cloneLog = Join-Path $vcpkgParent ("git_clone_attempt_${attempt}.log")
+      try {
+        & git clone $cloneUrl $VcpkgDir 2>&1 | Tee-Object -FilePath $cloneLog
+        $gitExit = $LASTEXITCODE
+      } catch {
+        $_ | Out-File -FilePath $cloneLog -Append -Encoding utf8
+        $gitExit = 1
+      }
+      Log("git clone exit code: $gitExit")
+      if ($gitExit -eq 0 -and (Test-Path $VcpkgDir)) { $cloned = $true; break }
+      Log("git clone failed; see log: $cloneLog","WARN")
       if ($attempt -lt $maxAttempts) {
         $sleep = [math]::Pow(2, $attempt)
-        Write-Host "Retrying in ${sleep}s..."
+        Log("Retrying in ${sleep}s...")
         Start-Sleep -Seconds $sleep
       }
     }
@@ -79,12 +98,27 @@ if (-not $DryRun) {
   }
 
   Push-Location $VcpkgDir
-  Write-Host "Bootstrapping vcpkg..."
-  & .\bootstrap-vcpkg.bat
-  if ($LASTEXITCODE -ne 0) { Fail "vcpkg bootstrap failed (exit code $LASTEXITCODE)" }
+  Log("Bootstrapping vcpkg...")
+  $bootstrapLog = Join-Path $VcpkgDir "bootstrap.log"
+  try {
+    & .\bootstrap-vcpkg.bat 2>&1 | Tee-Object -FilePath $bootstrapLog
+    $bootExit = $LASTEXITCODE
+  } catch {
+    $_ | Out-File -FilePath $bootstrapLog -Append -Encoding utf8
+    $bootExit = 1
+  }
+  Log("bootstrap exit code: $bootExit")
+  if ($bootExit -ne 0) { Fail "vcpkg bootstrap failed (exit code $bootExit). See $bootstrapLog" }
 
-  & .\vcpkg integrate install
-  if ($LASTEXITCODE -ne 0) { Write-Warning "vcpkg integrate install failed (exit code $LASTEXITCODE)" }
+  $integrateLog = Join-Path $VcpkgDir "integrate.log"
+  try {
+    & .\vcpkg integrate install 2>&1 | Tee-Object -FilePath $integrateLog
+    $intExit = $LASTEXITCODE
+  } catch {
+    $_ | Out-File -FilePath $integrateLog -Append -Encoding utf8
+    $intExit = 1
+  }
+  if ($intExit -ne 0) { Log("vcpkg integrate install failed (exit code $intExit). See $integrateLog","WARN") }
 
   # Diagnostic: list vcpkg scripts folder so CI logs show its contents
   $scriptsDir = Join-Path $VcpkgDir 'scripts\buildsystems'
@@ -104,20 +138,28 @@ if (-not $DryRun) {
   Write-Host "Installing vcpkg dependencies (classic mode per vcpkg.json)..."
   $vcpkgExe = (Join-Path $VcpkgDir 'vcpkg.exe')
   if (Test-Path (Join-Path $RepoRoot 'vcpkg.json')) {
-    try {
-      Write-Host "Using classic vcpkg install for dependencies listed in vcpkg.json"
+      try {
+      Log("Using classic vcpkg install for dependencies listed in vcpkg.json")
       $json = Get-Content (Join-Path $RepoRoot 'vcpkg.json') -Raw | ConvertFrom-Json
       if ($json.dependencies) {
         foreach ($dep in $json.dependencies) {
-          Write-Host "Installing $dep via vcpkg classic mode"
-          & $vcpkgExe install $dep --triplet $Triplet
-          if ($LASTEXITCODE -ne 0) { Write-Warning "vcpkg install $dep failed with exit code $LASTEXITCODE; continuing" }
+          Log("Installing $dep via vcpkg classic mode")
+          $depLog = Join-Path $VcpkgDir ("vcpkg_install_$dep.log")
+          try {
+            & $vcpkgExe install $dep --triplet $Triplet 2>&1 | Tee-Object -FilePath $depLog
+            $depExit = $LASTEXITCODE
+          } catch {
+            $_ | Out-File -FilePath $depLog -Append -Encoding utf8
+            $depExit = 1
+          }
+          Log("vcpkg install exit code for $dep: $depExit")
+          if ($depExit -ne 0) { Log("vcpkg install $dep failed; see $depLog","WARN") }
         }
       } else {
-        Write-Host "No dependencies array found in vcpkg.json"
+        Log("No dependencies array found in vcpkg.json")
       }
     } catch {
-      Write-Warning "vcpkg classic install failed: $_"
+      Log("vcpkg classic install failed: $_","WARN")
     }
   } else {
     Write-Host "No vcpkg.json found; skipping dependency installs."
@@ -171,6 +213,12 @@ foreach ($gen in $generators) {
   $candidateBuild = Join-Path $RepoRoot ("build_$sanitized")
   if (Test-Path $candidateBuild) { Remove-Item -Recurse -Force $candidateBuild -ErrorAction SilentlyContinue }
   New-Item -ItemType Directory -Path $candidateBuild | Out-Null
+  # Extra diagnostics: log candidate build details for clearer CI traces
+  Log("Created candidate build directory: $candidateBuild")
+  Log("Generator candidate: $($gen.Name) (sanitized: $sanitized)")
+  Log("Toolchain file: $toolchain")
+  Log("Install prefix: $InstallPrefix")
+  Log("Triplet: $Triplet")
   # Create an initial cache file to avoid passing complex -D arguments which can be mis-parsed
   $initFile = Join-Path $candidateBuild 'vcpkg_init.cmake'
   # Use forward slashes in paths to avoid CMake escaping issues on Windows (\a etc.)
