@@ -30,12 +30,13 @@ EXAMPLE
 #>
 
 param(
-    [Parameter(Mandatory=$true)] [string]$OutDir,
-    [string]$VcpkgDir = "$PSScriptRoot\..\vcpkg",
-    [string]$RepoRoot = (Get-Location).Path,
-    [string]$Triplet = "x64-windows",
-    [string]$InstallPrefix = "",
-    [switch]$UseCPack
+  [Parameter(Mandatory=$true)] [string]$OutDir,
+  [string]$VcpkgDir = "$PSScriptRoot\..\vcpkg",
+  [string]$RepoRoot = (Get-Location).Path,
+  [string]$Triplet = "x64-windows",
+  [string]$InstallPrefix = "",
+  [switch]$UseCPack,
+  [switch]$DryRun
 )
 
 function Fail($msg) {
@@ -53,66 +54,79 @@ if (-not (Test-Path $OutDir)) { New-Item -ItemType Directory -Force -Path $OutDi
 if (-not $InstallPrefix) { $InstallPrefix = Join-Path $OutDir "staging" }
 
 # Ensure vcpkg exists and is bootstrapped (clone full repo and bootstrap like Windows-Install)
-if (-not (Test-Path $VcpkgDir)) {
-  $vcpkgParent = Split-Path $VcpkgDir -Parent
-  if (-not (Test-Path $vcpkgParent)) { New-Item -ItemType Directory -Path $vcpkgParent | Out-Null }
-  Set-Location $vcpkgParent
-  $cloneUrl = 'https://github.com/microsoft/vcpkg.git'
-  $maxAttempts = 3
-  $attempt = 0
-  $cloned = $false
-  while (-not $cloned -and $attempt -lt $maxAttempts) {
-    $attempt++
-    Write-Host "Cloning vcpkg into $VcpkgDir... (attempt $attempt/$maxAttempts)"
-    git clone $cloneUrl $VcpkgDir
-    if ($LASTEXITCODE -eq 0 -and (Test-Path $VcpkgDir)) { $cloned = $true; break }
-    Write-Warning "git clone exited with code $LASTEXITCODE."
-    if ($attempt -lt $maxAttempts) {
-      $sleep = [math]::Pow(2, $attempt)
-      Write-Host "Retrying in ${sleep}s..."
-      Start-Sleep -Seconds $sleep
-    }
-  }
-  if (-not $cloned) { Fail "Failed to clone vcpkg into $VcpkgDir after $maxAttempts attempts" }
-}
-
-Push-Location $VcpkgDir
-Write-Host "Bootstrapping vcpkg..."
-& .\bootstrap-vcpkg.bat || Fail "vcpkg bootstrap failed"
-& .\vcpkg integrate install || Write-Warning "vcpkg integrate install failed"
-
-# Diagnostic: list vcpkg scripts folder so CI logs show its contents
-$scriptsDir = Join-Path $VcpkgDir 'scripts\buildsystems'
-Write-Host "vcpkg dir: $VcpkgDir"
-if (Test-Path $scriptsDir) {
-    Write-Host "Listing $scriptsDir contents:"
-    Get-ChildItem -Path $scriptsDir | ForEach-Object { Write-Host " - $($_.Name)" }
-} else {
-    Write-Warning "$scriptsDir does not exist after bootstrap"
-}
-
-Write-Host "Installing vcpkg dependencies (classic mode per vcpkg.json)..."
-$vcpkgExe = (Join-Path $VcpkgDir 'vcpkg.exe')
-if (Test-Path (Join-Path $RepoRoot 'vcpkg.json')) {
-  try {
-    Write-Host "Using classic vcpkg install for dependencies listed in vcpkg.json"
-    $json = Get-Content (Join-Path $RepoRoot 'vcpkg.json') -Raw | ConvertFrom-Json
-    if ($json.dependencies) {
-      foreach ($dep in $json.dependencies) {
-        Write-Host "Installing $dep via vcpkg classic mode"
-        & $vcpkgExe install $dep --triplet $Triplet
-        if ($LASTEXITCODE -ne 0) { Write-Warning "vcpkg install $dep failed with exit code $LASTEXITCODE; continuing" }
+if (-not $DryRun) {
+  if (-not (Test-Path $VcpkgDir)) {
+    $vcpkgParent = Split-Path $VcpkgDir -Parent
+    if (-not (Test-Path $vcpkgParent)) { New-Item -ItemType Directory -Path $vcpkgParent | Out-Null }
+    Set-Location $vcpkgParent
+    $cloneUrl = 'https://github.com/microsoft/vcpkg.git'
+    $maxAttempts = 3
+    $attempt = 0
+    $cloned = $false
+    while (-not $cloned -and $attempt -lt $maxAttempts) {
+      $attempt++
+      Write-Host "Cloning vcpkg into $VcpkgDir... (attempt $attempt/$maxAttempts)"
+      git clone $cloneUrl $VcpkgDir
+      if ($LASTEXITCODE -eq 0 -and (Test-Path $VcpkgDir)) { $cloned = $true; break }
+      Write-Warning "git clone exited with code $LASTEXITCODE."
+      if ($attempt -lt $maxAttempts) {
+        $sleep = [math]::Pow(2, $attempt)
+        Write-Host "Retrying in ${sleep}s..."
+        Start-Sleep -Seconds $sleep
       }
-    } else {
-      Write-Host "No dependencies array found in vcpkg.json"
     }
-  } catch {
-    Write-Warning "vcpkg classic install failed: $_"
+    if (-not $cloned) { Fail "Failed to clone vcpkg into $VcpkgDir after $maxAttempts attempts" }
   }
+
+  Push-Location $VcpkgDir
+  Write-Host "Bootstrapping vcpkg..."
+  & .\bootstrap-vcpkg.bat
+  if ($LASTEXITCODE -ne 0) { Fail "vcpkg bootstrap failed (exit code $LASTEXITCODE)" }
+
+  & .\vcpkg integrate install
+  if ($LASTEXITCODE -ne 0) { Write-Warning "vcpkg integrate install failed (exit code $LASTEXITCODE)" }
+
+  # Diagnostic: list vcpkg scripts folder so CI logs show its contents
+  $scriptsDir = Join-Path $VcpkgDir 'scripts\buildsystems'
+  Write-Host "vcpkg dir: $VcpkgDir"
+  if (Test-Path $scriptsDir) {
+      Write-Host "Listing $scriptsDir contents:"
+      Get-ChildItem -Path $scriptsDir | ForEach-Object { Write-Host " - $($_.Name)" }
+  } else {
+      Write-Warning "$scriptsDir does not exist after bootstrap"
+  }
+  Pop-Location
 } else {
-  Write-Host "No vcpkg.json found; skipping dependency installs."
+  Write-Host "DryRun: skipping vcpkg clone/bootstrap and integrate"
 }
-Pop-Location
+
+if (-not $DryRun) {
+  Write-Host "Installing vcpkg dependencies (classic mode per vcpkg.json)..."
+  $vcpkgExe = (Join-Path $VcpkgDir 'vcpkg.exe')
+  if (Test-Path (Join-Path $RepoRoot 'vcpkg.json')) {
+    try {
+      Write-Host "Using classic vcpkg install for dependencies listed in vcpkg.json"
+      $json = Get-Content (Join-Path $RepoRoot 'vcpkg.json') -Raw | ConvertFrom-Json
+      if ($json.dependencies) {
+        foreach ($dep in $json.dependencies) {
+          Write-Host "Installing $dep via vcpkg classic mode"
+          & $vcpkgExe install $dep --triplet $Triplet
+          if ($LASTEXITCODE -ne 0) { Write-Warning "vcpkg install $dep failed with exit code $LASTEXITCODE; continuing" }
+        }
+      } else {
+        Write-Host "No dependencies array found in vcpkg.json"
+      }
+    } catch {
+      Write-Warning "vcpkg classic install failed: $_"
+    }
+  } else {
+    Write-Host "No vcpkg.json found; skipping dependency installs."
+  }
+  Pop-Location
+} else {
+  Write-Host "DryRun: skipping vcpkg dependency installs"
+  Pop-Location
+}
 
 # Prepare build directory
 $buildDir = Join-Path $RepoRoot "build"
@@ -120,7 +134,13 @@ if (Test-Path $buildDir) { Remove-Item -Recurse -Force $buildDir }
 New-Item -ItemType Directory -Path $buildDir | Out-Null
 
 $toolchain = Join-Path $VcpkgDir "scripts\buildsystems\vcpkg.cmake"
-if (-not (Test-Path $toolchain)) { Fail "vcpkg toolchain not found at $toolchain" }
+if (-not (Test-Path $toolchain)) {
+  if (-not $DryRun) {
+    Fail "vcpkg toolchain not found at $toolchain"
+  } else {
+    Write-Warning "vcpkg toolchain not found at $toolchain (DryRun mode: continuing to write init file for diagnostics)"
+  }
+}
 
 Write-Host "Configuring CMake with generator fallback..."
 $cmakeExe = "cmake"
@@ -133,9 +153,13 @@ $generators = @(
 $selectedGenerator = $null
 # verify toolchain exists
 if (-not (Test-Path $toolchain)) {
-  Write-Warning "vcpkg toolchain file not found at $toolchain"
-  Write-Warning "If you expect a full vcpkg repo here, ensure you cloned the repository (not only downloaded vcpkg.exe)."
-  Fail "vcpkg toolchain file missing"
+  if (-not $DryRun) {
+    Write-Warning "vcpkg toolchain file not found at $toolchain"
+    Write-Warning "If you expect a full vcpkg repo here, ensure you cloned the repository (not only downloaded vcpkg.exe)."
+    Fail "vcpkg toolchain file missing"
+  } else {
+    Write-Warning "vcpkg toolchain file not found at $toolchain (DryRun: continuing)"
+  }
 } else {
   Write-Host "Toolchain file present: $toolchain"
   Write-Host "First lines of toolchain file (for diagnostics):"
@@ -147,9 +171,6 @@ foreach ($gen in $generators) {
   $candidateBuild = Join-Path $RepoRoot ("build_$sanitized")
   if (Test-Path $candidateBuild) { Remove-Item -Recurse -Force $candidateBuild -ErrorAction SilentlyContinue }
   New-Item -ItemType Directory -Path $candidateBuild | Out-Null
-
-  # Create an initial cache file to avoid passing complex -D arguments which can be mis-parsed
-  $initFile = Join-Path $candidateBuild 'vcpkg_init.cmake'
   # Create an initial cache file to avoid passing complex -D arguments which can be mis-parsed
   $initFile = Join-Path $candidateBuild 'vcpkg_init.cmake'
   # Use forward slashes in paths to avoid CMake escaping issues on Windows (\a etc.)
@@ -160,12 +181,59 @@ foreach ($gen in $generators) {
     'set(CMAKE_INSTALL_PREFIX "' + $installPosix + '" CACHE PATH "Install prefix")',
     'set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type")'
   )
-  # Write the initial cache file using ASCII so each array element becomes a separate line (CRLF on Windows)
-  $initContents | Out-File -FilePath $initFile -Encoding ASCII -Force
+  # Write the initial cache file using WriteAllLines so each array element becomes a separate line
+  # with the platform newline (CRLF on Windows). This avoids CMake parse errors when using -C <file>.
+  try {
+    # Build the init file as a here-string to guarantee real newlines between each set() entry.
+    $text = @"
+set(CMAKE_TOOLCHAIN_FILE "$toolchainPosix" CACHE STRING "Vcpkg toolchain")
+set(CMAKE_INSTALL_PREFIX "$installPosix" CACHE PATH "Install prefix")
+set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type")
+"@
+    $bytes = [System.Text.Encoding]::ASCII.GetBytes($text)
+    [System.IO.File]::WriteAllBytes($initFile, $bytes)
+  } catch {
+    Write-Warning "Failed to write init file via here-string WriteAllBytes: $_; falling back to Out-File"
+    $initContents | Out-File -FilePath $initFile -Encoding ASCII -Force
+  }
 
   # Emit the first lines of the generated init file for diagnostics
   Write-Host "Generated init file: $initFile (first 8 lines)"
   Get-Content -Path $initFile -TotalCount 8 | ForEach-Object { Write-Host "  $_" }
+
+  # Dump raw bytes (hex) of the init file to help diagnose line-ending / encoding issues that
+  # cause CMake to report "Expected a newline, got identifier 'set'". Show first 128 bytes.
+  try {
+    $raw = [System.IO.File]::ReadAllBytes($initFile)
+    $len = $raw.Length
+    Write-Host "Init file byte-length: $len"
+    if ($DryRun) {
+      # In DryRun print the full hex to make diagnostics definitive
+      if ($len -gt 0) {
+        $hex = ($raw | ForEach-Object { $_.ToString('x2') }) -join ' '
+        Write-Host "Init file full bytes (hex):"
+        Write-Host "  $hex"
+      } else {
+        Write-Host "Init file is empty"
+      }
+    } else {
+      $previewCount = [math]::Min(128, $len)
+      if ($previewCount -gt 0) {
+        $hex = ($raw[0..($previewCount - 1)] | ForEach-Object { $_.ToString('x2') }) -join ' '
+        Write-Host "Init file first $previewCount bytes (hex):"
+        Write-Host "  $hex"
+      } else {
+        Write-Host "Init file is empty"
+      }
+    }
+  } catch {
+    Write-Warning "Failed to read init file bytes for diagnostic: $_"
+  }
+
+  if ($DryRun) {
+    Write-Host "DryRun: wrote init file and dumped bytes in $candidateBuild; skipping CMake configure/build"
+    exit 0
+  }
 
   $cmakeArgs = @('-S', $RepoRoot, '-B', $candidateBuild) + $gen.Args + @('-C', $initFile)
   Write-Host "Trying generator: $($gen.Name)"
@@ -193,13 +261,13 @@ if (-not $selectedGenerator) { Fail "CMake configuration failed for all candidat
 Write-Host "Selected generator: $selectedGenerator (build dir: $buildDir)"
 
 Write-Host "Building and installing..."
-if ($selectedGenerator -eq 'Ninja') {
-  & $cmakeExe --build $buildDir --config Release --parallel 4
-  if ($LASTEXITCODE -ne 0) { Fail "Build/install failed (Ninja)" }
-} else {
-  & $cmakeExe --build $buildDir --config Release --target INSTALL -- /m:4
-  if ($LASTEXITCODE -ne 0) { Fail "Build/install failed (MSBuild)" }
-}
+  if ($selectedGenerator -eq 'Ninja') {
+    & $cmakeExe --build $buildDir --config Release --parallel 4
+    if ($LASTEXITCODE -ne 0) { Fail "Build/install failed (Ninja)" }
+  } else {
+    & $cmakeExe --build $buildDir --config Release --target INSTALL -- /m:4
+    if ($LASTEXITCODE -ne 0) { Fail "Build/install failed (MSBuild)" }
+  }
 
 # Ensure staging directory exists
 if (-not (Test-Path $InstallPrefix)) { New-Item -ItemType Directory -Path $InstallPrefix -Force | Out-Null }
@@ -235,7 +303,12 @@ if ($found) {
 if ($UseCPack) {
     Write-Host "Running CPack (requires NSIS or other packager)"
     Push-Location $buildDir
-    & cpack -G NSIS || Write-Warning "CPack/NSIS failed or NSIS not installed"
+    try {
+      & cpack -G NSIS
+      if ($LASTEXITCODE -ne 0) { Write-Warning "CPack/NSIS failed (exit code $LASTEXITCODE)" }
+    } catch {
+      Write-Warning "CPack/NSIS failed or NSIS not installed: $_"
+    }
     Pop-Location
 }
 
@@ -243,7 +316,11 @@ if ($UseCPack) {
 $zipPath = Join-Path $OutDir "release-package.zip"
 if (Test-Path $zipPath) { Remove-Item $zipPath }
 Write-Host "Creating ZIP: $zipPath"
-Compress-Archive -Path (Join-Path $InstallPrefix '*') -DestinationPath $zipPath -Force || Fail "Failed to create ZIP"
+try {
+  Compress-Archive -Path (Join-Path $InstallPrefix '*') -DestinationPath $zipPath -Force
+} catch {
+  Fail "Failed to create ZIP: $_"
+}
 
 # Compute SHA256
 $shaFile = "$zipPath.sha256"
