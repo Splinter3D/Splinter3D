@@ -1,10 +1,10 @@
 #pragma once
 
-#include <Renderer/Color.hpp>
-#include <Renderer/RenderObject.hpp>
 #include <Geometry/Mesh.hpp>
 #include <Geometry/Triangle.hpp>
 #include <Geometry/Vec3.hpp>
+#include <Renderer/Color.hpp>
+#include <Renderer/RenderObject.hpp>
 #include <cstdint>
 #include <string>
 #include <vector>

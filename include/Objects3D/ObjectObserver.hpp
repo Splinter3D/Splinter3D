@@ -4,8 +4,8 @@ namespace objects3D
 {
     struct ObjectObserver
     {
-        virtual ~ObjectObserver() = default;
-        virtual void onTransformChanged() = 0;
+        virtual ~ObjectObserver()          = default;
+        virtual void onTransformChanged()  = 0;
         virtual void onAppearanceChanged() = 0;
     };
-}
+} // namespace objects3D

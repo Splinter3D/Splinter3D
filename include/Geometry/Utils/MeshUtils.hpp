@@ -25,4 +25,4 @@ namespace geometry::meshutils
 
     // Move the camera to frame the mesh
     void frameCameraOnMesh(renderer::RaylibRenderer& renderer, const MeshBounds& bounds);
-}
+} // namespace geometry::meshutils
