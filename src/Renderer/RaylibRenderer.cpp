@@ -160,7 +160,26 @@ namespace renderer
     void RaylibRenderer::updateCamera(float dt)
     {
         (void) dt;
-        UpdateCamera(&impl_->camera, CAMERA_FREE);
+
+        static float distance = 10.0f;
+        static float yaw      = 0.5f;
+        static float pitch    = 0.5f;
+
+        if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
+        {
+            Vector2 delta = GetMouseDelta();
+            yaw -= delta.x * 0.01f;
+            pitch -= delta.y * 0.01f;
+        }
+
+        distance -= GetMouseWheelMove();
+        distance = std::max(distance, 1.0f);
+
+        impl_->camera.position = {
+            impl_->camera.target.x + distance * cosf(pitch) * sinf(yaw),
+            impl_->camera.target.y + distance * sinf(pitch),
+            impl_->camera.target.z + distance * cosf(pitch) * cosf(yaw)};
+        UpdateCamera(&impl_->camera, CAMERA_CUSTOM);
     }
 
     void RaylibRenderer::setCameraPosition(const geometry::Vec3& position)
