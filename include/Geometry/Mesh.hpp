@@ -2,11 +2,13 @@
 
 #include <Geometry/Triangle.hpp>
 #include <Geometry/Vec3.hpp>
-
 #include <string>
 #include <vector>
 
-namespace renderer { class RMesh; } // forward declaration
+namespace renderer
+{
+    class RMesh;
+} // namespace renderer
 
 namespace geometry
 {

@@ -1,25 +1,22 @@
 #include <Gui/ToolbarButton.hpp>
+#include <Renderer/IRenderer.hpp>
 
 namespace gui
 {
-    ToolbarButton::ToolbarButton(const std::string& _id, std::function<void()> _onClick, const std::function<void(Image&)>& iconPainter)
+    ToolbarButton::ToolbarButton(
+        const std::string&                _id,
+        std::function<void()>             _onClick,
+        const std::function<void(void*)>& iconPainter,
+        renderer::IRenderer&              renderer,
+        bool                              _hasIcon)
+        : id(_id), onClick(std::move(_onClick)), hasIcon(_hasIcon)
     {
-        id      = _id;
-        onClick = std::move(_onClick);
-        if (iconPainter)
-        {
-            icon    = createToolbarIcon(iconPainter);
-            hasIcon = true;
-        }
+        if (hasIcon && iconPainter)
+            icon = renderer.createIcon(64, 64, iconPainter);
     }
 
-    Texture2D ToolbarButton::createToolbarIcon(const std::function<void(Image&)>& painter)
+    void ToolbarButton::draw(const renderer::IRenderer& renderer) const
     {
-        constexpr int iconSize = 64;
-        Image         canvas   = GenImageColor(iconSize, iconSize, Color{0, 0, 0, 0});
-        painter(canvas);
-        Texture2D texture = LoadTextureFromImage(canvas);
-        UnloadImage(canvas);
-        return texture;
+        renderer.drawButton(x, y, width, height, icon, onClick);
     }
 } // namespace gui

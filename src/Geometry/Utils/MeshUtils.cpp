@@ -55,7 +55,7 @@ namespace geometry::meshutils
     // Camera framing
     // -----------------------------
 
-    void frameCameraOnMesh(renderer::RaylibRenderer& renderer, const MeshBounds& bounds)
+    void frameCameraOnMesh(renderer::IRenderer& renderer, const MeshBounds& bounds)
     {
         if (!bounds.valid)
             return;

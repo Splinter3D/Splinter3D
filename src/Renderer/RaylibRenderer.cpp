@@ -1,3 +1,4 @@
+#include <Renderer/RayGUI.hpp>
 #include <Renderer/RaylibRenderer.hpp>
 #include <Splinter3D/Utils/Logger.hpp>
 #include <cstdarg>
@@ -184,6 +185,16 @@ namespace renderer
         return geometry::Vec3(delta.x, delta.y, 0.0f);
     }
 
+    int RaylibRenderer::getScreenWidth() const
+    {
+        return GetScreenWidth();
+    }
+
+    int RaylibRenderer::getScreenHeight() const
+    {
+        return GetScreenHeight();
+    }
+
 #pragma endregion
 #pragma region CAMERA
 
@@ -242,28 +253,89 @@ namespace renderer
 #pragma endregion
 #pragma region "GUI DRAWING"
 
-    void RaylibRenderer::drawIconCentered(const Rectangle& bounds, const Texture2D& icon, float scale) const
-    {
-        const float iconSize = bounds.width * scale;
-
-        Rectangle src{
-            0.0f,
-            0.0f,
-            static_cast<float>(icon.width),
-            static_cast<float>(icon.height)};
-
-        Rectangle dest{
-            bounds.x + (bounds.width - iconSize) * 0.5f,
-            bounds.y + (bounds.height - iconSize) * 0.5f,
-            iconSize,
-            iconSize};
-
-        DrawTexturePro(icon, src, dest, {0.0f, 0.0f}, 0.0f, ::WHITE);
-    }
-
     void RaylibRenderer::drawGuiComponent(const gui::IGuiComponent& component) const
     {
         component.draw(*this);
+    }
+
+    ITexture* RaylibRenderer::createIcon(int width, int height, const std::function<void(void*)>& painter)
+    {
+        RaylibTexture* icon  = new RaylibTexture();
+        Image          image = GenImageColor(width, height, {0, 0, 0, 0});
+
+        painter(&image);
+        icon->tex = LoadTextureFromImage(image);
+
+        UnloadImage(image);
+        return icon;
+    }
+
+    void RaylibRenderer::drawTexture(const ITexture* texture, float x, float y, float width, float height) const
+    {
+        const RaylibTexture* rt = static_cast<const RaylibTexture*>(texture);
+        if (!rt)
+            return;
+
+        Rectangle src  = {0.0f, 0.0f, static_cast<float>(rt->tex.width), static_cast<float>(rt->tex.height)};
+        Rectangle dest = {x, y, width, height};
+        DrawTexturePro(rt->tex, src, dest, {0, 0}, 0.0f, ::WHITE);
+    }
+
+    void RaylibRenderer::drawButton(float x, float y, float width, float height,
+                                    const renderer::ITexture*    icon,
+                                    const std::function<void()>& onClick) const
+    {
+        Rectangle rect{x, y, width, height};
+
+        if (GuiButton(rect, "")) // Using raygui button detection
+        {
+            if (onClick)
+                onClick();
+        }
+
+        if (icon)
+        {
+            float iconSize = width * 0.55f;
+            this->drawTexture(icon, x + (width - iconSize) * 0.5f, y + (height - iconSize) * 0.5f, iconSize, iconSize);
+        }
+    }
+
+#pragma endregion
+#pragma region "ICON"
+
+    void RaylibRenderer::drawImportIcon(void* canvas)
+    {
+        Image*        img = static_cast<Image*>(canvas);
+        const ::Color accent{0, 190, 255, 255};
+        ImageDrawRectangle(img, 30, 10, 4, 26, accent);
+        ImageDrawTriangle(img, {18, 32}, {46, 32}, {32, 50}, accent);
+    }
+
+    void RaylibRenderer::drawExportIcon(void* canvas)
+    {
+        Image*        img = static_cast<Image*>(canvas);
+        const ::Color accent{67, 176, 65, 255};
+        ImageDrawRectangle(img, 30, 20, 4, 26, accent);
+        ImageDrawTriangle(img, {32, 14}, {18, 32}, {46, 32}, accent);
+    }
+
+    void RaylibRenderer::drawSliceIcon(void* canvas)
+    {
+        Image*        img = static_cast<Image*>(canvas);
+        const ::Color accent{243, 156, 18, 255};
+        ImageDrawRectangle(img, 16, 14, 32, 6, accent);
+        ImageDrawRectangle(img, 16, 26, 32, 6, accent);
+        ImageDrawRectangle(img, 16, 38, 32, 6, accent);
+    }
+
+    void RaylibRenderer::drawPreviewIcon(void* canvas)
+    {
+        Image*        img = static_cast<Image*>(canvas);
+        const ::Color outline{236, 240, 241, 255};
+        const ::Color iris{0, 151, 230, 255};
+        ImageDrawCircleLines(img, 32, 32, 18, outline);
+        ImageDrawCircle(img, 32, 32, 10, iris);
+        ImageDrawCircle(img, 32, 32, 4, {255, 255, 255, 255});
     }
 
 #pragma endregion

@@ -41,7 +41,7 @@ namespace geometry
 
         inline Vector3 toRaylib() const
         {
-            return Vector3{ x, y, z };
+            return Vector3{x, y, z};
         }
     };
 } // namespace geometry

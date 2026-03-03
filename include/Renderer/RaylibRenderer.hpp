@@ -6,6 +6,11 @@
 
 namespace renderer
 {
+    struct RaylibTexture : ITexture
+    {
+        Texture2D tex{};
+    };
+
     class RaylibRenderer final : public IRenderer
     {
       public:
@@ -23,8 +28,17 @@ namespace renderer
         // --------------------
         // Drawing Gui
         // --------------------
-        void drawIconCentered(const Rectangle& bounds, const Texture2D& icon, float scale = 0.55f) const;
-        void drawGuiComponent(const gui::IGuiComponent& component) const override;
+        void      drawGuiComponent(const gui::IGuiComponent& component) const override;
+        ITexture* createIcon(int width, int height, const std::function<void(void* canvas)>& painter) override;
+        void      drawTexture(const ITexture* texture, float x, float y, float width, float height) const override;
+
+        void drawButton(float x, float y, float width, float height, const ITexture* icon, const std::function<void()>& onClick) const override;
+
+        // Specific icon painters
+        void drawImportIcon(void* canvas) override;
+        void drawExportIcon(void* canvas) override;
+        void drawSliceIcon(void* canvas) override;
+        void drawPreviewIcon(void* canvas) override;
 
         // --------------------
         // Drawing 3D
@@ -51,6 +65,8 @@ namespace renderer
         // --------------------
         bool           shouldClose() const override;
         void           requestClose() override;
+        int            getScreenWidth() const override;
+        int            getScreenHeight() const override;
         bool           isKeyDown(Key key) const override;
         bool           isMouseButtonDown(int button) const override;
         geometry::Vec3 getMouseDelta() const override;

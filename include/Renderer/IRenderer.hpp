@@ -5,8 +5,10 @@
 #include <Geometry/Vec3.hpp>
 #include <Gui/IGuiComponent.hpp>
 #include <Renderer/Color.hpp>
+#include <Renderer/ITexture.hpp>
 #include <Renderer/RenderObject.hpp>
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -76,8 +78,16 @@ namespace renderer
         virtual void end3D()   = 0;
 
         // GUI drawing
-        virtual void drawIconCentered(const Rectangle& bounds, const Texture2D& icon, float scale = 0.55f) const = 0;
-        virtual void drawGuiComponent(const gui::IGuiComponent& component) const                                 = 0;
+        virtual void      drawGuiComponent(const gui::IGuiComponent& component) const                                                               = 0;
+        virtual ITexture* createIcon(int width, int height, const std::function<void(void* canvas)>& painter)                                       = 0;
+        virtual void      drawTexture(const ITexture* texture, float x, float y, float width, float height) const                                   = 0;
+        virtual void      drawButton(float x, float y, float width, float height, const ITexture* icon, const std::function<void()>& onClick) const = 0;
+
+        // Specific icon painters
+        virtual void drawImportIcon(void* canvas)  = 0;
+        virtual void drawExportIcon(void* canvas)  = 0;
+        virtual void drawSliceIcon(void* canvas)   = 0;
+        virtual void drawPreviewIcon(void* canvas) = 0;
 
         // 3D Drawing
         virtual void drawTriangle(const geometry::Triangle& tri, Color color) = 0;
@@ -97,6 +107,8 @@ namespace renderer
 
         // Input / window
         virtual bool           shouldClose() const                 = 0;
+        virtual int            getScreenWidth() const              = 0;
+        virtual int            getScreenHeight() const             = 0;
         virtual void           requestClose()                      = 0;
         virtual bool           isKeyDown(Key key) const            = 0;
         virtual bool           isMouseButtonDown(int button) const = 0;

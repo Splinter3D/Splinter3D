@@ -87,7 +87,7 @@ namespace geometry
 
             // Read the vertices
             Triangle tri;
-            float     vertex[3];
+            float    vertex[3];
             for (int v = 0; v < 3; ++v)
             {
                 if (!file.read(reinterpret_cast<char*>(vertex), sizeof(vertex)))
@@ -109,4 +109,4 @@ namespace geometry
         }
         return mesh;
     }
-} // namespace objects3D
+} // namespace geometry

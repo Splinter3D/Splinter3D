@@ -8,4 +8,4 @@ namespace geometry
     {
         Vec3 vertices[3];
     };
-} // namespace 
+} // namespace geometry

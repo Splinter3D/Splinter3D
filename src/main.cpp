@@ -41,6 +41,7 @@ int main()
     geometry::meshutils::frameCameraOnMesh(renderer, meshBounds);
 
     gui::CenteredToolbar toolbar(18.0f, 52.0f, 14.0f);
+    toolbar.initialize(renderer);
 
     while (!renderer.shouldClose())
     {
@@ -49,10 +50,8 @@ int main()
 
         renderer.begin3D();
 
-        if (obj.transform.scale.x < 2.0f)
-            obj.transform.scale = obj.transform.scale + geometry::Vec3(0.01f, 0.01f, 0.01f);
-        else
-            obj.transform.scale = geometry::Vec3(1.0f, 1.0f, 1.0f);
+        obj.transform.rotation.y += dt * 0.5f; // Rotate object for demonstration
+        obj.transform.rotation.x += dt * 0.5f; // Rotate object for demonstration
         obj.notifyTransform();
 
         renderer.drawGrid(10, 1.0f);

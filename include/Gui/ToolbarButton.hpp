@@ -1,22 +1,35 @@
 #pragma once
-
+#include <Gui/IGuiComponent.hpp>
 #include <functional>
-#include <raylib.h>
 #include <string>
-#include <vector>
+
+namespace renderer
+{
+    struct ITexture;
+    class IRenderer;
+} // namespace renderer
 
 namespace gui
 {
-    struct ToolbarButton
+    struct ToolbarButton : IGuiComponent
     {
         std::string           id;
-        Texture2D             icon{};
-        bool                  hasIcon{false};
         std::function<void()> onClick;
+        renderer::ITexture*   icon{nullptr};
+        bool                  hasIcon{false};
 
-        ToolbarButton(const std::string& _id, std::function<void()> _onClick, const std::function<void(Image&)>& iconPainter);
+        float x{0};
+        float y{0};
+        float width{48};
+        float height{48};
 
-        Texture2D createToolbarIcon(const std::function<void(Image&)>& painter);
+        ToolbarButton(
+            const std::string&                _id,
+            std::function<void()>             _onClick,
+            const std::function<void(void*)>& iconPainter,
+            renderer::IRenderer&              renderer,
+            bool                              _hasIcon = true);
+
+        void draw(const renderer::IRenderer& renderer) const override;
     };
-
 } // namespace gui
