@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Geometry/Mesh.hpp>
-#include <Renderer/RaylibRenderer.hpp>
+#include <Renderer/IRenderer.hpp>
 #include <algorithm>
 #include <cmath>
 
@@ -24,5 +24,5 @@ namespace geometry::meshutils
     float computeBoundsRadius(const MeshBounds& bounds);
 
     // Move the camera to frame the mesh
-    void frameCameraOnMesh(renderer::RaylibRenderer& renderer, const MeshBounds& bounds);
+    void frameCameraOnMesh(renderer::IRenderer& renderer, const MeshBounds& bounds);
 }

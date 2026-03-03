@@ -7,6 +7,8 @@
 #include <rlgl.h>
 #include <vector>
 
+#pragma region Logger callback
+
 static void RaylibToLogger([[maybe_unused]] int         logLevel,
                            [[maybe_unused]] const char* text, [[maybe_unused]] va_list args)
 {
@@ -66,6 +68,9 @@ static void RaylibToLogger([[maybe_unused]] int         logLevel,
     std::free(buf);
 }
 
+#pragma endregion
+#pragma region CTOR / DTOR
+
 namespace renderer
 {
     struct RaylibRenderer::Impl
@@ -105,9 +110,8 @@ namespace renderer
         CloseWindow();
     }
 
-    // --------------------------
-    // Helpers: convert to Raylib
-    // --------------------------
+#pragma region HELPERS
+
     inline ::Color toRaylibColor(const renderer::Color& c)
     {
         return ::Color{c.r, c.g, c.b, c.a};
@@ -121,6 +125,9 @@ namespace renderer
             result.push_back(v.toRaylib());
         return result;
     }
+
+#pragma endregion
+#pragma region Lifecycle
 
     // ------------------------
     // FRAME LIFECYCLE
@@ -148,9 +155,8 @@ namespace renderer
         EndDrawing();
     }
 
-    // ------------------------
-    // WINDOW / INPUT
-    // ------------------------
+#pragma endregion
+#pragma region WINDOW / INPUT
 
     bool RaylibRenderer::shouldClose() const
     {
@@ -161,6 +167,25 @@ namespace renderer
     {
         impl_->exitRequested = true;
     }
+
+    bool RaylibRenderer::isKeyDown(Key key) const
+    {
+        return IsKeyDown(static_cast<int>(key));
+    }
+
+    bool RaylibRenderer::isMouseButtonDown(int button) const
+    {
+        return IsMouseButtonDown(button);
+    }
+
+    geometry::Vec3 RaylibRenderer::getMouseDelta() const
+    {
+        Vector2 delta = GetMouseDelta();
+        return geometry::Vec3(delta.x, delta.y, 0.0f);
+    }
+
+#pragma endregion
+#pragma region CAMERA
 
     void RaylibRenderer::updateCamera(float dt)
     {
@@ -214,25 +239,35 @@ namespace renderer
         impl_->pitch = pitch;
     }
 
-    bool RaylibRenderer::isKeyDown(Key key) const
+#pragma endregion
+#pragma region "GUI DRAWING"
+
+    void RaylibRenderer::drawIconCentered(const Rectangle& bounds, const Texture2D& icon, float scale) const
     {
-        return IsKeyDown(static_cast<int>(key));
+        const float iconSize = bounds.width * scale;
+
+        Rectangle src{
+            0.0f,
+            0.0f,
+            static_cast<float>(icon.width),
+            static_cast<float>(icon.height)};
+
+        Rectangle dest{
+            bounds.x + (bounds.width - iconSize) * 0.5f,
+            bounds.y + (bounds.height - iconSize) * 0.5f,
+            iconSize,
+            iconSize};
+
+        DrawTexturePro(icon, src, dest, {0.0f, 0.0f}, 0.0f, ::WHITE);
     }
 
-    bool RaylibRenderer::isMouseButtonDown(int button) const
+    void RaylibRenderer::drawGuiComponent(const gui::IGuiComponent& component) const
     {
-        return IsMouseButtonDown(button);
+        component.draw(*this);
     }
 
-    geometry::Vec3 RaylibRenderer::getMouseDelta() const
-    {
-        Vector2 delta = GetMouseDelta();
-        return geometry::Vec3(delta.x, delta.y, 0.0f);
-    }
-
-    // ------------------------
-    // 3D DRAWING
-    // ------------------------
+#pragma endregion
+#pragma region "3D DRAWING"
 
     void RaylibRenderer::drawGrid(int slices, float spacing)
     {

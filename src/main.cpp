@@ -6,7 +6,7 @@
 */
 
 #include <Geometry/Utils/MeshUtils.hpp>
-#include <Gui/CenterredToolBar.hpp>
+#include <Gui/CenteredToolbar.hpp>
 #include <Objects3D/Object3D.hpp>
 #include <Renderer/RaylibRenderer.hpp>
 #include <Renderer/RenderObject.hpp>
@@ -32,7 +32,7 @@ int main()
     renderer::Config         cfg{1280, 720, "Prototype 3D Slicer", 60};
     renderer::RaylibRenderer renderer(cfg);
 
-    objects3D::Object3D    obj = objects3D::Object3D::fromSTL("assets/stl/binary/magnolia_binary.stl");
+    objects3D::Object3D    obj = objects3D::Object3D::fromSTL("assets/stl/binary/cube.stl");
     renderer::RenderObject rObj;
     rObj.bind(obj);
 
@@ -60,7 +60,7 @@ int main()
         renderer.drawObject(rObj, {255, 0, 0, 255});
 
         renderer.end3D();
-        toolbar.draw();
+        renderer.drawGuiComponent(toolbar);
         renderer.endFrame();
     }
     return 0;
