@@ -1,3 +1,5 @@
+#pragma once
+
 #include <Splinter3D/Utils/Singleton.hpp>
 #include <iostream>
 #include <mutex>
