@@ -160,9 +160,8 @@ foreach ($gen in $generators) {
     'set(CMAKE_INSTALL_PREFIX "' + $installPosix + '" CACHE PATH "Install prefix")',
     'set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type")'
   )
-  # Write the initial cache file using ASCII with explicit CRLF line endings so CMake parses it reliably
-  $body = ($initContents -join "`r`n") + "`r`n"
-  [System.IO.File]::WriteAllText($initFile, $body, [System.Text.Encoding]::ASCII)
+  # Write the initial cache file using ASCII so each array element becomes a separate line (CRLF on Windows)
+  $initContents | Out-File -FilePath $initFile -Encoding ASCII -Force
 
   # Emit the first lines of the generated init file for diagnostics
   Write-Host "Generated init file: $initFile (first 8 lines)"
