@@ -1,6 +1,9 @@
 name: Build Windows package (staging)
 
 on:
+  push:
+    branches:
+      - feat/create_exe
   workflow_dispatch:
 
 jobs:
