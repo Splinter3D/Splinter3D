@@ -5,7 +5,6 @@
   "dependencies": [
     "raylib",
     "glfw3",
-    "gettext",
-    "gettext-tools"
+    "gettext"
   ]
 }
