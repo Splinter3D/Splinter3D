@@ -66,19 +66,17 @@ if (-not (Test-Path "$VcpkgDir\vcpkg.exe")) {
 
 Write-Host "Installing vcpkg dependencies (manifest-aware)..."
 try {
-  $vcpkgHelp = & .\vcpkg.exe help install 2>&1
-  if ($vcpkgHelp -match '--manifest') {
-    Write-Host "vcpkg supports manifest mode; running manifest install"
-    Push-Location $RepoRoot
-    & $VcpkgDir\vcpkg.exe install --manifest || Write-Warning "vcpkg manifest install failed; continuing"
-    Pop-Location
-  } else {
-    Write-Host "vcpkg does not support manifest mode; falling back to classic install (triplet: $Triplet)"
-    # Attempt a best-effort classic install. This will only work if ports are specified.
-    & $VcpkgDir\vcpkg.exe install --triplet $Triplet || Write-Warning "vcpkg classic install failed or no ports specified; continuing"
-  }
+    $vcpkgExe = (Join-Path $VcpkgDir 'vcpkg.exe')
+    if (Test-Path (Join-Path $RepoRoot 'vcpkg.json')) {
+        Write-Host "Found vcpkg.json in repository root; running manifest install"
+        Push-Location $RepoRoot
+        & $vcpkgExe install --manifest || Write-Warning "vcpkg manifest install failed; continuing"
+        Pop-Location
+    } else {
+        Write-Host "No vcpkg.json found; skipping manifest install. If you need classic installs, list ports explicitly."
+    }
 } catch {
-  Write-Warning "vcpkg install step failed; continuing. Error: $_"
+    Write-Warning "vcpkg install step failed; continuing. Error: $_"
 }
 Pop-Location
 
@@ -100,19 +98,15 @@ $generators = @(
 
 $selectedGenerator = $null
 foreach ($gen in $generators) {
-  $cmakeArgs = @(
-    '-S', $RepoRoot,
-    '-B', $buildDir,
-    $gen.Args + @('-DCMAKE_TOOLCHAIN_FILE=' + $toolchain, '-DCMAKE_BUILD_TYPE=Release', '-DCMAKE_INSTALL_PREFIX=' + $InstallPrefix)
-  ) -join ' '
+  $cmakeArgs = @('-S', $RepoRoot, '-B', $buildDir) + $gen.Args + @('-DCMAKE_TOOLCHAIN_FILE=' + $toolchain, '-DCMAKE_BUILD_TYPE=Release', '-DCMAKE_INSTALL_PREFIX=' + $InstallPrefix)
   Write-Host "Trying generator: $($gen.Name)"
-  Write-Host "$cmakeExe $cmakeArgs"
-  try {
-    & $cmakeExe $cmakeArgs
+  Write-Host "$cmakeExe $($cmakeArgs -join ' ')"
+  & $cmakeExe @cmakeArgs
+  if ($LASTEXITCODE -eq 0) {
     $selectedGenerator = $gen.Name
     break
-  } catch {
-    Write-Warning "Generator $($gen.Name) failed: $_"
+  } else {
+    Write-Warning "Generator $($gen.Name) failed with exit code $LASTEXITCODE"
   }
 }
 
@@ -122,9 +116,42 @@ Write-Host "Selected generator: $selectedGenerator"
 
 Write-Host "Building and installing..."
 if ($selectedGenerator -eq 'Ninja') {
-  & $cmakeExe --build $buildDir --config Release --parallel 4 || Fail "Build/install failed"
+  & $cmakeExe --build $buildDir --config Release --parallel 4
+  if ($LASTEXITCODE -ne 0) { Fail "Build/install failed (Ninja)" }
 } else {
-  & $cmakeExe --build $buildDir --config Release --target INSTALL -- -m:4 || Fail "Build/install failed"
+  & $cmakeExe --build $buildDir --config Release --target INSTALL -- /m:4
+  if ($LASTEXITCODE -ne 0) { Fail "Build/install failed (MSBuild)" }
+}
+
+# Ensure staging directory exists
+if (-not (Test-Path $InstallPrefix)) { New-Item -ItemType Directory -Path $InstallPrefix -Force | Out-Null }
+
+# Copy locale files into staging
+if (Test-Path (Join-Path $RepoRoot 'locale')) {
+    Write-Host "Copying locale/ into staging"
+    $destLocale = Join-Path $InstallPrefix 'locale'
+    Remove-Item -Recurse -Force $destLocale -ErrorAction SilentlyContinue
+    Copy-Item -Path (Join-Path $RepoRoot 'locale') -Destination $destLocale -Recurse -Force
+}
+
+# Copy assets (icons, etc.) into staging
+if (Test-Path (Join-Path $RepoRoot 'assets')) {
+    Write-Host "Copying assets/ into staging"
+    $destAssets = Join-Path $InstallPrefix 'assets'
+    Remove-Item -Recurse -Force $destAssets -ErrorAction SilentlyContinue
+    Copy-Item -Path (Join-Path $RepoRoot 'assets') -Destination $destAssets -Recurse -Force
+}
+
+# Attempt to locate the built executable and copy into staging/bin
+$exeName = 'splinter3D.exe'
+$found = Get-ChildItem -Path $buildDir -Recurse -Filter $exeName -ErrorAction SilentlyContinue | Select-Object -First 1
+if ($found) {
+    $binDir = Join-Path $InstallPrefix 'bin'
+    if (-not (Test-Path $binDir)) { New-Item -ItemType Directory -Path $binDir | Out-Null }
+    Copy-Item -Path $found.FullName -Destination (Join-Path $binDir $exeName) -Force
+    Write-Host "Copied executable to staging/bin"
+} else {
+    Write-Warning "Executable $exeName not found in build tree; ensure CMake install rules place binaries into staging or adjust script to copy them explicitly."
 }
 
 if ($UseCPack) {
