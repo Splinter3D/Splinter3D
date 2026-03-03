@@ -62,12 +62,6 @@ int main()
         renderer.end3D();
         toolbar.draw();
         renderer.endFrame();
-
-        // if (IsKeyPressed(KEY_F11))
-        //     toggleFullscreen(windowState);
-
-        // if (IsWindowResized() && !IsWindowFullscreen())
-        //     rememberWindowedSize(windowState);
     }
     return 0;
 }
