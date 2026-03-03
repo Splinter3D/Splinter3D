@@ -160,9 +160,13 @@ foreach ($gen in $generators) {
     'set(CMAKE_INSTALL_PREFIX "' + $installPosix + '" CACHE PATH "Install prefix")',
     'set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type")'
   )
-  # Write the initial cache file without a UTF-8 BOM so CMake can parse it reliably
-  $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-  [System.IO.File]::WriteAllLines($initFile, $initContents, $utf8NoBom)
+  # Write the initial cache file using ASCII with explicit CRLF line endings so CMake parses it reliably
+  $body = ($initContents -join "`r`n") + "`r`n"
+  [System.IO.File]::WriteAllText($initFile, $body, [System.Text.Encoding]::ASCII)
+
+  # Emit the first lines of the generated init file for diagnostics
+  Write-Host "Generated init file: $initFile (first 8 lines)"
+  Get-Content -Path $initFile -TotalCount 8 | ForEach-Object { Write-Host "  $_" }
 
   $cmakeArgs = @('-S', $RepoRoot, '-B', $candidateBuild) + $gen.Args + @('-C', $initFile)
   Write-Host "Trying generator: $($gen.Name)"
