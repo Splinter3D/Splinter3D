@@ -1,22 +1,21 @@
 #pragma once
 
-#include <Objects3D/Transform.hpp>
-#include <Renderer/Color.hpp>
 #include <Geometry/Mesh.hpp>
 #include <Objects3D/ObjectObserver.hpp>
-
-#include <vector>
+#include <Objects3D/Transform.hpp>
+#include <Renderer/Color.hpp>
 #include <algorithm>
+#include <vector>
 
 namespace objects3D
 {
     struct Object3D
     {
-        const geometry::Mesh*   mesh;
-        Transform               transform;
-        renderer::Color         color;
+        geometry::Mesh* mesh;
+        Transform       transform;
+        renderer::Color color;
 
-        Object3D(const geometry::Mesh* m, const renderer::Color& c = {255, 255, 255, 255})
+        Object3D(geometry::Mesh* m, const renderer::Color& c = {255, 255, 255, 255})
             : mesh(m), color(c)
         { }
 
@@ -37,7 +36,7 @@ namespace objects3D
                 o->onTransformChanged();
         }
 
-        private:
-            std::vector<ObjectObserver*> observers;
+      private:
+        std::vector<ObjectObserver*> observers;
     };
 } // namespace objects3D

@@ -72,7 +72,12 @@ namespace renderer
     {
         Config   cfg;
         Camera3D camera{};
-        bool     exitRequested{false};
+
+        float yaw      = 0.0f;
+        float pitch    = 0.0f;
+        float distance = 5.0f;
+
+        bool exitRequested{false};
     };
 
     RaylibRenderer::RaylibRenderer(const Config& cfg)
@@ -81,8 +86,9 @@ namespace renderer
         impl_->cfg = cfg;
 
         SetTraceLogCallback(RaylibToLogger);
-        SetConfigFlags(FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT);
+        SetConfigFlags(FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE);
         InitWindow(cfg.width, cfg.height, cfg.title.c_str());
+        SetWindowMinSize(640, 360);
         SetTargetFPS(cfg.target_fps);
         SetExitKey(0);
 
@@ -158,8 +164,54 @@ namespace renderer
 
     void RaylibRenderer::updateCamera(float dt)
     {
-        UpdateCamera(&impl_->camera, CAMERA_ORBITAL);
         (void) dt;
+
+        if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
+        {
+            Vector2 delta = GetMouseDelta();
+            impl_->yaw -= delta.x * 0.01f;
+            impl_->pitch -= delta.y * 0.01f;
+        }
+
+        impl_->distance -= GetMouseWheelMove();
+        impl_->distance = std::max(impl_->distance, 1.0f);
+
+        impl_->camera.position = {
+            impl_->camera.target.x + impl_->distance * cosf(impl_->pitch) * sinf(impl_->yaw),
+            impl_->camera.target.y + impl_->distance * sinf(impl_->pitch),
+            impl_->camera.target.z + impl_->distance * cosf(impl_->pitch) * cosf(impl_->yaw)};
+        UpdateCamera(&impl_->camera, CAMERA_CUSTOM);
+    }
+
+    void RaylibRenderer::setCameraPosition(const geometry::Vec3& position)
+    {
+        impl_->camera.position = position.toRaylib();
+    }
+
+    void RaylibRenderer::setCameraTarget(const geometry::Vec3& target)
+    {
+        impl_->camera.target = target.toRaylib();
+    }
+
+    void RaylibRenderer::setCameraFov(float fovY)
+    {
+        impl_->camera.fovy = fovY;
+    }
+
+    float RaylibRenderer::getCameraFov() const
+    {
+        return impl_->camera.fovy;
+    }
+
+    void RaylibRenderer::setOrbitDistance(float d)
+    {
+        impl_->distance = d;
+    }
+
+    void RaylibRenderer::setOrbitAngles(float yaw, float pitch)
+    {
+        impl_->yaw   = yaw;
+        impl_->pitch = pitch;
     }
 
     bool RaylibRenderer::isKeyDown(Key key) const
@@ -196,12 +248,12 @@ namespace renderer
 
     void RaylibRenderer::ensureCCW(geometry::Triangle& tri, geometry::Vec3 cameraPos)
     {
-        geometry::Vec3 v0 = tri.vertices[0];
-        geometry::Vec3 v1 = tri.vertices[1];
-        geometry::Vec3 v2 = tri.vertices[2];
+        geometry::Vec3 v0     = tri.vertices[0];
+        geometry::Vec3 v1     = tri.vertices[1];
+        geometry::Vec3 v2     = tri.vertices[2];
         geometry::Vec3 normal = geometry::Vec3::cross(v1 - v0, v2 - v0);
         geometry::Vec3 camDir = geometry::Vec3{cameraPos.x, cameraPos.y, cameraPos.z} - v0;
-        float dot    = geometry::Vec3::dotProduct(normal, camDir);
+        float          dot    = geometry::Vec3::dotProduct(normal, camDir);
         if (dot < 0)
         {
             // swap two vertices to make CCW
