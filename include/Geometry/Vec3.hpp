@@ -10,10 +10,12 @@ namespace geometry
         float y;
         float z;
 
-        Vec3() : x(0), y(0), z(0)
+        Vec3()
+            : x(0), y(0), z(0)
         { }
 
-        Vec3(float X, float Y, float Z) : x(X), y(Y), z(Z)
+        Vec3(float X, float Y, float Z)
+            : x(X), y(Y), z(Z)
         { }
 
         Vec3 operator-(const Vec3& other) const

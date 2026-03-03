@@ -1,0 +1,13 @@
+msgid ""
+msgstr ""
+"Language: de\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "Play"
+msgstr "Spielen"
+
+msgid "Settings"
+msgstr "Einstellungen"
+
+msgid "Quit"
+msgstr "Beenden"
