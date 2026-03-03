@@ -152,7 +152,7 @@ if (-not $DryRun) {
             $_ | Out-File -FilePath $depLog -Append -Encoding utf8
             $depExit = 1
           }
-          Log("vcpkg install exit code for $dep: $depExit")
+          Log("vcpkg install exit code for ${dep}: ${depExit}")
           if ($depExit -ne 0) { Log("vcpkg install $dep failed; see $depLog","WARN") }
         }
       } else {
