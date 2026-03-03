@@ -57,8 +57,23 @@ if (-not (Test-Path $VcpkgDir)) {
   $vcpkgParent = Split-Path $VcpkgDir -Parent
   if (-not (Test-Path $vcpkgParent)) { New-Item -ItemType Directory -Path $vcpkgParent | Out-Null }
   Set-Location $vcpkgParent
-  Write-Host "Cloning vcpkg into $VcpkgDir..."
-  git clone https://github.com/microsoft/vcpkg.git $VcpkgDir || Fail "Failed to clone vcpkg into $VcpkgDir"
+  $cloneUrl = 'https://github.com/microsoft/vcpkg.git'
+  $maxAttempts = 3
+  $attempt = 0
+  $cloned = $false
+  while (-not $cloned -and $attempt -lt $maxAttempts) {
+    $attempt++
+    Write-Host "Cloning vcpkg into $VcpkgDir... (attempt $attempt/$maxAttempts)"
+    git clone $cloneUrl $VcpkgDir
+    if ($LASTEXITCODE -eq 0 -and (Test-Path $VcpkgDir)) { $cloned = $true; break }
+    Write-Warning "git clone exited with code $LASTEXITCODE."
+    if ($attempt -lt $maxAttempts) {
+      $sleep = [math]::Pow(2, $attempt)
+      Write-Host "Retrying in ${sleep}s..."
+      Start-Sleep -Seconds $sleep
+    }
+  }
+  if (-not $cloned) { Fail "Failed to clone vcpkg into $VcpkgDir after $maxAttempts attempts" }
 }
 
 Push-Location $VcpkgDir
