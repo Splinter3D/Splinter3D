@@ -15,6 +15,13 @@ namespace gui
 
     void CenteredToolbar::draw(const renderer::IRenderer& renderer) const
     {
+        if (renderer.getScreenWidth() != _lastScreenWidth || renderer.getScreenHeight() != _lastScreenHeight)
+        {
+            std::cout << "[CenteredToolbar] Screen size changed, reinitializing toolbar...\n";
+            const_cast<CenteredToolbar*>(this)->initialize(const_cast<renderer::IRenderer&>(renderer));
+            const_cast<CenteredToolbar*>(this)->_lastScreenWidth  = renderer.getScreenWidth();
+            const_cast<CenteredToolbar*>(this)->_lastScreenHeight = renderer.getScreenHeight();
+        }
         for (const auto& button : _toolbarButtons)
             button.draw(renderer);
     }

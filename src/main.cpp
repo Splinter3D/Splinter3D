@@ -10,6 +10,9 @@
 #include <Objects3D/Object3D.hpp>
 #include <Renderer/RaylibRenderer.hpp>
 #include <Renderer/RenderObject.hpp>
+#include <Splinter3D/Utils/Locale.hpp>
+
+#define _(String) gettext(String)
 
 #define RAYGUI_IMPLEMENTATION
 #if defined(__GNUC__)
@@ -21,6 +24,8 @@
 #pragma GCC diagnostic ignored "-Wshadow"
 #pragma GCC diagnostic ignored "-Wmissing-declarations"
 #pragma GCC diagnostic ignored "-Wcast-qual"
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+#pragma GCC diagnostic ignored "-Wcast-align"
 #endif
 #include <Renderer/RayGUI.hpp>
 #if defined(__GNUC__)
@@ -29,6 +34,16 @@
 
 int main()
 {
+    splinter3D::utils::Locale::init("splinter3D", "./locale");
+
+    // splinter::utils::Locale::setLanguage("fr");
+    // splinter::utils::Locale::setLanguage("es");
+    // splinter::utils::Locale::setLanguage("de");
+
+    std::cout << _("Play") << std::endl;
+    std::cout << _("Settings") << std::endl;
+    std::cout << _("Quit") << std::endl;
+
     renderer::Config         cfg{1280, 720, "Prototype 3D Slicer", 60};
     renderer::RaylibRenderer renderer(cfg);
 

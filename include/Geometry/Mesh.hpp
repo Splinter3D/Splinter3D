@@ -18,7 +18,8 @@ namespace geometry
 
         Mesh() = default;
 
-        Mesh(const std::vector<geometry::Triangle>& tris) : triangles(tris)
+        Mesh(const std::vector<geometry::Triangle>& tris)
+            : triangles(tris)
         { }
 
         /**

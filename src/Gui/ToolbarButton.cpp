@@ -15,6 +15,12 @@ namespace gui
             icon = renderer.createIcon(64, 64, iconPainter);
     }
 
+    void ToolbarButton::initialize(renderer::IRenderer& renderer)
+    {
+        (void) renderer;
+        // No dynamic initialization needed here
+    }
+
     void ToolbarButton::draw(const renderer::IRenderer& renderer) const
     {
         renderer.drawButton(x, y, width, height, icon, onClick);

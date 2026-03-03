@@ -1,5 +1,5 @@
 #pragma once
-#include <Gui/IGuiComponent.hpp>
+#include <Gui/AGuiComponent.hpp>
 #include <functional>
 #include <string>
 
@@ -11,7 +11,7 @@ namespace renderer
 
 namespace gui
 {
-    struct ToolbarButton : IGuiComponent
+    struct ToolbarButton : AGuiComponent
     {
         std::string           id;
         std::function<void()> onClick;
@@ -29,6 +29,8 @@ namespace gui
             const std::function<void(void*)>& iconPainter,
             renderer::IRenderer&              renderer,
             bool                              _hasIcon = true);
+
+        void initialize(renderer::IRenderer& renderer) override;
 
         void draw(const renderer::IRenderer& renderer) const override;
     };
