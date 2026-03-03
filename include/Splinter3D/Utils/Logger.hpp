@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Splinter3D/Api.hpp>
 #include <Splinter3D/Utils/Singleton.hpp>
 #include <iostream>
 #include <mutex>
@@ -15,7 +16,7 @@ namespace splinter3D::utils
      * It provides two methods, `cout` and `cerr`, which are thread-safe
      * versions of `std::cout` and `std::cerr`.
      */
-    class Logger : public Singleton<Logger>
+    class SPLINTER3D_API Logger : public Singleton<Logger>
     {
       public:
         /**
@@ -67,11 +68,11 @@ namespace splinter3D::utils
  * @brief Prints a message to given output.
  * @param args The arguments to print.
  */
-#define __S3D_LOGGER_FUNCS_FACTORY(FNAME)                                                                                 \
-    template <typename... Args>                                                                                           \
-    static inline void FNAME(Args&&... args) noexcept(noexcept(Logger::getInstance().FNAME(std::forward<Args>(args)...))) \
-    {                                                                                                                     \
-        Logger::getInstance().FNAME(std::forward<Args>(args)...);                                                         \
+#define __S3D_LOGGER_FUNCS_FACTORY(FNAME)                                                                                                \
+    template <typename... Args>                                                                                                          \
+    static inline void SPLINTER3D_API FNAME(Args&&... args) noexcept(noexcept(Logger::getInstance().FNAME(std::forward<Args>(args)...))) \
+    {                                                                                                                                    \
+        Logger::getInstance().FNAME(std::forward<Args>(args)...);                                                                        \
     }
 
     __S3D_LOGGER_FUNCS_FACTORY(cout)
