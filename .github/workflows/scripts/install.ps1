@@ -23,52 +23,49 @@ Push-Location $vcpkgDir
 $vcpkgExe = Join-Path $vcpkgDir 'vcpkg.exe'
 
 if (-not (Test-Path $vcpkgExe)) {
-  Write-Host "vcpkg.exe not found; attempting to download prebuilt binary"
+  Write-Host "vcpkg.exe not found; running bootstrap"
+#   try {
+#     curl.exe -L -o $vcpkgExe "https://github.com/microsoft/vcpkg/releases/latest/download/vcpkg.exe"
+#   } catch {
+#     Write-Warning "curl download failed: $_"
+#   }
+
+#   # Validate downloaded file looks like a Windows PE (MZ header)
+#   $validExe = $false
+#   if (Test-Path $vcpkgExe) {
+#     try {
+#       $hdr = Get-Content -Path $vcpkgExe -Encoding Byte -TotalCount 2 -ErrorAction Stop
+#       if ($hdr.Count -ge 2 -and $hdr[0] -eq 0x4d -and $hdr[1] -eq 0x5a) { $validExe = $true }
+#     } catch { }
+#   }
+
+#   if (-not $validExe) {
+#     Write-Warning "Downloaded vcpkg.exe is not a valid PE file; attempting Releases API download"
+#     try {
+#       $api = 'https://api.github.com/repos/microsoft/vcpkg/releases/latest'
+#       $rel = Invoke-RestMethod -Uri $api -UseBasicParsing
+#       $asset = $rel.assets | Where-Object { $_.name -eq 'vcpkg.exe' } | Select-Object -First 1
+#       if ($null -ne $asset) {
+#         $url = $asset.browser_download_url
+#         curl.exe -L -o $vcpkgExe $url
+#         try {
+#           $hdr2 = Get-Content -Path $vcpkgExe -Encoding Byte -TotalCount 2 -ErrorAction Stop
+#           if ($hdr2.Count -ge 2 -and $hdr2[0] -eq 0x4d -and $hdr2[1] -eq 0x5a) { $validExe = $true }
+#         } catch { }
+#       } else {
+#         Write-Warning "No vcpkg.exe asset found in latest release"
+#       }
+#     } catch {
+#       Write-Warning "Releases API download attempt failed: $_"
+#     }
+#   }
+  Write-Host "Bootstrapping from source"
   try {
-    curl.exe -L -o $vcpkgExe "https://github.com/microsoft/vcpkg/releases/latest/download/vcpkg.exe"
-  } catch {
-    Write-Warning "curl download failed: $_"
-  }
-
-  # Validate downloaded file looks like a Windows PE (MZ header)
-  $validExe = $false
-  if (Test-Path $vcpkgExe) {
-    try {
-      $hdr = Get-Content -Path $vcpkgExe -Encoding Byte -TotalCount 2 -ErrorAction Stop
-      if ($hdr.Count -ge 2 -and $hdr[0] -eq 0x4d -and $hdr[1] -eq 0x5a) { $validExe = $true }
-    } catch { }
-  }
-
-  if (-not $validExe) {
-    Write-Warning "Downloaded vcpkg.exe is not a valid PE file; attempting Releases API download"
-    try {
-      $api = 'https://api.github.com/repos/microsoft/vcpkg/releases/latest'
-      $rel = Invoke-RestMethod -Uri $api -UseBasicParsing
-      $asset = $rel.assets | Where-Object { $_.name -eq 'vcpkg.exe' } | Select-Object -First 1
-      if ($null -ne $asset) {
-        $url = $asset.browser_download_url
-        curl.exe -L -o $vcpkgExe $url
-        try {
-          $hdr2 = Get-Content -Path $vcpkgExe -Encoding Byte -TotalCount 2 -ErrorAction Stop
-          if ($hdr2.Count -ge 2 -and $hdr2[0] -eq 0x4d -and $hdr2[1] -eq 0x5a) { $validExe = $true }
-        } catch { }
-      } else {
-        Write-Warning "No vcpkg.exe asset found in latest release"
-      }
-    } catch {
-      Write-Warning "Releases API download attempt failed: $_"
-    }
-  }
-
-  if (-not $validExe) {
-    Write-Host "Prebuilt vcpkg.exe not available or invalid; bootstrapping from source"
-    try {
       & .\bootstrap-vcpkg.bat
-    } catch {
+  } catch {
       Write-Error "vcpkg bootstrap failed: $_"
       Pop-Location
       Fail "vcpkg bootstrap failed"
-    }
   }
 }
 
