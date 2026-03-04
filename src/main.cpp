@@ -13,8 +13,6 @@
 #include <Renderer/RenderObject.hpp>
 #include <Splinter3D/Utils/Locale.hpp>
 
-#define _(String) gettext(String)
-
 #define RAYGUI_IMPLEMENTATION
 #if defined(__GNUC__)
 #pragma GCC diagnostic push
@@ -39,7 +37,6 @@
 int main()
 {
     splinter3D::utils::Locale::init("splinter3D", "./locale");
-
     renderer::Config         cfg{1270, 720, "Prototype 3D Slicer", 60};
     renderer::RaylibRenderer renderer(cfg);
 

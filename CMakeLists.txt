@@ -13,7 +13,7 @@ include(3-Warnings)
 include(4-External)
 include(5-Sources)
 include(6-Linker)
-include(7-Language)
+include(7-Locale)
 include(8-Target)
 
 ########################################
