@@ -1,5 +1,6 @@
 #include <Gui/CenteredToolbar.hpp>
-#include <Gui/States/ResizePanelState.hpp>
+#include <Gui/Panels/ScalePanel.hpp>
+#include <Gui/States/ScalePanelState.hpp>
 #include <Renderer/IRenderer.hpp>
 #include <iostream>
 
@@ -47,13 +48,7 @@ namespace gui
         buttons_.emplace_back(Button::Builder("scale")
                                   .icon([&renderer](void* c) { renderer.drawScaleIcon(c); })
                                   .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::S}, "Scale (S)")
-                                  .panel([](const renderer::IRenderer& r, float px, float py, float, float) {
-                                      auto& state = gui::states::ResizePanelState::instance();
-                                      r.drawText("Scale (%)", px + 10.f, py + 10.f, 18);
-                                      r.drawText(("X: " + std::to_string(state.scaleX)).c_str(), px + 10.f, py + 42.f, 16);
-                                      r.drawText(("Y: " + std::to_string(state.scaleY)).c_str(), px + 10.f, py + 70.f, 16);
-                                      r.drawText(("Z: " + std::to_string(state.scaleZ)).c_str(), px + 10.f, py + 98.f, 16);
-                                  })
+                                  .panel(panels::ScalePanel())
                                   .build(renderer));
 
         repositionButtons(renderer);
@@ -66,16 +61,28 @@ namespace gui
         rebuildIfResized(renderer);
 
         const bool outsideClick = renderer.isMouseButtonPressed((int) renderer::MouseButton::Left) && [&]() {
+            const auto mouse = renderer.getMousePosition();
             for (const auto& btn : buttons_)
             {
-                const auto mouse = renderer.getMousePosition();
+                // Inside button bounds
                 if (mouse.x >= btn.x && mouse.x <= btn.x + btn.width &&
                     mouse.y >= btn.y && mouse.y <= btn.y + btn.height)
                     return false;
+
+                // Inside panel bounds (if open)
+                if (btn.isPanelOpen())
+                {
+                    float px = btn.x + (btn.width - Button::kPanelW) * 0.5f;
+                    px       = std::max(4.0f, std::min(px, (float) renderer.getScreenWidth() - Button::kPanelW - 4.0f));
+                    float py = btn.y + btn.height + Button::kPanelGap;
+
+                    if (mouse.x >= px && mouse.x <= px + Button::kPanelW &&
+                        mouse.y >= py && mouse.y <= py + Button::kPanelH)
+                        return false;
+                }
             }
             return true;
         }();
-
         for (size_t i = 0; i < buttons_.size(); ++i)
         {
             buttons_[i].update(renderer);

@@ -196,6 +196,22 @@ namespace renderer
                             return;
                         DrawTexturePro(rt->tex, c.src, c.dest, {0, 0}, 0.0f, ::WHITE);
                     }
+                    else if constexpr (std::is_same_v<T, ValueBoxCmd>)
+                    {
+                        int val = c.value;
+                        if (GuiValueBox({c.x, c.y, c.w, c.h}, c.label.c_str(), &val, c.min, c.max, c.editMode))
+                            if (c.outEdit)
+                                *c.outEdit = !c.editMode;
+                        if (c.outValue)
+                            *c.outValue = val;
+                    }
+                    else if constexpr (std::is_same_v<T, CheckboxCmd>)
+                    {
+                        bool checked = c.checked;
+                        GuiCheckBox({c.x, c.y, c.size, c.size}, c.label.c_str(), &checked);
+                        if (c.outChecked)
+                            *c.outChecked = checked;
+                    }
                     else if constexpr (std::is_same_v<T, TextCmd>)
                         DrawText(c.text.c_str(), c.x, c.y, c.fontSize, toRaylibColor(c.color));
                 },
@@ -322,7 +338,7 @@ namespace renderer
     }
 
 #pragma endregion
-#pragma region "GUI DRAWING"
+#pragma region GUI DRAWING
 
     void RaylibRenderer::drawGuiComponent(const gui::IGuiComponent& component) const
     {
@@ -341,7 +357,7 @@ namespace renderer
         return icon;
     }
 
-    void RaylibRenderer::drawTexture(const ITexture* texture, float x, float y, float width, float height, Layer layer) const
+    void RaylibRenderer::drawTexture(float x, float y, float width, float height, const ITexture* texture, Layer layer) const
     {
         const RaylibTexture* rt = static_cast<const RaylibTexture*>(texture);
         if (!rt)
@@ -367,16 +383,16 @@ namespace renderer
         if (icon)
         {
             float iconSize = width * 0.55f;
-            this->drawTexture(icon, x + (width - iconSize) * 0.5f, y + (height - iconSize) * 0.5f, iconSize, iconSize, layer);
+            this->drawTexture(x + (width - iconSize) * 0.5f, y + (height - iconSize) * 0.5f, iconSize, iconSize, icon, layer);
         }
     }
 
-    void RaylibRenderer::drawPanel(float x, float y, float w, float h, Layer layer) const
+    void RaylibRenderer::drawPanel(float x, float y, float width, float height, Layer layer) const
     {
-        drawQueue_[layer].push_back(RectCmd{x, y, w, h, Palette::Background});
+        drawQueue_[layer].push_back(RectCmd{x, y, width, height, Palette::Background});
     }
 
-    void RaylibRenderer::drawText(const char* text, float x, float y, int fontSize, Layer layer) const
+    void RaylibRenderer::drawText(float x, float y, const char* text, int fontSize, Layer layer) const
     {
         drawQueue_[layer].push_back(TextCmd{text, (int) x, (int) y, fontSize, Palette::Secondary});
     }
@@ -401,8 +417,18 @@ namespace renderer
         return nullptr; // Not needed for raylib since we draw directly on textures
     }
 
+    void RaylibRenderer::drawValueBox(float x, float y, float w, float h, const char* label, int& value, int min, int max, bool& editMode, Layer layer) const
+    {
+        drawQueue_[layer].push_back(ValueBoxCmd{x, y, w, h, label, value, min, max, editMode, &value, &editMode});
+    }
+
+    void RaylibRenderer::drawCheckbox(float x, float y, float size, const char* label, bool& checked, Layer layer) const
+    {
+        drawQueue_[layer].push_back(CheckboxCmd{x, y, size, label, checked, &checked});
+    }
+
 #pragma endregion
-#pragma region "ICON"
+#pragma region ICON
 
     void RaylibRenderer::drawImportIcon(void* canvas)
     {
@@ -494,7 +520,7 @@ namespace renderer
     }
 
 #pragma endregion
-#pragma region "3D DRAWING"
+#pragma region 3D DRAWING
 
     void RaylibRenderer::drawGrid(int slices, float spacing, Layer layer)
     {

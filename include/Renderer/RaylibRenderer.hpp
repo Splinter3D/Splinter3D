@@ -57,7 +57,26 @@ namespace renderer
         Color       color;
     };
 
-    using DrawCmd = std::variant<RectCmd, RectLinesCmd, TextureCmd, TextCmd, LineCmd, GridCmd, TriangleCmd>;
+    struct ValueBoxCmd
+    {
+        float       x, y, w, h;
+        std::string label;
+        int         value;
+        int         min, max;
+        bool        editMode;
+        int*        outValue;
+        bool*       outEdit;
+    };
+
+    struct CheckboxCmd
+    {
+        float       x, y, size;
+        std::string label;
+        bool        checked;
+        bool*       outChecked;
+    };
+
+    using DrawCmd = std::variant<RectCmd, RectLinesCmd, TextureCmd, TextCmd, LineCmd, GridCmd, TriangleCmd, ValueBoxCmd, CheckboxCmd>;
 
 #pragma endregion
 #pragma region Texture
@@ -94,15 +113,16 @@ namespace renderer
         // --------------------
         void      drawGuiComponent(const gui::IGuiComponent& component) const override;
         ITexture* createIcon(int width, int height, const std::function<void(void* canvas)>& painter) override;
-        void      drawTexture(const ITexture* texture, float x, float y, float width, float height, Layer layer = Layer::UI) const override;
-        void      drawButton(float x, float y, float width, float height, const ITexture* icon, const std::function<void()>& onClick, Layer layer = Layer::UI) const override;
-        void      drawPanel(float x, float y, float w, float h, Layer layer = Layer::Overlay) const override;
-        void      drawText(const char* text, float x, float y, int fontSize, Layer layer = Layer::UI) const override;
-        void      drawRectangle(float x, float y, float width, float height, Color color, Layer layer = Layer::UI) const override;
         void      drawRectangleLines(float x, float y, float width, float height, Color color, Layer layer = Layer::UI) const override;
+        void      drawRectangle(float x, float y, float width, float height, Color color, Layer layer = Layer::UI) const override;
+        void      drawValueBox(float x, float y, float width, float height, const char* label, int& value, int min, int max, bool& editMode, Layer layer = Layer::UI) const;
+        void      drawCheckbox(float x, float y, float size, const char* label, bool& checked, Layer layer = Layer::UI) const;
+        void      drawTexture(float x, float y, float width, float height, const ITexture* texture, Layer layer = Layer::UI) const override;
+        void      drawButton(float x, float y, float width, float height, const ITexture* icon, const std::function<void()>& onClick, Layer layer = Layer::UI) const override;
+        void      drawPanel(float x, float y, float width, float height, Layer layer = Layer::Overlay) const override;
+        void      drawText(float x, float y, const char* text, int fontSize, Layer layer = Layer::UI) const override;
         float     measureTextWidth(const char* text, int fontSize) const override;
-
-        void* getCanvas() const override;
+        void*     getCanvas() const override;
 
         // Specific icon painters
         void drawImportIcon(void* canvas) override;

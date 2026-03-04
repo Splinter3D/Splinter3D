@@ -92,7 +92,14 @@ namespace gui
 #pragma region Button
 
         // Default values for position and size; will be set by parent container
-        float x{0}, y{0}, width{48}, height{48};
+        float x{0};
+        float y{0};
+        float width{48};
+        float height{48};
+
+        static constexpr float kPanelW   = 220.0f;
+        static constexpr float kPanelH   = 150.0f;
+        static constexpr float kPanelGap = 6.0f; // gap below button
 
         Button(std::string                id,
                ActionFn                   action,
@@ -170,9 +177,6 @@ namespace gui
 
         mutable bool panelOpen_{false};
 
-        static constexpr float kPanelW       = 220.0f;
-        static constexpr float kPanelH       = 150.0f;
-        static constexpr float kPanelGap     = 6.0f; // gap below button
         static constexpr float kTooltipDelay = 0.2f; // seconds before tooltip shows
         mutable float          hoverTimer_{0.0f};
     };

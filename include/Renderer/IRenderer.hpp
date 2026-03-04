@@ -92,15 +92,17 @@ namespace renderer
         virtual void end3D()   = 0;
 
         // GUI drawing
-        virtual void      drawGuiComponent(const gui::IGuiComponent& component) const                                                                                        = 0;
-        virtual ITexture* createIcon(int width, int height, const std::function<void(void* canvas)>& painter)                                                                = 0;
-        virtual void      drawTexture(const ITexture* texture, float x, float y, float width, float height, Layer layer = Layer::UI) const                                   = 0;
-        virtual void      drawButton(float x, float y, float width, float height, const ITexture* icon, const std::function<void()>& onClick, Layer layer = Layer::UI) const = 0;
-        virtual void      drawPanel(float x, float y, float w, float h, Layer layer = Layer::Overlay) const                                                                  = 0;
-        virtual void      drawText(const char* text, float x, float y, int fontSize, Layer layer = Layer::UI) const                                                          = 0;
-        virtual void      drawRectangle(float x, float y, float width, float height, Color color, Layer layer = Layer::UI) const                                             = 0;
-        virtual void      drawRectangleLines(float x, float y, float width, float height, Color color, Layer layer = Layer::UI) const                                        = 0;
-        virtual float     measureTextWidth(const char* text, int fontSize) const                                                                                             = 0;
+        virtual void      drawGuiComponent(const gui::IGuiComponent& component) const                                                                                               = 0;
+        virtual ITexture* createIcon(int width, int height, const std::function<void(void* canvas)>& painter)                                                                       = 0;
+        virtual void      drawRectangleLines(float x, float y, float width, float height, Color color, Layer layer = Layer::UI) const                                               = 0;
+        virtual void      drawRectangle(float x, float y, float width, float height, Color color, Layer layer = Layer::UI) const                                                    = 0;
+        virtual void      drawValueBox(float x, float y, float width, float height, const char* label, int& value, int min, int max, bool& editMode, Layer layer = Layer::UI) const = 0;
+        virtual void      drawCheckbox(float x, float y, float size, const char* label, bool& checked, Layer layer = Layer::UI) const                                               = 0;
+        virtual void      drawTexture(float x, float y, float width, float height, const ITexture* texture, Layer layer = Layer::UI) const                                          = 0;
+        virtual void      drawButton(float x, float y, float width, float height, const ITexture* icon, const std::function<void()>& onClick, Layer layer = Layer::UI) const        = 0;
+        virtual void      drawPanel(float x, float y, float width, float height, Layer layer = Layer::Overlay) const                                                                = 0;
+        virtual void      drawText(float x, float y, const char* text, int fontSize, Layer layer = Layer::UI) const                                                                 = 0;
+        virtual float     measureTextWidth(const char* text, int fontSize) const                                                                                                    = 0;
 
         virtual void* getCanvas() const = 0; // For icon drawing
 

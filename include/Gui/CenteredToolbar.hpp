@@ -34,6 +34,10 @@ namespace gui
          * Checks if the screen size has changed since the last frame, and if so, recalculates button positions to keep the toolbar centered.
          */
         void rebuildIfResized(renderer::IRenderer& renderer);
+
+        /**
+         * Recalculates button positions to keep the toolbar centered based on the current screen width and button layout.
+         */
         void repositionButtons(renderer::IRenderer& renderer);
 
         float topMargin_;

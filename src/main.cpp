@@ -7,6 +7,7 @@
 
 #include <Geometry/Utils/MeshUtils.hpp>
 #include <Gui/CenteredToolbar.hpp>
+#include <Gui/States/ScalePanelState.hpp>
 #include <Objects3D/Object3D.hpp>
 #include <Renderer/RaylibRenderer.hpp>
 #include <Renderer/RenderObject.hpp>
@@ -26,8 +27,11 @@
 #pragma GCC diagnostic ignored "-Wcast-qual"
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 #pragma GCC diagnostic ignored "-Wcast-align"
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
 #endif
+
 #include <Renderer/RayGUI.hpp>
+
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
 #endif
@@ -49,6 +53,19 @@ int main()
 
     gui::CenteredToolbar toolbar(18.0f, 52.0f, 14.0f);
     toolbar.initialize(renderer);
+
+    {
+        auto&                     scaleState = gui::states::ScalePanelState::instance();
+        const objects3D::Transform t          = obj.getTransform();
+
+        scaleState.target = &obj;
+        scaleState.scaleX = t.scale.x * 100.0f;
+        scaleState.scaleY = t.scale.y * 100.0f;
+        scaleState.scaleZ = t.scale.z * 100.0f;
+        scaleState.scaleXi = (int) scaleState.scaleX;
+        scaleState.scaleYi = (int) scaleState.scaleY;
+        scaleState.scaleZi = (int) scaleState.scaleZ;
+    }
 
     while (!renderer.shouldClose())
     {

@@ -100,7 +100,7 @@ namespace gui
             const float     iconSize     = std::min(width, height) * kIconPadding;
             const float     ix           = x + (width - iconSize) * 0.5f;
             const float     iy           = y + (height - iconSize) * 0.5f;
-            renderer.drawTexture(iconTexture_, ix, iy, iconSize, iconSize, renderer::Layer::UI);
+            renderer.drawTexture(ix, iy, iconSize, iconSize, iconTexture_, renderer::Layer::UI);
         }
 
         // Overlay layer — hover tint, tooltip, panel
@@ -142,7 +142,7 @@ namespace gui
 
         renderer.drawRectangle(tx, ty, tw, kH, renderer::Palette::Background, renderer::Layer::Overlay);
         renderer.drawRectangleLines(tx, ty, tw, kH, renderer::Palette::Muted, renderer::Layer::Overlay);
-        renderer.drawText(tooltip_.c_str(), tx + kPad, ty + (kH - 14.0f) * 0.5f, 14, renderer::Layer::Overlay);
+        renderer.drawText(tx + kPad, ty + (kH - 14.0f) * 0.5f, tooltip_.c_str(), 14, renderer::Layer::Overlay);
     }
 
     void Button::drawPanel(const renderer::IRenderer& renderer) const
