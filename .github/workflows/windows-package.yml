@@ -41,8 +41,35 @@ jobs:
         run: |
           $dest = "${{ runner.temp }}\vcpkg\vcpkg.exe"
           if (-not (Test-Path $dest)) {
-            Write-Host "Downloading prebuilt vcpkg.exe to $dest"
+            Write-Host "Downloading prebuilt vcpkg.exe to $dest (curl)"
             curl.exe -L -o $dest "https://github.com/microsoft/vcpkg/releases/latest/download/vcpkg.exe"
+            $ok = $false
+            try {
+              $bytes = Get-Content -Path $dest -Encoding Byte -TotalCount 2 -ErrorAction Stop
+              if ($bytes.Count -ge 2 -and $bytes[0] -eq 0x4d -and $bytes[1] -eq 0x5a) { $ok = $true }
+            } catch { }
+            if (-not $ok) {
+              Write-Host "Initial download did not produce a PE executable; attempting Releases API download"
+              $api = 'https://api.github.com/repos/microsoft/vcpkg/releases/latest'
+              try {
+                $rel = Invoke-RestMethod -Uri $api -UseBasicParsing
+                $asset = $rel.assets | Where-Object { $_.name -eq 'vcpkg.exe' } | Select-Object -First 1
+                if ($null -eq $asset) { Write-Error "No vcpkg.exe asset found in latest release"; exit 1 }
+                $url = $asset.browser_download_url
+                Write-Host "Downloading asset from $url"
+                curl.exe -L -o $dest $url
+                $bytes2 = Get-Content -Path $dest -Encoding Byte -TotalCount 2 -ErrorAction Stop
+                if ($bytes2.Count -lt 2 -or $bytes2[0] -ne 0x4d -or $bytes2[1] -ne 0x5a) {
+                  Write-Error "Downloaded asset is not a valid PE executable"
+                  Write-Host "Preview of downloaded file (first 40 lines):"
+                  Get-Content $dest -Encoding utf8 -TotalCount 40 | ForEach-Object { Write-Host $_ }
+                  exit 1
+                }
+              } catch {
+                Write-Error "Failed to download vcpkg.exe via Releases API: $_"
+                exit 1
+              }
+            }
           } else {
             Write-Host "vcpkg.exe already present at $dest"
           }
@@ -112,8 +139,34 @@ jobs:
           $dest = "${{ runner.temp }}\vcpkg"
           New-Item -ItemType Directory -Path $dest -Force | Out-Null
           $exe = Join-Path $dest 'vcpkg.exe'
-          Write-Host "Cache miss: downloading prebuilt vcpkg.exe to $exe"
+          Write-Host "Cache miss: downloading prebuilt vcpkg.exe to $exe (curl)"
           curl.exe -L -o $exe "https://github.com/microsoft/vcpkg/releases/latest/download/vcpkg.exe"
+          $ok = $false
+          try {
+            $h = Get-Content -Path $exe -Encoding Byte -TotalCount 2 -ErrorAction Stop
+            if ($h.Count -ge 2 -and $h[0] -eq 0x4d -and $h[1] -eq 0x5a) { $ok = $true }
+          } catch { }
+          if (-not $ok) {
+            Write-Host "Initial download invalid; trying Releases API"
+            $api = 'https://api.github.com/repos/microsoft/vcpkg/releases/latest'
+            try {
+              $rel = Invoke-RestMethod -Uri $api -UseBasicParsing
+              $asset = $rel.assets | Where-Object { $_.name -eq 'vcpkg.exe' } | Select-Object -First 1
+              if ($null -eq $asset) { Write-Error "No vcpkg.exe asset found in latest release"; exit 1 }
+              $url = $asset.browser_download_url
+              Write-Host "Downloading asset from $url"
+              curl.exe -L -o $exe $url
+              $h2 = Get-Content -Path $exe -Encoding Byte -TotalCount 2 -ErrorAction Stop
+              if ($h2.Count -lt 2 -or $h2[0] -ne 0x4d -or $h2[1] -ne 0x5a) {
+                Write-Error "Downloaded asset is not a valid PE executable"
+                Get-Content $exe -Encoding utf8 -TotalCount 40 | ForEach-Object { Write-Host $_ }
+                exit 1
+              }
+            } catch {
+              Write-Error "Failed to download vcpkg.exe via Releases API: $_"
+              exit 1
+            }
+          }
         shell: pwsh
 
       - name: Run build-and-package
