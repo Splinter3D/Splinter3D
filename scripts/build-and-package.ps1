@@ -245,11 +245,14 @@ foreach ($gen in $generators) {
     # Also add a build-specific vcpkg tools path so programs installed by vcpkg
     # (e.g. gettext's msgfmt) are discoverable by CMake during configure.
     $vcpkgToolsPosix = (Join-Path $candidateBuild ("vcpkg_installed\" + $Triplet + "\tools\gettext\bin")) -replace '\\','/'
+    # Prepend vcpkg-installed tools to PATH inside CMake so tools like msgfmt are found
     $text = @"
-  set(CMAKE_TOOLCHAIN_FILE "$toolchainPosix" CACHE STRING "Vcpkg toolchain")
-  set(CMAKE_INSTALL_PREFIX "$installPosix" CACHE PATH "Install prefix")
-  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type")
-  set(CMAKE_PROGRAM_PATH "$vcpkgToolsPosix" CACHE PATH "Paths in which to search for programs (include vcpkg-installed tools)")
+set(CMAKE_TOOLCHAIN_FILE "$toolchainPosix" CACHE STRING "Vcpkg toolchain")
+set(CMAKE_INSTALL_PREFIX "$installPosix" CACHE PATH "Install prefix")
+set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type")
+set(CMAKE_PROGRAM_PATH "$vcpkgToolsPosix" CACHE PATH "Paths in which to search for programs (include vcpkg-installed tools)")
+# Ensure msgfmt/gettext tools are discoverable by adding the vcpkg tools bin to PATH
+set(ENV{PATH} "$vcpkgToolsPosix;`$${ENV{PATH}}")
 "@
     $bytes = [System.Text.Encoding]::ASCII.GetBytes($text)
     [System.IO.File]::WriteAllBytes($initFile, $bytes)

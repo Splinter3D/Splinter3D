@@ -28,6 +28,22 @@ jobs:
           }
         shell: pwsh
 
+      - name: Prepare vcpkg cache directory
+        run: New-Item -ItemType Directory -Path "${{ runner.temp }}\vcpkg" -Force | Out-Null
+        shell: pwsh
+
+      - name: Restore vcpkg cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ runner.temp }}\vcpkg\downloads
+            ${{ runner.temp }}\vcpkg\packages
+            ${{ runner.temp }}\vcpkg\installed
+            ${{ runner.temp }}\vcpkg\archives
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: |
+            vcpkg-${{ runner.os }}-
+
       - name: Run build-and-package
         if: always()
         run: pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/build-and-package.ps1 -OutDir "${{ runner.temp }}\output" -VcpkgDir "${{ runner.temp }}\vcpkg"
