@@ -7,6 +7,37 @@ on:
   workflow_dispatch:
 
 jobs:
+  check-windows-build:
+    name: Check Windows install & build
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run install.ps1
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/install.ps1 ${{ github.workspace }}
+        shell: pwsh
+
+      - name: Run build.ps1
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/build.ps1 ${{ github.workspace }}
+        shell: pwsh
+
+      - name: Verify build output
+        run: |
+          $exe = Join-Path ${{ github.workspace }} 'staging\bin\splinter3D.exe'
+          if (Test-Path $exe) { Write-Host "Found executable: $exe" } else { Write-Error "splinter3D.exe not found in staging/bin"; exit 1 }
+        shell: pwsh
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-check-build
+          path: staging
+
   prewarm-vcpkg:
     name: Prewarm vcpkg cache
     runs-on: windows-latest
