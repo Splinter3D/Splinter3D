@@ -109,12 +109,18 @@ if (-not $DryRun) {
   Push-Location $VcpkgDir
   Log("Bootstrapping vcpkg...")
   $bootstrapLog = Join-Path $VcpkgDir "bootstrap.log"
-  try {
-    & .\bootstrap-vcpkg.bat 2>&1 | Tee-Object -FilePath $bootstrapLog
-    $bootExit = $LASTEXITCODE
-  } catch {
-    $_ | Out-File -FilePath $bootstrapLog -Append -Encoding utf8
-    $bootExit = 1
+  $vcpkgExePath = Join-Path $VcpkgDir 'vcpkg.exe'
+  if (Test-Path $vcpkgExePath) {
+    Log("Found existing vcpkg.exe at $vcpkgExePath; skipping bootstrap")
+    $bootExit = 0
+  } else {
+    try {
+      & .\bootstrap-vcpkg.bat 2>&1 | Tee-Object -FilePath $bootstrapLog
+      $bootExit = $LASTEXITCODE
+    } catch {
+      $_ | Out-File -FilePath $bootstrapLog -Append -Encoding utf8
+      $bootExit = 1
+    }
   }
   Log("bootstrap exit code: $bootExit")
   if ($bootExit -ne 0) {
@@ -171,18 +177,61 @@ if (-not $DryRun) {
       Log("Using classic vcpkg install for dependencies listed in vcpkg.json")
       $json = Get-Content (Join-Path $RepoRoot 'vcpkg.json') -Raw | ConvertFrom-Json
       if ($json.dependencies) {
-        foreach ($dep in $json.dependencies) {
-          Log("Installing $dep via vcpkg classic mode")
-          $depLog = Join-Path $VcpkgDir ("vcpkg_install_$dep.log")
+        # Ensure vcpkg.exe exists; if not, try downloading a prebuilt copy
+        if (-not (Test-Path $vcpkgExe)) {
+          Write-Host "vcpkg.exe not found at $vcpkgExe; attempting to download prebuilt vcpkg.exe"
           try {
-            & $vcpkgExe install $dep --triplet $Triplet 2>&1 | Tee-Object -FilePath $depLog
+            $destDir = Split-Path $vcpkgExe -Parent
+            if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Path $destDir -Force | Out-Null }
+            Invoke-WebRequest -Uri "https://github.com/microsoft/vcpkg/releases/latest/download/vcpkg.exe" -OutFile $vcpkgExe -UseBasicParsing -ErrorAction Stop
+            Write-Host "Downloaded vcpkg.exe to $vcpkgExe"
+          } catch {
+            Write-Warning "Failed to download vcpkg.exe: $_"
+          }
+        }
+
+        # Normalize dependency names (strip features like pkg[feat])
+        $deps = @()
+        foreach ($d in $json.dependencies) {
+          if ($d -is [string]) {
+            if ($d -match '^([^\[]+)') { $deps += $matches[1].Trim() } else { $deps += $d }
+          } elseif ($d.name) {
+            $deps += $d.name
+          }
+        }
+
+        # Query installed ports for the required triplet
+        $installed = @()
+        if (Test-Path $vcpkgExe) {
+          try {
+            $list = & $vcpkgExe list 2>&1
+            foreach ($line in $list) {
+              if ($line -match '^([^:]+):([^\s]+)') {
+                $name = $matches[1]
+                $t = $matches[2]
+                if ($t -eq $Triplet) { $installed += $name }
+              }
+            }
+          } catch {
+            Write-Warning "Failed to run 'vcpkg list': $_"
+          }
+        }
+
+        $missing = $deps | Where-Object { $installed -notcontains $_ }
+        if ($missing.Count -gt 0) {
+          Log("Missing vcpkg ports: $($missing -join ', '); installing...")
+          $depLog = Join-Path $VcpkgDir "vcpkg_install_missing.log"
+          try {
+            & $vcpkgExe install $missing --triplet $Triplet 2>&1 | Tee-Object -FilePath $depLog
             $depExit = $LASTEXITCODE
           } catch {
             $_ | Out-File -FilePath $depLog -Append -Encoding utf8
             $depExit = 1
           }
-          Log("vcpkg install exit code for ${dep}: ${depExit}")
-          if ($depExit -ne 0) { Log("vcpkg install $dep failed; see $depLog","WARN") }
+          Log("vcpkg install missing exit code: ${depExit}")
+          if ($depExit -ne 0) { Log("vcpkg install (missing) failed; see $depLog","WARN") }
+        } else {
+          Log("All vcpkg dependencies already installed for triplet $Triplet")
         }
       } else {
         Log("No dependencies array found in vcpkg.json")
@@ -206,10 +255,36 @@ New-Item -ItemType Directory -Path $buildDir | Out-Null
 
 $toolchain = Join-Path $VcpkgDir "scripts\buildsystems\vcpkg.cmake"
 if (-not (Test-Path $toolchain)) {
-  if (-not $DryRun) {
-    Fail "vcpkg toolchain not found at $toolchain"
+  # If the toolchain file is missing but a prebuilt vcpkg.exe exists (downloaded
+  # by the workflow), try to fetch the single toolchain file from the vcpkg repo
+  # so CMake can use it. Try common branches 'master' then 'main'.
+  $vcpkgExePath = Join-Path $VcpkgDir 'vcpkg.exe'
+  if (Test-Path $vcpkgExePath) {
+    $fetched = $false
+    foreach ($branch in @('master','main')) {
+      $url = "https://raw.githubusercontent.com/microsoft/vcpkg/$branch/scripts/buildsystems/vcpkg.cmake"
+      try {
+        Write-Host "Attempting to download vcpkg toolchain from $url"
+        $destDir = Split-Path $toolchain -Parent
+        if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Path $destDir -Force | Out-Null }
+        Invoke-WebRequest -Uri $url -OutFile $toolchain -UseBasicParsing -ErrorAction Stop
+        Write-Host "Downloaded vcpkg.cmake from branch $branch"
+        $fetched = $true
+        break
+      } catch {
+        Write-Warning "Failed to download vcpkg.cmake from $url: $_"
+      }
+    }
+    if (-not $fetched) {
+      if (-not $DryRun) { Fail "vcpkg toolchain not found at $toolchain and download attempts failed" }
+      else { Write-Warning "vcpkg toolchain not found at $toolchain (DryRun mode: continuing)" }
+    }
   } else {
-    Write-Warning "vcpkg toolchain not found at $toolchain (DryRun mode: continuing to write init file for diagnostics)"
+    if (-not $DryRun) {
+      Fail "vcpkg toolchain not found at $toolchain"
+    } else {
+      Write-Warning "vcpkg toolchain not found at $toolchain (DryRun mode: continuing)"
+    }
   }
 }
 
