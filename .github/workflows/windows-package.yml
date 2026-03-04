@@ -16,6 +16,7 @@ jobs:
         with:
           fetch-depth: 0
 
+      #preparing the environment for build: bootstrapped vcpkg, integrated it, imported the MSVC environment, and installed all manifest dependencies
       - name: Run install.ps1
         run: |
           pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/install.ps1 ${{ github.workspace }}
