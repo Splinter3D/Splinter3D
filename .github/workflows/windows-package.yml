@@ -42,7 +42,7 @@ jobs:
           $dest = "${{ runner.temp }}\vcpkg\vcpkg.exe"
           if (-not (Test-Path $dest)) {
             Write-Host "Downloading prebuilt vcpkg.exe to $dest"
-            Invoke-WebRequest -Uri "https://github.com/microsoft/vcpkg/releases/latest/download/vcpkg.exe" -OutFile $dest -UseBasicParsing
+            curl.exe -L -o $dest "https://github.com/microsoft/vcpkg/releases/latest/download/vcpkg.exe"
           } else {
             Write-Host "vcpkg.exe already present at $dest"
           }
@@ -113,7 +113,7 @@ jobs:
           New-Item -ItemType Directory -Path $dest -Force | Out-Null
           $exe = Join-Path $dest 'vcpkg.exe'
           Write-Host "Cache miss: downloading prebuilt vcpkg.exe to $exe"
-          Invoke-WebRequest -Uri "https://github.com/microsoft/vcpkg/releases/latest/download/vcpkg.exe" -OutFile $exe -UseBasicParsing
+          curl.exe -L -o $exe "https://github.com/microsoft/vcpkg/releases/latest/download/vcpkg.exe"
         shell: pwsh
 
       - name: Run build-and-package
