@@ -13,20 +13,27 @@ namespace gui::panels
         {
             auto& state = gui::states::ScalePanelState::instance();
 
-            constexpr float kPad     = 10.0f;
-            constexpr float kRowH    = 28.0f;
-            constexpr float kLabelW  = 20.0f;
-            constexpr float kFieldW  = 80.0f;
-            constexpr float kFieldH  = 24.0f;
-            constexpr float kSpacing = 6.0f;
+            constexpr float kPad        = 10.0f;
+            constexpr float kFieldH     = 24.0f;
+            constexpr float kAxisBoxW   = 36.0f;
+            constexpr float kAxisStepW  = 62.0f;
+            constexpr float kMarkerSize = 8.0f;
 
-            r.drawText(px + kPad, py + kPad, "Scale (%)", 16, renderer::Layer::Overlay);
+            const renderer::Color kAxisX{229, 57, 53, 255};
+            const renderer::Color kAxisY{67, 160, 71, 255};
+            const renderer::Color kAxisZ{30, 136, 229, 255};
+
+            r.drawText(px + kPad, py + kPad, "Scale", 16, renderer::Layer::Overlay);
 
             float fy = py + kPad + 24.0f;
 
-            // ── X ─────────────────────────────────────────────────────
-            r.drawText(px + kPad, fy + 4.0f, "X", 14, renderer::Layer::Overlay);
-            r.drawValueBox(px + kPad + kLabelW + kSpacing, fy, kFieldW, kFieldH,
+            const float xRow = px + kPad;
+            const float yRow = fy;
+
+            // X
+            r.drawRectangle(xRow, yRow + 8.0f, kMarkerSize, kMarkerSize, kAxisX, renderer::Layer::Overlay);
+            r.drawText(xRow + 12.0f, yRow + 4.0f, "X", 14, renderer::Layer::Overlay);
+            r.drawValueBox(xRow + 24.0f, yRow, kAxisBoxW, kFieldH,
                            "", state.scaleXi, 1, 9999, state.editX, renderer::Layer::Overlay);
             if (state.scaleXi != (int) state.scaleX)
             {
@@ -40,11 +47,12 @@ namespace gui::panels
                 }
                 state.applyToTarget();
             }
-            fy += kRowH + kSpacing;
 
-            // ── Y ─────────────────────────────────────────────────────
-            r.drawText(px + kPad, fy + 4.0f, "Y", 14, renderer::Layer::Overlay);
-            r.drawValueBox(px + kPad + kLabelW + kSpacing, fy, kFieldW, kFieldH,
+            // Y
+            const float xRowY = xRow + kAxisStepW;
+            r.drawRectangle(xRowY, yRow + 8.0f, kMarkerSize, kMarkerSize, kAxisY, renderer::Layer::Overlay);
+            r.drawText(xRowY + 12.0f, yRow + 4.0f, "Y", 14, renderer::Layer::Overlay);
+            r.drawValueBox(xRowY + 24.0f, yRow, kAxisBoxW, kFieldH,
                            "", state.scaleYi, 1, 9999, state.editY, renderer::Layer::Overlay);
             if (state.scaleYi != (int) state.scaleY)
             {
@@ -58,11 +66,12 @@ namespace gui::panels
                 }
                 state.applyToTarget();
             }
-            fy += kRowH + kSpacing;
 
-            // ── Z ─────────────────────────────────────────────────────
-            r.drawText(px + kPad, fy + 4.0f, "Z", 14, renderer::Layer::Overlay);
-            r.drawValueBox(px + kPad + kLabelW + kSpacing, fy, kFieldW, kFieldH,
+            // Z
+            const float xRowZ = xRow + kAxisStepW * 2.0f;
+            r.drawRectangle(xRowZ, yRow + 8.0f, kMarkerSize, kMarkerSize, kAxisZ, renderer::Layer::Overlay);
+            r.drawText(xRowZ + 12.0f, yRow + 4.0f, "Z", 14, renderer::Layer::Overlay);
+            r.drawValueBox(xRowZ + 24.0f, yRow, kAxisBoxW, kFieldH,
                            "", state.scaleZi, 1, 9999, state.editZ, renderer::Layer::Overlay);
             if (state.scaleZi != (int) state.scaleZ)
             {
@@ -76,7 +85,7 @@ namespace gui::panels
                 }
                 state.applyToTarget();
             }
-            fy += kRowH + kSpacing + 4.0f;
+            fy += 34.0f;
 
             // ── Uniform scale ──────────────────────────────────────────
             r.drawCheckbox(px + kPad, fy, 16.0f, "Uniform scale",

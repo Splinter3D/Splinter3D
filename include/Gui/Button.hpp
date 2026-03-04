@@ -98,7 +98,7 @@ namespace gui
         float height{48};
 
         static constexpr float kPanelW   = 220.0f;
-        static constexpr float kPanelH   = 150.0f;
+        static constexpr float kPanelH   = 100.0f;
         static constexpr float kPanelGap = 6.0f; // gap below button
 
         Button(std::string                id,
