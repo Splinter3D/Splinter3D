@@ -37,15 +37,22 @@ if (-not (Test-Path $vcpkgExe)) {
 # Integrate and ensure vcpkg works (only if executable present and valid)
 if (Test-Path $vcpkgExe) {
   try {
-    # Double-check header before running
-    $hdr = Get-Content -Path $vcpkgExe -Encoding Byte -TotalCount 2 -ErrorAction Stop
-    if ($hdr.Count -ge 2 -and $hdr[0] -eq 0x4d -and $hdr[1] -eq 0x5a) {
-      & $vcpkgExe integrate install
+    # Double-check header before running using .NET to avoid PowerShell encoding compatibility issues
+    $bytes = [System.IO.File]::ReadAllBytes($vcpkgExe)
+    if ($bytes.Length -ge 2 -and $bytes[0] -eq 0x4d -and $bytes[1] -eq 0x5a) {
+      # Suppress non-terminating warnings from PowerShell parameter binding inside the integrate helper
+      $oldWarning = $WarningPreference
+      try {
+        $WarningPreference = 'SilentlyContinue'
+        & $vcpkgExe integrate install
+      } finally {
+        $WarningPreference = $oldWarning
+      }
     } else {
       Write-Warning "vcpkg.exe is present but not a valid PE file; skipping integrate"
     }
   } catch {
-    Write-Warning "vcpkg integrate failed: $_"
+    Write-Warning "vcpkg integrate encountered an error: $_"
   }
 } else {
   Write-Warning "vcpkg.exe not found; skipping integrate"
