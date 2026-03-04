@@ -123,7 +123,7 @@ if (-not $DryRun) {
       try {
         Get-Content -Path $bootstrapLog -Tail 200 | ForEach-Object { Write-Host "BOOT> $_" }
       } catch {
-        Write-Warning "Failed to read $bootstrapLog: $_"
+        Write-Warning "Failed to read ${bootstrapLog}: $($_)"
       }
     } else {
       Write-Warning "$bootstrapLog not present"
