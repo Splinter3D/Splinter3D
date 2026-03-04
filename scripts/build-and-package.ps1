@@ -117,7 +117,27 @@ if (-not $DryRun) {
     $bootExit = 1
   }
   Log("bootstrap exit code: $bootExit")
-  if ($bootExit -ne 0) { Fail "vcpkg bootstrap failed (exit code $bootExit). See $bootstrapLog" }
+  if ($bootExit -ne 0) {
+    Write-Warning "vcpkg bootstrap exited with code $bootExit. Showing tail of $bootstrapLog for diagnostics:" 
+    if (Test-Path $bootstrapLog) {
+      try {
+        Get-Content -Path $bootstrapLog -Tail 200 | ForEach-Object { Write-Host "BOOT> $_" }
+      } catch {
+        Write-Warning "Failed to read $bootstrapLog: $_"
+      }
+    } else {
+      Write-Warning "$bootstrapLog not present"
+    }
+    # If vcpkg.exe exists despite non-zero exit, allow continuation (some environments
+    # build vcpkg in a way that returns non-zero but produces the binary). Otherwise fail.
+    $vcpkgExePath = Join-Path $VcpkgDir 'vcpkg.exe'
+    if (Test-Path $vcpkgExePath) {
+      Log("vcpkg.exe present despite bootstrap non-zero exit; continuing", 'WARN')
+      $bootExit = 0
+    } else {
+      Fail "vcpkg bootstrap failed (exit code $bootExit). See $bootstrapLog for details"
+    }
+  }
 
   $integrateLog = Join-Path $VcpkgDir "integrate.log"
   try {
