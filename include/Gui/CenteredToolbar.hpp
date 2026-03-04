@@ -14,14 +14,25 @@ namespace gui
                         float spacing    = 12.0f);
         ~CenteredToolbar() = default;
 
+        /**
+         * Initializes the toolbar, creating its buttons. Should be called once before the first draw().
+         */
         void initialize(renderer::IRenderer& renderer);
 
-        // Call every frame BEFORE draw()
+        /**
+         * Draws the toolbar and its buttons. Should be called every frame after update().
+         */
         void update(renderer::IRenderer& renderer);
 
+        /**
+         * Draws the toolbar and its buttons. Should be called every frame after update().
+         */
         void draw(const renderer::IRenderer& renderer) const override;
 
       private:
+        /**
+         * Checks if the screen size has changed since the last frame, and if so, recalculates button positions to keep the toolbar centered.
+         */
         void rebuildIfResized(renderer::IRenderer& renderer);
         void repositionButtons(renderer::IRenderer& renderer);
 

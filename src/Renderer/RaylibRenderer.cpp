@@ -1,3 +1,4 @@
+#include <Renderer/Palette.hpp>
 #include <Renderer/RayGUI.hpp>
 #include <Renderer/RaylibRenderer.hpp>
 #include <Splinter3D/Utils/Logger.hpp>
@@ -372,7 +373,7 @@ namespace renderer
 
     void RaylibRenderer::drawPanel(float x, float y, float w, float h, Layer layer) const
     {
-        drawQueue_[layer].push_back(RectCmd{x, y, w, h, Color{40, 40, 40, 255}});
+        drawQueue_[layer].push_back(RectCmd{x, y, w, h, Palette::Background});
     }
 
     void RaylibRenderer::drawText(const char* text, float x, float y, int fontSize, Layer layer) const
@@ -443,7 +444,7 @@ namespace renderer
         Image* img = static_cast<Image*>(canvas);
 
         const ::Color outline{236, 240, 241, 255};
-        const ::Color accent{255, 193, 7, 255}; // warm yellow/orange
+        const ::Color accent{255, 193, 7, 255};
 
         // Draw central square
         Rectangle rec = {20, 20, 24, 24};
@@ -539,7 +540,7 @@ namespace renderer
 
     void RaylibRenderer::drawObject(const RenderObject& obj, Color color, Layer layer)
     {
-        for (auto& tri : obj.object->mesh->triangles)
+        for (auto& tri : obj.object->getMesh()->triangles)
         {
             TriangleCmd cmd{tri, color, obj.modelMatrix};
             drawQueue_[layer].push_back(cmd);

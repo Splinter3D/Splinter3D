@@ -1,23 +1,23 @@
 #include <Gui/Button.hpp>
-#include <iostream>
+#include <Renderer/Palette.hpp>
 
 namespace gui
 {
 
-    Button::Button(std::string          id,
-                   ActionFn             action,
-                   DrawIconFn           drawIcon,
-                   renderer::IRenderer& renderer,
-                   bool                 hasShortcut,
-                   std::string          tooltip,
-                   renderer::Key        shortcutKey,
-                   bool                 hasPanel,
-                   PanelDrawFn          panelDrawFn)
+    Button::Button(std::string                id,
+                   ActionFn                   action,
+                   DrawIconFn                 drawIcon,
+                   renderer::IRenderer&       renderer,
+                   bool                       hasShortcut,
+                   std::string                tooltip,
+                   std::vector<renderer::Key> shortcutKey,
+                   bool                       hasPanel,
+                   PanelDrawFn                panelDrawFn)
         : id_(std::move(id))
         , action_(std::move(action))
         , hasShortcut_(hasShortcut)
         , tooltip_(std::move(tooltip))
-        , shortcutKey_(shortcutKey)
+        , shortcutKeys_(shortcutKey)
         , hasPanel_(hasPanel)
         , panelDrawFn_(std::move(panelDrawFn))
     {
@@ -25,8 +25,6 @@ namespace gui
         if (drawIcon)
             iconTexture_ = renderer.createIcon(64, 64, [drawIcon](void* canvas) { drawIcon(canvas); });
     }
-
-    // ── Update ────────────────────────────────────────────────────────────────────
 
     void Button::update(renderer::IRenderer& renderer)
     {
@@ -47,26 +45,50 @@ namespace gui
             }
         }
 
-        if (hasShortcut_ && renderer.isKeyPressed(shortcutKey_))
+        if (hasShortcut_)
         {
-            if (hasPanel_)
-                panelOpen_ = !panelOpen_;
-            else if (action_)
-                action_();
+            bool modifiersHeld      = true;
+            bool hasNonModifierKey  = false;
+            bool nonModifierPressed = false;
+
+            for (const auto& key : shortcutKeys_)
+            {
+                const bool isModifier = (key == renderer::Key::Ctrl ||
+                                         key == renderer::Key::Shift ||
+                                         key == renderer::Key::Alt);
+
+                if (isModifier)
+                {
+                    if (!renderer.isKeyDown(key))
+                    {
+                        modifiersHeld = false;
+                        break;
+                    }
+                }
+                else
+                {
+                    hasNonModifierKey = true;
+                    if (renderer.isKeyPressed(key))
+                        nonModifierPressed = true;
+                }
+            }
+
+            const bool shortcutTriggered = modifiersHeld && hasNonModifierKey && nonModifierPressed;
+            if (shortcutTriggered)
+            {
+                if (hasPanel_)
+                    panelOpen_ = !panelOpen_;
+                else if (action_)
+                    action_();
+            }
         }
     }
 
-    // ── Draw ──────────────────────────────────────────────────────────────────────
-
     void Button::draw(const renderer::IRenderer& renderer) const
     {
-        (void) renderer;
-    }
-
-    void Button::drawBase(const renderer::IRenderer& renderer) const
-    {
+        // Base — UI layer
         if (panelOpen_)
-            renderer.drawRectangle(x, y, width, height, renderer::Palette::Accent, renderer::Layer::Overlay);
+            renderer.drawRectangle(x, y, width, height, renderer::Palette::Secondary, renderer::Layer::UI);
         else
             renderer.drawRectangle(x, y, width, height, renderer::Palette::Primary, renderer::Layer::UI);
 
@@ -80,30 +102,24 @@ namespace gui
             const float     iy           = y + (height - iconSize) * 0.5f;
             renderer.drawTexture(iconTexture_, ix, iy, iconSize, iconSize, renderer::Layer::UI);
         }
-    }
 
-    void Button::drawOverlay(const renderer::IRenderer& renderer) const
-    {
+        // Overlay layer — hover tint, tooltip, panel
         const bool hovered = isHovered(renderer);
 
-        // Hover tint — on top of ALL buttons
         if (hovered && !panelOpen_)
             renderer.drawRectangle(x, y, width, height,
                                    renderer::Color(renderer::Palette::Secondary.r,
                                                    renderer::Palette::Secondary.g,
                                                    renderer::Palette::Secondary.b,
-                                                   80));
+                                                   80),
+                                   renderer::Layer::Overlay);
 
-        // Tooltip — on top of ALL buttons
         if (hovered && hoverTimer_ >= kTooltipDelay)
             drawTooltip(renderer);
 
-        // Panel — on top of ALL buttons
         if (panelOpen_)
             drawPanel(renderer);
     }
-
-    // ── Private ───────────────────────────────────────────────────────────────────
 
     bool Button::isHovered(const renderer::IRenderer& renderer) const
     {
@@ -124,9 +140,9 @@ namespace gui
         float tx = renderer.getMouseX() + 20.0f;
         float ty = renderer.getMouseY() + 20.0f;
 
-        renderer.drawRectangle(tx, ty, tw, kH, renderer::Palette::Background, renderer::Layer::UI);
-        renderer.drawRectangleLines(tx, ty, tw, kH, renderer::Palette::Muted, renderer::Layer::UI);
-        renderer.drawText(tooltip_.c_str(), tx + kPad, ty + (kH - 14.0f) * 0.5f, 14, renderer::Layer::UI);
+        renderer.drawRectangle(tx, ty, tw, kH, renderer::Palette::Background, renderer::Layer::Overlay);
+        renderer.drawRectangleLines(tx, ty, tw, kH, renderer::Palette::Muted, renderer::Layer::Overlay);
+        renderer.drawText(tooltip_.c_str(), tx + kPad, ty + (kH - 14.0f) * 0.5f, 14, renderer::Layer::Overlay);
     }
 
     void Button::drawPanel(const renderer::IRenderer& renderer) const

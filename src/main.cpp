@@ -43,7 +43,7 @@ int main()
     renderer::RenderObject rObj;
     rObj.bind(obj);
 
-    auto meshBounds = geometry::meshutils::computeMeshBounds(*obj.mesh);
+    auto meshBounds = geometry::meshutils::computeMeshBounds(*obj.getMesh());
 
     geometry::meshutils::frameCameraOnMesh(renderer, meshBounds);
 
@@ -58,9 +58,10 @@ int main()
 
         renderer.begin3D();
 
-        obj.transform.rotation.y += dt * 0.5f; // Rotate object for demonstration
-        obj.transform.rotation.x += dt * 0.5f; // Rotate object for demonstration
-        obj.notifyTransform();
+        objects3D::Transform objTransform = obj.getTransform();
+        objTransform.rotation.y += dt * 0.5f; // Rotate object for demonstration
+        objTransform.rotation.x += dt * 0.5f; // Rotate object for demonstration
+        obj.setTransform(objTransform);
 
         renderer.drawGrid(10, 1.0f);
         renderer.drawAxis(2.0f);

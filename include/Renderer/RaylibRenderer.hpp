@@ -8,6 +8,7 @@
 
 namespace renderer
 {
+#pragma region Draw CMD
 
     struct LineCmd
     {
@@ -58,10 +59,19 @@ namespace renderer
 
     using DrawCmd = std::variant<RectCmd, RectLinesCmd, TextureCmd, TextCmd, LineCmd, GridCmd, TriangleCmd>;
 
+#pragma endregion
+#pragma region Texture
+
+    /**
+     * Allow us to store raylib textures in our renderer without exposing raylib headers in the public interface.
+     */
     struct RaylibTexture : ITexture
     {
         Texture2D tex{};
     };
+
+#pragma endregion
+#pragma region RenderObject
 
     class RaylibRenderer final : public IRenderer
     {
@@ -135,6 +145,9 @@ namespace renderer
         geometry::Vec3 getMousePosition() const override;
         geometry::Vec3 getMouseDelta() const override;
         float          getDeltaTime() const override;
+
+#pragma endregion
+#pragma region Private
 
       private:
         struct Impl;

@@ -15,54 +15,46 @@ namespace gui
         buttons_.clear();
         buttons_.reserve(5);
 
-        // ── Import ────────────────────────────────────────────────────────────
-        buttons_.emplace_back(Button(
-            "import",
-            []() { std::cout << "[Toolbar] Import\n"; },
-            [&renderer](void* c) { renderer.drawImportIcon(c); },
-            renderer,
-            true, "Import (I)", renderer::Key::I));
+        // Import
+        buttons_.emplace_back(Button::Builder("import")
+                                  .icon([&renderer](void* c) { renderer.drawImportIcon(c); })
+                                  .action([]() { std::cout << "[Toolbar] Import\n"; })
+                                  .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::I}, "Import (I)")
+                                  .build(renderer));
 
-        // ── Export ────────────────────────────────────────────────────────────
-        buttons_.emplace_back(Button(
-            "export",
-            []() { std::cout << "[Toolbar] Export\n"; },
-            [&renderer](void* c) { renderer.drawExportIcon(c); },
-            renderer,
-            true, "Export (E)", renderer::Key::E));
+        // Export
+        buttons_.emplace_back(Button::Builder("export")
+                                  .icon([&renderer](void* c) { renderer.drawExportIcon(c); })
+                                  .action([]() { std::cout << "[Toolbar] Export\n"; })
+                                  .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::E}, "Export (E)")
+                                  .build(renderer));
 
-        // ── Preview ───────────────────────────────────────────────────────────
-        buttons_.emplace_back(Button(
-            "preview",
-            []() { std::cout << "[Toolbar] Preview\n"; },
-            [&renderer](void* c) { renderer.drawPreviewIcon(c); },
-            renderer,
-            true, "Preview (P)", renderer::Key::P));
+        // Preview
+        buttons_.emplace_back(Button::Builder("preview")
+                                  .icon([&renderer](void* c) { renderer.drawPreviewIcon(c); })
+                                  .action([]() { std::cout << "[Toolbar] Preview\n"; })
+                                  .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::P}, "Preview (P)")
+                                  .build(renderer));
 
-        // ── Slice ─────────────────────────────────────────────────────────────
-        buttons_.emplace_back(Button(
-            "slice",
-            []() { std::cout << "[Toolbar] Slice\n"; },
-            [&renderer](void* c) { renderer.drawSliceIcon(c); },
-            renderer,
-            true, "Slice (L)", renderer::Key::L));
+        // Slice
+        buttons_.emplace_back(Button::Builder("slice")
+                                  .icon([&renderer](void* c) { renderer.drawSliceIcon(c); })
+                                  .action([]() { std::cout << "[Toolbar] Slice\n"; })
+                                  .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::L}, "Slice (L)")
+                                  .build(renderer));
 
-        // ── Scale  (has panel) ────────────────────────────────────────────────
-        buttons_.emplace_back(Button(
-            "scale",
-            nullptr,
-            [&renderer](void* c) { renderer.drawScaleIcon(c); },
-            renderer,
-            true, "Scale (S)", renderer::Key::S,
-            /*hasPanel=*/true,
-            [](const renderer::IRenderer& r,
-               float px, float py, float /*pw*/, float /*ph*/) {
-                auto& state = gui::states::ResizePanelState::instance();
-                r.drawText("Scale (%)", px + 10.f, py + 10.f, 18);
-                r.drawText(("X: " + std::to_string(state.scaleX)).c_str(), px + 10.f, py + 42.f, 16);
-                r.drawText(("Y: " + std::to_string(state.scaleY)).c_str(), px + 10.f, py + 70.f, 16);
-                r.drawText(("Z: " + std::to_string(state.scaleZ)).c_str(), px + 10.f, py + 98.f, 16);
-            }));
+        // Scale (has panel)
+        buttons_.emplace_back(Button::Builder("scale")
+                                  .icon([&renderer](void* c) { renderer.drawScaleIcon(c); })
+                                  .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::S}, "Scale (S)")
+                                  .panel([](const renderer::IRenderer& r, float px, float py, float, float) {
+                                      auto& state = gui::states::ResizePanelState::instance();
+                                      r.drawText("Scale (%)", px + 10.f, py + 10.f, 18);
+                                      r.drawText(("X: " + std::to_string(state.scaleX)).c_str(), px + 10.f, py + 42.f, 16);
+                                      r.drawText(("Y: " + std::to_string(state.scaleY)).c_str(), px + 10.f, py + 70.f, 16);
+                                      r.drawText(("Z: " + std::to_string(state.scaleZ)).c_str(), px + 10.f, py + 98.f, 16);
+                                  })
+                                  .build(renderer));
 
         repositionButtons(renderer);
         _lastScreenWidth  = renderer.getScreenWidth();
@@ -103,9 +95,7 @@ namespace gui
     void CenteredToolbar::draw(const renderer::IRenderer& renderer) const
     {
         for (const auto& btn : buttons_)
-            btn.drawBase(renderer);
-        for (const auto& btn : buttons_)
-            btn.drawOverlay(renderer);
+            btn.draw(renderer);
     }
 
     void CenteredToolbar::rebuildIfResized(renderer::IRenderer& renderer)
