@@ -27,16 +27,30 @@ if (-not (Test-Path $vcpkgToolchain)) {
 # under the build directory and classic installs under the vcpkg repo.
 $toolPathsTried = @()
 $foundToolPath = $null
+$vcpkgRoot = Join-Path (Split-Path $ProjectRoot -Parent) 'vcpkg'
+
+# Candidate locations (strings to avoid Join-Path ambiguity when arrays are involved)
 $candidates = @(
-  Join-Path $buildDir "vcpkg_installed\$Triplet\tools\gettext\bin",
-  Join-Path $ProjectRoot "vcpkg_installed\$Triplet\tools\gettext\bin",
-  Join-Path (Join-Path (Split-Path $ProjectRoot -Parent) 'vcpkg') "installed\$Triplet\tools\gettext\bin",
-  Join-Path (Join-Path (Split-Path $ProjectRoot -Parent) 'vcpkg') "vcpkg_installed\$Triplet\tools\gettext\bin",
-  Join-Path (Join-Path (Split-Path $ProjectRoot -Parent) 'vcpkg') "tools\gettext\bin"
+  "$buildDir\vcpkg_installed\$Triplet\tools\gettext\bin",
+  "$ProjectRoot\vcpkg_installed\$Triplet\tools\gettext\bin",
+  "$vcpkgRoot\installed\$Triplet\tools\gettext\bin",
+  "$vcpkgRoot\vcpkg_installed\$Triplet\tools\gettext\bin",
+  "$vcpkgRoot\packages\gettext_$Triplet\tools\gettext\bin",
+  "$vcpkgRoot\packages\gettext_$Triplet#*\tools\gettext\bin"
 )
+
 foreach ($p in $candidates) {
-  $toolPathsTried += $p
-  if (Test-Path $p) { $foundToolPath = $p; break }
+  # Expand wildcard patterns (some vcpkg package dirs include ABI/hash suffixes)
+  $matches = Get-ChildItem -Path $p -Directory -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }
+  if (-not $matches) { $matches = @($p) }
+  foreach ($mp in $matches) {
+    $toolPathsTried += $mp
+    # check for msgfmt executable (Windows) or msgfmt (POSIX)
+    if (Test-Path (Join-Path $mp 'msgfmt.exe') -PathType Leaf -ErrorAction SilentlyContinue -or Test-Path (Join-Path $mp 'msgfmt') -PathType Leaf -ErrorAction SilentlyContinue) {
+      $foundToolPath = $mp; break
+    }
+  }
+  if ($foundToolPath) { break }
 }
 if ($foundToolPath) {
   Write-Host "Prepending vcpkg tools path to PATH: $foundToolPath"
@@ -51,6 +65,7 @@ if ($foundToolPath) {
 # Configure
 $cmakeArgs = @('-S', $ProjectRoot, '-B', $buildDir, '-G', 'Visual Studio 17 2022', '-A', 'x64')
 if (Test-Path $vcpkgToolchain) { $cmakeArgs += "-DCMAKE_TOOLCHAIN_FILE=$vcpkgToolchain" }
+if ($cmakeToolPaths -and $cmakeToolPaths.Length -gt 0) { $cmakeArgs += $cmakeToolPaths }
 
 Write-Host "Running CMake configure"
 cmake @cmakeArgs
