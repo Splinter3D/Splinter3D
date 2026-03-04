@@ -22,6 +22,32 @@ if (-not (Test-Path $vcpkgToolchain)) {
   Write-Host "Using vcpkg toolchain: $vcpkgToolchain"
 }
 
+# Try to locate vcpkg-installed tools (e.g. gettext's msgfmt) and prepend to PATH so
+# CMake can find programs during configure. This covers both manifest-mode installs
+# under the build directory and classic installs under the vcpkg repo.
+$toolPathsTried = @()
+$foundToolPath = $null
+$candidates = @(
+  Join-Path $buildDir "vcpkg_installed\$Triplet\tools\gettext\bin",
+  Join-Path $ProjectRoot "vcpkg_installed\$Triplet\tools\gettext\bin",
+  Join-Path (Join-Path (Split-Path $ProjectRoot -Parent) 'vcpkg') "installed\$Triplet\tools\gettext\bin",
+  Join-Path (Join-Path (Split-Path $ProjectRoot -Parent) 'vcpkg') "vcpkg_installed\$Triplet\tools\gettext\bin",
+  Join-Path (Join-Path (Split-Path $ProjectRoot -Parent) 'vcpkg') "tools\gettext\bin"
+)
+foreach ($p in $candidates) {
+  $toolPathsTried += $p
+  if (Test-Path $p) { $foundToolPath = $p; break }
+}
+if ($foundToolPath) {
+  Write-Host "Prepending vcpkg tools path to PATH: $foundToolPath"
+  $env:PATH = "$foundToolPath;$env:PATH"
+  # Also instruct CMake to look for programs in this path
+  $cmakeToolPaths = "-DCMAKE_PROGRAM_PATH=$foundToolPath"
+} else {
+  Write-Host "Did not find gettext tools in common vcpkg locations; tried:`n  $($toolPathsTried -join "`n  ")"
+  $cmakeToolPaths = ""
+}
+
 # Configure
 $cmakeArgs = @('-S', $ProjectRoot, '-B', $buildDir, '-G', 'Visual Studio 17 2022', '-A', 'x64')
 if (Test-Path $vcpkgToolchain) { $cmakeArgs += "-DCMAKE_TOOLCHAIN_FILE=$vcpkgToolchain" }

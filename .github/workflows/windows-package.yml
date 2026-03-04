@@ -38,202 +38,202 @@ jobs:
           name: windows-check-build
           path: staging
 
-  prewarm-vcpkg:
-    name: Prewarm vcpkg cache
-    runs-on: windows-latest
-    outputs:
-      warmed: ${{ steps.warmout.outputs.warmed }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+  # prewarm-vcpkg:
+  #   name: Prewarm vcpkg cache
+  #   runs-on: windows-latest
+  #   outputs:
+  #     warmed: ${{ steps.warmout.outputs.warmed }}
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
 
-      - name: Restore vcpkg cache
-        id: vcpkg-cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ runner.temp }}\vcpkg\downloads
-            ${{ runner.temp }}\vcpkg\packages
-            ${{ runner.temp }}\vcpkg\installed
-            ${{ runner.temp }}\vcpkg\archives
-            ${{ runner.temp }}\vcpkg\buildtrees
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
-          restore-keys: |
-            vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}-
-            vcpkg-${{ runner.os }}-
+  #     - name: Restore vcpkg cache
+  #       id: vcpkg-cache
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: |
+  #           ${{ runner.temp }}\vcpkg\downloads
+  #           ${{ runner.temp }}\vcpkg\packages
+  #           ${{ runner.temp }}\vcpkg\installed
+  #           ${{ runner.temp }}\vcpkg\archives
+  #           ${{ runner.temp }}\vcpkg\buildtrees
+  #         key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+  #         restore-keys: |
+  #           vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}-
+  #           vcpkg-${{ runner.os }}-
 
-      - name: Prepare vcpkg dir
-        run: New-Item -ItemType Directory -Path "${{ runner.temp }}\vcpkg" -Force | Out-Null
-        shell: pwsh
+  #     - name: Prepare vcpkg dir
+  #       run: New-Item -ItemType Directory -Path "${{ runner.temp }}\vcpkg" -Force | Out-Null
+  #       shell: pwsh
 
-      - name: Ensure vcpkg.exe present (download fallback)
-        run: |
-          $dest = "${{ runner.temp }}\vcpkg\vcpkg.exe"
-          if (-not (Test-Path $dest)) {
-            Write-Host "Downloading prebuilt vcpkg.exe to $dest (curl)"
-            curl.exe -L -o $dest "https://github.com/microsoft/vcpkg/releases/latest/download/vcpkg.exe"
-            $ok = $false
-            try {
-              $bytes = Get-Content -Path $dest -Encoding Byte -TotalCount 2 -ErrorAction Stop
-              if ($bytes.Count -ge 2 -and $bytes[0] -eq 0x4d -and $bytes[1] -eq 0x5a) { $ok = $true }
-            } catch { }
-            if (-not $ok) {
-              Write-Host "Initial download did not produce a PE executable; attempting Releases API download"
-              $api = 'https://api.github.com/repos/microsoft/vcpkg/releases/latest'
-              try {
-                $rel = Invoke-RestMethod -Uri $api -UseBasicParsing
-                $asset = $rel.assets | Where-Object { $_.name -eq 'vcpkg.exe' } | Select-Object -First 1
-                if ($null -eq $asset) { Write-Error "No vcpkg.exe asset found in latest release"; exit 1 }
-                $url = $asset.browser_download_url
-                Write-Host "Downloading asset from $url"
-                curl.exe -L -o $dest $url
-                $bytes2 = Get-Content -Path $dest -Encoding Byte -TotalCount 2 -ErrorAction Stop
-                if ($bytes2.Count -lt 2 -or $bytes2[0] -ne 0x4d -or $bytes2[1] -ne 0x5a) {
-                  Write-Error "Downloaded asset is not a valid PE executable"
-                  Write-Host "Preview of downloaded file (first 40 lines):"
-                  Get-Content $dest -Encoding utf8 -TotalCount 40 | ForEach-Object { Write-Host $_ }
-                  exit 1
-                }
-              } catch {
-                Write-Error "Failed to download vcpkg.exe via Releases API: $_"
-                exit 1
-              }
-            }
-          } else {
-            Write-Host "vcpkg.exe already present at $dest"
-          }
-        shell: pwsh
+  #     - name: Ensure vcpkg.exe present (download fallback)
+  #       run: |
+  #         $dest = "${{ runner.temp }}\vcpkg\vcpkg.exe"
+  #         if (-not (Test-Path $dest)) {
+  #           Write-Host "Downloading prebuilt vcpkg.exe to $dest (curl)"
+  #           curl.exe -L -o $dest "https://github.com/microsoft/vcpkg/releases/latest/download/vcpkg.exe"
+  #           $ok = $false
+  #           try {
+  #             $bytes = Get-Content -Path $dest -Encoding Byte -TotalCount 2 -ErrorAction Stop
+  #             if ($bytes.Count -ge 2 -and $bytes[0] -eq 0x4d -and $bytes[1] -eq 0x5a) { $ok = $true }
+  #           } catch { }
+  #           if (-not $ok) {
+  #             Write-Host "Initial download did not produce a PE executable; attempting Releases API download"
+  #             $api = 'https://api.github.com/repos/microsoft/vcpkg/releases/latest'
+  #             try {
+  #               $rel = Invoke-RestMethod -Uri $api -UseBasicParsing
+  #               $asset = $rel.assets | Where-Object { $_.name -eq 'vcpkg.exe' } | Select-Object -First 1
+  #               if ($null -eq $asset) { Write-Error "No vcpkg.exe asset found in latest release"; exit 1 }
+  #               $url = $asset.browser_download_url
+  #               Write-Host "Downloading asset from $url"
+  #               curl.exe -L -o $dest $url
+  #               $bytes2 = Get-Content -Path $dest -Encoding Byte -TotalCount 2 -ErrorAction Stop
+  #               if ($bytes2.Count -lt 2 -or $bytes2[0] -ne 0x4d -or $bytes2[1] -ne 0x5a) {
+  #                 Write-Error "Downloaded asset is not a valid PE executable"
+  #                 Write-Host "Preview of downloaded file (first 40 lines):"
+  #                 Get-Content $dest -Encoding utf8 -TotalCount 40 | ForEach-Object { Write-Host $_ }
+  #                 exit 1
+  #               }
+  #             } catch {
+  #               Write-Error "Failed to download vcpkg.exe via Releases API: $_"
+  #               exit 1
+  #             }
+  #           }
+  #         } else {
+  #           Write-Host "vcpkg.exe already present at $dest"
+  #         }
+  #       shell: pwsh
 
-      - name: Pre-install vcpkg dependencies (warm cache)
-        id: warmout
-        run: |
-          $vcpkg = "${{ runner.temp }}\vcpkg\vcpkg.exe"
-          if (-not (Test-Path $vcpkg)) { Write-Host "vcpkg.exe missing; skipping prewarm"; echo "warmed=false"; exit 0 }
-          $jsonPath = "${{ github.workspace }}\vcpkg.json"
-          if (-not (Test-Path $jsonPath)) { Write-Host "No vcpkg.json; nothing to prewarm"; echo "warmed=false"; exit 0 }
-          $json = Get-Content $jsonPath -Raw | ConvertFrom-Json
-          $deps = @()
-          foreach ($d in $json.dependencies) {
-            if ($d -is [string]) {
-              if ($d -match '^([^\[]+)') { $deps += $matches[1].Trim() } else { $deps += $d }
-            } elseif ($d.name) { $deps += $d.name }
-          }
-          if ($deps.Count -eq 0) { Write-Host "No dependencies to install"; echo "warmed=false"; exit 0 }
-          Write-Host "Installing deps: $($deps -join ', ')"
-          & $vcpkg install $deps --triplet x64-windows 2>&1 | Tee-Object -FilePath "${{ runner.temp }}\vcpkg\prewarm.log"
-          if ($LASTEXITCODE -ne 0) { Write-Host "vcpkg prewarm failed"; echo "warmed=false"; exit 0 }
-          echo "warmed=true"
-        shell: pwsh
+  #     - name: Pre-install vcpkg dependencies (warm cache)
+  #       id: warmout
+  #       run: |
+  #         $vcpkg = "${{ runner.temp }}\vcpkg\vcpkg.exe"
+  #         if (-not (Test-Path $vcpkg)) { Write-Host "vcpkg.exe missing; skipping prewarm"; echo "warmed=false"; exit 0 }
+  #         $jsonPath = "${{ github.workspace }}\vcpkg.json"
+  #         if (-not (Test-Path $jsonPath)) { Write-Host "No vcpkg.json; nothing to prewarm"; echo "warmed=false"; exit 0 }
+  #         $json = Get-Content $jsonPath -Raw | ConvertFrom-Json
+  #         $deps = @()
+  #         foreach ($d in $json.dependencies) {
+  #           if ($d -is [string]) {
+  #             if ($d -match '^([^\[]+)') { $deps += $matches[1].Trim() } else { $deps += $d }
+  #           } elseif ($d.name) { $deps += $d.name }
+  #         }
+  #         if ($deps.Count -eq 0) { Write-Host "No dependencies to install"; echo "warmed=false"; exit 0 }
+  #         Write-Host "Installing deps: $($deps -join ', ')"
+  #         & $vcpkg install $deps --triplet x64-windows 2>&1 | Tee-Object -FilePath "${{ runner.temp }}\vcpkg\prewarm.log"
+  #         if ($LASTEXITCODE -ne 0) { Write-Host "vcpkg prewarm failed"; echo "warmed=false"; exit 0 }
+  #         echo "warmed=true"
+  #       shell: pwsh
 
-  build-package:
-    name: Build & Package on Windows
-    needs: prewarm-vcpkg
-    permissions:
-      contents: write
-      packages: write
-    runs-on: windows-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+  # build-package:
+  #   name: Build & Package on Windows
+  #   needs: prewarm-vcpkg
+  #   permissions:
+  #     contents: write
+  #     packages: write
+  #   runs-on: windows-latest
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
 
-      - name: Ensure PowerShell script is executable
-        run: |
-          if (-not (Test-Path ./scripts/build-and-package.ps1)) {
-            Write-Host "Warning: scripts/build-and-package.ps1 not found. Add the script to repo before running the workflow."
-          } else {
-            Write-Host "build-and-package.ps1 exists"
-          }
-        shell: pwsh
+  #     - name: Ensure PowerShell script is executable
+  #       run: |
+  #         if (-not (Test-Path ./scripts/build-and-package.ps1)) {
+  #           Write-Host "Warning: scripts/build-and-package.ps1 not found. Add the script to repo before running the workflow."
+  #         } else {
+  #           Write-Host "build-and-package.ps1 exists"
+  #         }
+  #       shell: pwsh
 
-      - name: Restore vcpkg cache
-        id: vcpkg-cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ runner.temp }}\vcpkg\downloads
-            ${{ runner.temp }}\vcpkg\packages
-            ${{ runner.temp }}\vcpkg\installed
-            ${{ runner.temp }}\vcpkg\archives
-            ${{ runner.temp }}\vcpkg\buildtrees
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
-          restore-keys: |
-            vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}-
-            vcpkg-${{ runner.os }}-
+  #     - name: Restore vcpkg cache
+  #       id: vcpkg-cache
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: |
+  #           ${{ runner.temp }}\vcpkg\downloads
+  #           ${{ runner.temp }}\vcpkg\packages
+  #           ${{ runner.temp }}\vcpkg\installed
+  #           ${{ runner.temp }}\vcpkg\archives
+  #           ${{ runner.temp }}\vcpkg\buildtrees
+  #         key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+  #         restore-keys: |
+  #           vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}-
+  #           vcpkg-${{ runner.os }}-
 
-      - name: Download prebuilt vcpkg.exe (cache miss fallback)
-        if: steps.vcpkg-cache.outputs.cache-hit != 'true'
-        run: |
-          $dest = "${{ runner.temp }}\vcpkg"
-          New-Item -ItemType Directory -Path $dest -Force | Out-Null
-          $exe = Join-Path $dest 'vcpkg.exe'
-          Write-Host "Cache miss: downloading prebuilt vcpkg.exe to $exe (curl)"
-          curl.exe -L -o $exe "https://github.com/microsoft/vcpkg/releases/latest/download/vcpkg.exe"
-          $ok = $false
-          try {
-            $h = Get-Content -Path $exe -Encoding Byte -TotalCount 2 -ErrorAction Stop
-            if ($h.Count -ge 2 -and $h[0] -eq 0x4d -and $h[1] -eq 0x5a) { $ok = $true }
-          } catch { }
-          if (-not $ok) {
-            Write-Host "Initial download invalid; trying Releases API"
-            $api = 'https://api.github.com/repos/microsoft/vcpkg/releases/latest'
-            try {
-              $rel = Invoke-RestMethod -Uri $api -UseBasicParsing
-              $asset = $rel.assets | Where-Object { $_.name -eq 'vcpkg.exe' } | Select-Object -First 1
-              if ($null -eq $asset) { Write-Error "No vcpkg.exe asset found in latest release"; exit 1 }
-              $url = $asset.browser_download_url
-              Write-Host "Downloading asset from $url"
-              curl.exe -L -o $exe $url
-              $h2 = Get-Content -Path $exe -Encoding Byte -TotalCount 2 -ErrorAction Stop
-              if ($h2.Count -lt 2 -or $h2[0] -ne 0x4d -or $h2[1] -ne 0x5a) {
-                Write-Error "Downloaded asset is not a valid PE executable"
-                Get-Content $exe -Encoding utf8 -TotalCount 40 | ForEach-Object { Write-Host $_ }
-                exit 1
-              }
-            } catch {
-              Write-Error "Failed to download vcpkg.exe via Releases API: $_"
-              exit 1
-            }
-          }
-        shell: pwsh
+  #     - name: Download prebuilt vcpkg.exe (cache miss fallback)
+  #       if: steps.vcpkg-cache.outputs.cache-hit != 'true'
+  #       run: |
+  #         $dest = "${{ runner.temp }}\vcpkg"
+  #         New-Item -ItemType Directory -Path $dest -Force | Out-Null
+  #         $exe = Join-Path $dest 'vcpkg.exe'
+  #         Write-Host "Cache miss: downloading prebuilt vcpkg.exe to $exe (curl)"
+  #         curl.exe -L -o $exe "https://github.com/microsoft/vcpkg/releases/latest/download/vcpkg.exe"
+  #         $ok = $false
+  #         try {
+  #           $h = Get-Content -Path $exe -Encoding Byte -TotalCount 2 -ErrorAction Stop
+  #           if ($h.Count -ge 2 -and $h[0] -eq 0x4d -and $h[1] -eq 0x5a) { $ok = $true }
+  #         } catch { }
+  #         if (-not $ok) {
+  #           Write-Host "Initial download invalid; trying Releases API"
+  #           $api = 'https://api.github.com/repos/microsoft/vcpkg/releases/latest'
+  #           try {
+  #             $rel = Invoke-RestMethod -Uri $api -UseBasicParsing
+  #             $asset = $rel.assets | Where-Object { $_.name -eq 'vcpkg.exe' } | Select-Object -First 1
+  #             if ($null -eq $asset) { Write-Error "No vcpkg.exe asset found in latest release"; exit 1 }
+  #             $url = $asset.browser_download_url
+  #             Write-Host "Downloading asset from $url"
+  #             curl.exe -L -o $exe $url
+  #             $h2 = Get-Content -Path $exe -Encoding Byte -TotalCount 2 -ErrorAction Stop
+  #             if ($h2.Count -lt 2 -or $h2[0] -ne 0x4d -or $h2[1] -ne 0x5a) {
+  #               Write-Error "Downloaded asset is not a valid PE executable"
+  #               Get-Content $exe -Encoding utf8 -TotalCount 40 | ForEach-Object { Write-Host $_ }
+  #               exit 1
+  #             }
+  #           } catch {
+  #             Write-Error "Failed to download vcpkg.exe via Releases API: $_"
+  #             exit 1
+  #           }
+  #         }
+  #       shell: pwsh
 
-      - name: Run build-and-package
-        if: always()
-        run: pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/build-and-package.ps1 -OutDir "${{ runner.temp }}\output" -VcpkgDir "${{ runner.temp }}\vcpkg"
-        shell: pwsh
+  #     - name: Run build-and-package
+  #       if: always()
+  #       run: pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/build-and-package.ps1 -OutDir "${{ runner.temp }}\output" -VcpkgDir "${{ runner.temp }}\vcpkg"
+  #       shell: pwsh
 
-      - name: Upload packaged artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-package
-          path: ${{ runner.temp }}\output
+  #     - name: Upload packaged artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: windows-package
+  #         path: ${{ runner.temp }}\output
 
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: windows-package-${{ github.run_number }}
-          release_name: windows-package-${{ github.run_number }}
-          draft: false
-          prerelease: false
+  #     - name: Create GitHub Release
+  #       id: create_release
+  #       uses: actions/create-release@v1
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       with:
+  #         tag_name: windows-package-${{ github.run_number }}
+  #         release_name: windows-package-${{ github.run_number }}
+  #         draft: false
+  #         prerelease: false
 
-      - name: Upload ZIP to Release
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ runner.temp }}/output/release-package.zip
-          asset_name: release-package.zip
-          asset_content_type: application/zip
+  #     - name: Upload ZIP to Release
+  #       uses: actions/upload-release-asset@v1
+  #       with:
+  #         upload_url: ${{ steps.create_release.outputs.upload_url }}
+  #         asset_path: ${{ runner.temp }}/output/release-package.zip
+  #         asset_name: release-package.zip
+  #         asset_content_type: application/zip
 
-      - name: Upload SHA256 to Release
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ runner.temp }}/output/release-package.zip.sha256
-          asset_name: release-package.zip.sha256
-          asset_content_type: text/plain
+  #     - name: Upload SHA256 to Release
+  #       uses: actions/upload-release-asset@v1
+  #       with:
+  #         upload_url: ${{ steps.create_release.outputs.upload_url }}
+  #         asset_path: ${{ runner.temp }}/output/release-package.zip.sha256
+  #         asset_name: release-package.zip.sha256
+  #         asset_content_type: text/plain
