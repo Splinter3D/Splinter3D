@@ -104,11 +104,11 @@ namespace renderer
         // --------------------
         // Drawing 3D
         // --------------------
-        void drawTriangle(const geometry::Triangle& tri, Color color, Layer layer = Layer::UI) override;
-        void drawMesh(const geometry::Mesh& mesh, Color color, Layer layer = Layer::UI) override;
-        void drawObject(const RenderObject& obj, Color color, Layer layer = Layer::UI) override;
-        void drawGrid(int slices, float spacing, Layer layer = Layer::UI) override;
-        void drawAxis(float size, Layer layer = Layer::UI) override;
+        void drawTriangle(const geometry::Triangle& tri, Color color, Layer layer = Layer::World) override;
+        void drawMesh(const geometry::Mesh& mesh, Color color, Layer layer = Layer::World) override;
+        void drawObject(const RenderObject& obj, Color color, Layer layer = Layer::World) override;
+        void drawGrid(int slices, float spacing, Layer layer = Layer::World) override;
+        void drawAxis(float size, Layer layer = Layer::World) override;
 
         // --------------------
         // Camera
