@@ -6,7 +6,8 @@
 */
 
 #include <Geometry/Utils/MeshUtils.hpp>
-#include <Gui/CenterredToolBar.hpp>
+#include <Gui/CenteredToolbar.hpp>
+#include <Gui/States/ScalePanelState.hpp>
 #include <Objects3D/Object3D.hpp>
 #include <Renderer/RaylibRenderer.hpp>
 #include <Renderer/RenderObject.hpp>
@@ -24,8 +25,11 @@
 #pragma GCC diagnostic ignored "-Wcast-qual"
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 #pragma GCC diagnostic ignored "-Wcast-align"
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
 #endif
+
 #include <Renderer/RayGUI.hpp>
+
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
 #endif
@@ -33,47 +37,52 @@
 int main()
 {
     splinter3D::utils::Locale::init("splinter3D", "./locale");
-
-    // splinter3D::utils::Locale::setLanguage("fr");
-    // splinter3D::utils::Locale::setLanguage("es");
-    // splinter3D::utils::Locale::setLanguage("de");
-
-    std::cout << _("Play") << std::endl;
-    std::cout << _("Settings") << std::endl;
-    std::cout << _("Quit") << std::endl;
-
-    renderer::Config         cfg{1280, 720, "Prototype 3D Slicer", 60};
+    renderer::Config         cfg{1270, 720, "Prototype 3D Slicer", 60};
     renderer::RaylibRenderer renderer(cfg);
 
-    objects3D::Object3D    obj = objects3D::Object3D::fromSTL("assets/stl/binary/magnolia_binary.stl");
+    objects3D::Object3D    obj = objects3D::Object3D::fromSTL("assets/stl/binary/cube.stl");
     renderer::RenderObject rObj;
     rObj.bind(obj);
 
-    auto meshBounds = geometry::meshutils::computeMeshBounds(*obj.mesh);
+    auto meshBounds = geometry::meshutils::computeMeshBounds(*obj.getMesh());
 
     geometry::meshutils::frameCameraOnMesh(renderer, meshBounds);
 
     gui::CenteredToolbar toolbar(18.0f, 52.0f, 14.0f);
+    toolbar.initialize(renderer);
+
+    {
+        auto&                     scaleState = gui::states::ScalePanelState::instance();
+        const objects3D::Transform t          = obj.getTransform();
+
+        scaleState.target = &obj;
+        scaleState.scaleX = t.scale.x * 100.0f;
+        scaleState.scaleY = t.scale.y * 100.0f;
+        scaleState.scaleZ = t.scale.z * 100.0f;
+        scaleState.scaleXi = (int) scaleState.scaleX;
+        scaleState.scaleYi = (int) scaleState.scaleY;
+        scaleState.scaleZi = (int) scaleState.scaleZ;
+    }
 
     while (!renderer.shouldClose())
     {
         float dt = renderer.beginFrame();
         renderer.updateCamera(dt);
+        toolbar.update(renderer);
 
         renderer.begin3D();
 
-        if (obj.transform.scale.x < 2.0f)
-            obj.transform.scale = obj.transform.scale + geometry::Vec3(0.01f, 0.01f, 0.01f);
-        else
-            obj.transform.scale = geometry::Vec3(1.0f, 1.0f, 1.0f);
-        obj.notifyTransform();
+        objects3D::Transform objTransform = obj.getTransform();
+        objTransform.rotation.y += dt * 0.5f; // Rotate object for demonstration
+        objTransform.rotation.x += dt * 0.5f; // Rotate object for demonstration
+        obj.setTransform(objTransform);
 
         renderer.drawGrid(10, 1.0f);
         renderer.drawAxis(2.0f);
         renderer.drawObject(rObj, {255, 0, 0, 255});
 
         renderer.end3D();
-        toolbar.draw();
+        renderer.drawGuiComponent(toolbar);
         renderer.endFrame();
     }
     return 0;

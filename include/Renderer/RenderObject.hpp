@@ -14,6 +14,9 @@ namespace renderer
 
         RenderObject() = default;
 
+        /**
+         * Binds this RenderObject to an Object3D, allowing it to receive transform and appearance updates.
+         */
         void bind(objects3D::Object3D& obj)
         {
             object = &obj;
@@ -21,22 +24,27 @@ namespace renderer
             rebuildMatrix();
         }
 
+        /**
+         * ObjectObserver implementation - called when the observed Object3D's transform changes. Rebuilds the model matrix.
+         */
         void onTransformChanged() override
         {
             rebuildMatrix();
         }
 
+        /**
+         * ObjectObserver implementation - called when the observed Object3D's appearance changes. Currently does nothing.
+         */
         void onAppearanceChanged() override
         {
-            // No appearance data to update in this implementation
+            // TODO: use the new appearance when drawing the object
         }
 
         void rebuildMatrix()
         {
-            modelMatrix =
-                MatrixScale(object->transform.scale.x, object->transform.scale.y, object->transform.scale.z) *
-                MatrixRotateXYZ(object->transform.rotation.toRaylib()) *
-                MatrixTranslate(object->transform.position.x, object->transform.position.y, object->transform.position.z);
+            Matrix objectMatrix = object->getTransform().toMatrix();
+
+            modelMatrix = objectMatrix;
         }
     };
 } // namespace renderer

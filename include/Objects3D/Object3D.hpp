@@ -11,32 +11,108 @@ namespace objects3D
 {
     struct Object3D
     {
-        geometry::Mesh* mesh;
-        Transform       transform;
-        renderer::Color color;
+
+#pragma region Object3D
 
         Object3D(geometry::Mesh* m, const renderer::Color& c = {255, 255, 255, 255})
-            : mesh(m), color(c)
+            : _mesh(m), _color(c)
         { }
 
+        /**
+         * Load the mesh from an STL file and create an Object3D.
+         */
         inline static Object3D fromSTL(const std::string& stlFile, const renderer::Color& c = {255, 255, 255, 255})
         {
             return Object3D(new geometry::Mesh(geometry::Mesh::fromSTL(stlFile)), c);
         }
 
+#pragma endregion
+#pragma region Observers
+
+        /**
+         * Attaches an observer to this object. The observer will be notified when notifyTransform() or notifyAppearanceChanged() is called.
+         */
         void attach(ObjectObserver* obs)
         {
             if (std::find(observers.begin(), observers.end(), obs) == observers.end())
                 observers.push_back(obs);
         }
 
+        /**
+         * Notify all the observers that the transform has changed.
+         */
         void notifyTransform()
         {
             for (auto* o : observers)
                 o->onTransformChanged();
         }
 
+        /**
+         * Notify all the observers that the appearance (color, mesh) has changed.
+         */
+        void notifyAppearanceChanged()
+        {
+            for (auto* o : observers)
+                o->onAppearanceChanged();
+        }
+
+#pragma endregion
+#pragma region Getters/Setters
+
+        /**
+         * Return the mesh of this object.
+         */
+        geometry::Mesh* getMesh() const
+        {
+            return _mesh;
+        }
+
+        /**
+         * Return the color of this object.
+         */
+        renderer::Color getColor() const
+        {
+            return _color;
+        }
+
+        /**
+         * Set the color of this object and notify observers of the change.
+         */
+        renderer::Color setColor(const renderer::Color& c)
+        {
+            _color = c;
+            notifyAppearanceChanged();
+            return _color;
+        }
+
+        /**
+         * Return a COPY of the transform of this object. (view details below)
+         * @details Modifying the returned Transform will NOT affect the object's actual transform.
+         * To change the object's transform, use setTransform() with a modified Transform.
+         */
+        Transform getTransform() const
+        {
+            return _transform;
+        }
+
+        /**
+         * Set the transform of this object and notify observers of the change.
+         */
+        Transform setTransform(const Transform t)
+        {
+            _transform = t;
+            notifyTransform();
+            return _transform;
+        }
+
+#pragma endregion
+#pragma region Private
+
       private:
+        geometry::Mesh* _mesh;
+        Transform       _transform;
+        renderer::Color _color;
+
         std::vector<ObjectObserver*> observers;
     };
 } // namespace objects3D
