@@ -46,7 +46,7 @@ foreach ($p in $candidates) {
   foreach ($mp in $matches) {
     $toolPathsTried += $mp
     # check for msgfmt executable (Windows) or msgfmt (POSIX)
-    if (Test-Path (Join-Path $mp 'msgfmt.exe') -PathType Leaf -ErrorAction SilentlyContinue -or Test-Path (Join-Path $mp 'msgfmt') -PathType Leaf -ErrorAction SilentlyContinue) {
+    if ((Test-Path (Join-Path $mp 'msgfmt.exe') -PathType Leaf -ErrorAction SilentlyContinue) -or (Test-Path (Join-Path $mp 'msgfmt') -PathType Leaf -ErrorAction SilentlyContinue)) {
       $foundToolPath = $mp; break
     }
   }
