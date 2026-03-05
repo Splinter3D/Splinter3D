@@ -25,7 +25,9 @@
 #pragma GCC diagnostic ignored "-Wcast-qual"
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 #pragma GCC diagnostic ignored "-Wcast-align"
+#if !defined(__clang__)
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
+#endif
 #endif
 
 #include <Renderer/RayGUI.hpp>
@@ -52,13 +54,13 @@ int main()
     toolbar.initialize(renderer);
 
     {
-        auto&                     scaleState = gui::states::ScalePanelState::instance();
+        auto&                      scaleState = gui::states::ScalePanelState::instance();
         const objects3D::Transform t          = obj.getTransform();
 
-        scaleState.target = &obj;
-        scaleState.scaleX = t.scale.x * 100.0f;
-        scaleState.scaleY = t.scale.y * 100.0f;
-        scaleState.scaleZ = t.scale.z * 100.0f;
+        scaleState.target  = &obj;
+        scaleState.scaleX  = t.scale.x * 100.0f;
+        scaleState.scaleY  = t.scale.y * 100.0f;
+        scaleState.scaleZ  = t.scale.z * 100.0f;
         scaleState.scaleXi = (int) scaleState.scaleX;
         scaleState.scaleYi = (int) scaleState.scaleY;
         scaleState.scaleZi = (int) scaleState.scaleZ;

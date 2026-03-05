@@ -111,7 +111,7 @@ namespace gui
                bool                       hasPanel     = false,
                PanelDrawFn                panelDrawFn  = nullptr);
 
-        ~Button() = default;
+        virtual ~Button() = default;
 
         /**
          * Updates the button state, handling clicks and shortcuts. Should be called every frame before draw().
