@@ -71,9 +71,6 @@ try {
 } catch {
   $vcpkgRootCandidates = @()
 }
-# Also consider a vcpkg_installed under the build directory (CI sometimes places vcpkg output there)
-$buildVcpkg = Join-Path $buildDir 'vcpkg_installed'
-if (Test-Path $buildVcpkg) { $vcpkgRootCandidates += $buildVcpkg }
 foreach ($root in $vcpkgRootCandidates) {
   if (-not $root) { continue }
   $cand = Join-Path $root "installed\$Triplet\tools\gettext\bin"
@@ -93,58 +90,25 @@ if ($foundToolPath) {
   $cmakeToolPaths = ""
 }
 
-# Ensure msgfmt is available to CMake: if not in PATH, try a few places and prepend the folder when found
+# Ensure msgfmt is available to CMake: if not in PATH, try to locate msgfmt.exe under vcpkg and prepend its folder
 if (-not (Get-Command msgfmt -ErrorAction SilentlyContinue)) {
-  Write-Host 'msgfmt not found on PATH. Searching vcpkg roots for msgfmt.exe...'
+  Write-Host 'msgfmt not found on PATH. Searching vcpkg for msgfmt.exe...'
   $msgfmtCandidates = @()
   foreach ($root in $vcpkgRootCandidates) {
     if (-not (Test-Path $root)) { continue }
     try {
-      # Search recursively under candidate roots (covers installed/<triplet>/tools and packages/*/tools)
       $c = Get-ChildItem -Path (Join-Path $root '*') -Filter 'msgfmt.exe' -Recurse -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }
       if ($c) { $msgfmtCandidates += $c }
     } catch { }
   }
   if ($msgfmtCandidates.Count -gt 0) {
+    # Prefer the first candidate's folder
     $msgfmtExe = $msgfmtCandidates[0]
     $msgfmtDir = Split-Path -Path $msgfmtExe -Parent
     Write-Host "Found msgfmt at: $msgfmtExe -- prepending $msgfmtDir to PATH"
     $env:PATH = "$msgfmtDir;$env:PATH"
   } else {
-    Write-Host 'No msgfmt.exe found under vcpkg roots. Trying common Chocolatey locations...'
-    # Try common Chocolatey locations
-    $chocoCandidates = @(
-      'C:\Program Files\gettext-iconv\bin',
-      'C:\Program Files\gettext\bin',
-      'C:\ProgramData\chocolatey\lib\gettext*\tools\*',
-      'C:\ProgramData\chocolatey\lib\gettext-iconv*\tools\*'
-    )
-    foreach ($pattern in $chocoCandidates) {
-      try {
-        $found = Get-ChildItem -Path $pattern -Filter 'msgfmt.exe' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-        if ($found) {
-          $dir = Split-Path -Path $found.FullName -Parent
-          $env:PATH = "$dir;$env:PATH"
-          Write-Host "Found msgfmt at $($found.FullName); prepended $dir to PATH"
-          break
-        }
-      } catch { }
-    }
-
-    # Final fallback: search the build tree for any msgfmt.exe (useful when vcpkg installs into build/vcpkg_installed)
-    if (-not (Get-Command msgfmt -ErrorAction SilentlyContinue)) {
-      try {
-        Write-Host 'Final scan: searching build directory for msgfmt.exe...'
-        $found = Get-ChildItem -Path $buildDir -Filter 'msgfmt.exe' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-        if ($found) {
-          $dir = Split-Path -Path $found.FullName -Parent
-          $env:PATH = "$dir;$env:PATH"
-          Write-Host "Found msgfmt at $($found.FullName); prepended $dir to PATH"
-        } else {
-          Write-Host 'Final scan: msgfmt.exe not found in build tree.'
-        }
-      } catch { Write-Host "Final scan error: $_" }
-    }
+    Write-Host 'No msgfmt.exe found under vcpkg directories.'
   }
 } else {
   Write-Host "msgfmt found: $(Get-Command msgfmt | Select-Object -ExpandProperty Source)"
@@ -187,21 +151,14 @@ cmake @cmakeArgs
 if ($LASTEXITCODE -ne 0) { Fail "CMake configure failed" }
 
 Write-Host "Building ($Config)"
-# Ensure MSBuild writes outputs into the build tree by overriding OutDir when
-# using Visual Studio/MSBuild. This keeps artifacts under $buildDir\$Config\
-$procCount = [Environment]::ProcessorCount
-$outDirMsbuild = Join-Path $buildDir $Config
-# ensure trailing backslash for MSBuild OutDir
-if ($outDirMsbuild[-1] -ne '\') { $outDirMsbuild = "$outDirMsbuild\" }
-$msbuildArgs = @("/m:$procCount", "/p:OutDir=$outDirMsbuild")
-cmake --build $buildDir --config $Config -- $msbuildArgs
+cmake --build $buildDir --config $Config -- /m:$(Get-Process -Id $PID -ErrorAction SilentlyContinue | ForEach-Object { [Environment]::ProcessorCount })
 if ($LASTEXITCODE -ne 0) { Fail "Build failed" }
 
 # Ensure the splinter3D target(s) are explicitly built (try both possible target names)
 $targetsToTry = @('splinter3D','splinter3D-app')
 foreach ($t in $targetsToTry) {
   Write-Host "Attempting to build target: $t"
-  cmake --build $buildDir --config $Config --target $t -- $msbuildArgs 2>$null
+  cmake --build $buildDir --config $Config --target $t -- /m:$(Get-Process -Id $PID -ErrorAction SilentlyContinue | ForEach-Object { [Environment]::ProcessorCount }) 2>$null
 }
 
 # Prepare staging area
@@ -302,21 +259,6 @@ $sha.Hash | Out-File -FilePath $shaFile -Encoding ascii
 Write-Host "Packaging complete: $zipPath"
 Write-Host "SHA256: $($sha.Hash) -> $shaFile"
 Write-Host "build.ps1 finished. Staging: $staging; Output: $outDir"
-
-# If a top-level Release folder was left behind and it's empty, remove it to keep
-# the repository clean (some MSBuild setups create this folder transiently).
-$topLevelRelease = Join-Path $ProjectRoot 'Release'
-if (Test-Path $topLevelRelease) {
-  try {
-    $entries = Get-ChildItem -LiteralPath $topLevelRelease -Force -ErrorAction SilentlyContinue
-    if (-not $entries -or $entries.Count -eq 0) {
-      Remove-Item -Recurse -Force $topLevelRelease -ErrorAction SilentlyContinue
-      if (-not (Test-Path $topLevelRelease)) { Write-Host "Removed empty top-level Release folder: $topLevelRelease" }
-    }
-  } catch {
-    Write-Warning "Failed to inspect or remove top-level Release folder: $_"
-  }
-}
 
 # Remove staging directory now that the ZIP is created, unless DevMode is active
 if (-not $DevMode) {
