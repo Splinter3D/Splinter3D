@@ -21,7 +21,6 @@ namespace renderer
         void setColor(const Color& c);
 
         void            onTransformChanged() override;
-        void            onAppearanceChanged() override;
         geometry::Mesh* getTransformedMesh() const;
 
       private:

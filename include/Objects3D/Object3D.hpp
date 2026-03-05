@@ -14,16 +14,16 @@ namespace objects3D
 
 #pragma region Object3D
 
-        Object3D(geometry::Mesh* m, const renderer::Color& c = {255, 255, 255, 255})
-            : _mesh(m), _color(c)
+        Object3D(geometry::Mesh* m)
+            : _mesh(m)
         { }
 
         /**
          * Load the mesh from an STL file and create an Object3D.
          */
-        inline static Object3D fromSTL(const std::string& stlFile, const renderer::Color& c = {255, 255, 255, 255})
+        inline static Object3D fromSTL(const std::string& stlFile)
         {
-            return Object3D(new geometry::Mesh(geometry::Mesh::fromSTL(stlFile)), c);
+            return Object3D(new geometry::Mesh(geometry::Mesh::fromSTL(stlFile)));
         }
 
 #pragma endregion
@@ -45,15 +45,6 @@ namespace objects3D
         {
             for (auto* o : observers)
                 o->onTransformChanged();
-        }
-
-        /**
-         * Notify all the observers that the appearance (color, mesh) has changed.
-         */
-        void notifyAppearanceChanged()
-        {
-            for (auto* o : observers)
-                o->onAppearanceChanged();
         }
 
 #pragma endregion
@@ -93,24 +84,6 @@ namespace objects3D
         }
 
         /**
-         * Return the color of this object.
-         */
-        renderer::Color getColor() const
-        {
-            return _color;
-        }
-
-        /**
-         * Set the color of this object and notify observers of the change.
-         */
-        renderer::Color setColor(const renderer::Color& c)
-        {
-            _color = c;
-            notifyAppearanceChanged();
-            return _color;
-        }
-
-        /**
          * Return a COPY of the transform of this object. (view details below)
          * @details Modifying the returned Transform will NOT affect the object's actual transform.
          * To change the object's transform, use setTransform() with a modified Transform.
@@ -136,7 +109,6 @@ namespace objects3D
       private:
         geometry::Mesh* _mesh;
         Transform       _transform;
-        renderer::Color _color;
 
         std::vector<ObjectObserver*> observers;
     };

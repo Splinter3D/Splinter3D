@@ -29,11 +29,6 @@ namespace renderer
         rebuildMatrix();
     }
 
-    void RenderObject::onAppearanceChanged()
-    {
-        // TODO: use the new appearance when drawing the object
-    }
-
     void RenderObject::rebuildMatrix()
     {
         modelMatrix = object->getTransform().toMatrix();

@@ -26,6 +26,9 @@ namespace gui::states
         // Whether to maintain uniform scaling across all axes
         bool uniformScale{true};
 
+        /**
+         * Applies the current scale values to the selected object in the scene.
+         */
         void applyToTarget()
         {
             scene::SceneObject* target = scene::Scene::getInstance().getSelected();
@@ -39,6 +42,9 @@ namespace gui::states
         }
 
       protected:
+        /**
+         * Constructor that subscribes to ObjectSelectedEvent to reset scale values when the selection changes.
+         */
         ScalePanelState() noexcept
         {
             splinter3D::events::EventBus::getInstance()
@@ -49,19 +55,21 @@ namespace gui::states
         ~ScalePanelState() noexcept = default;
 
       private:
+        /**
+         * Event handler for ObjectSelectedEvent. Resets the scale values based on the selected object.
+         * If an object is selected (index >= 0), it retrieves the object's current scale and updates the scale values accordingly.
+         * If no object is selected (index -1), it resets the scale values to 100% (1.0 scale) for all axes.
+         */
         void resetOnSelectionChange(const scene::events::ObjectSelectedEvent& e)
         {
             int index = e.index;
             if (index < 0)
             {
-                std::cout << "No object selected, resetting scale to defaults." << std::endl;
-                // No object selected, reset to defaults
                 scaleX = scaleY = scaleZ = 100.0f;
                 scaleXi = scaleYi = scaleZi = 100;
             }
             else
             {
-                std::cout << "Object selected with index: " << index << ", resetting scale to object's current scale." << std::endl;
                 auto* obj = scene::Scene::getInstance().getSelected();
                 if (!obj)
                     return;

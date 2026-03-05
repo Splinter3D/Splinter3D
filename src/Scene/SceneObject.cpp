@@ -55,7 +55,6 @@ namespace scene
 
     void SceneObject::setColor(const renderer::Color& c)
     {
-        obj.setColor(c);
         rObj.setColor(c);
     }
 
