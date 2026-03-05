@@ -38,4 +38,30 @@ namespace renderer
     {
         modelMatrix = object->getTransform().toMatrix();
     }
+
+    geometry::Mesh* RenderObject::getTransformedMesh() const
+    {
+        if (!object)
+            return nullptr;
+
+        geometry::Mesh* mesh = object->getMesh();
+        if (!mesh)
+            return nullptr;
+
+        // Create a transformed copy of the mesh
+        geometry::Mesh* transformedMesh = new geometry::Mesh(*mesh);
+        for (auto& tri : transformedMesh->triangles)
+        {
+            for (int i = 0; i < 3; ++i)
+            {
+                geometry::Vec3& v  = tri.vertices[i];
+                Vector3         vt = Vector3{v.x, v.y, v.z};
+                vt                 = Vector3Transform(vt, modelMatrix);
+                v.x                = vt.x;
+                v.y                = vt.y;
+                v.z                = vt.z;
+            }
+        }
+        return transformedMesh;
+    }
 } // namespace renderer

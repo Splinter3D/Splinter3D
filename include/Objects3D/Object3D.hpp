@@ -68,6 +68,31 @@ namespace objects3D
         }
 
         /**
+         * Return a new mesh with the current transform applied to it. The caller is responsible for deleting the returned mesh.
+         */
+        geometry::Mesh* getTransformedMesh() const
+        {
+            geometry::Mesh* transformedMesh = new geometry::Mesh();
+            Matrix          transformMatrix = _transform.toMatrix();
+
+            for (const auto& tri : _mesh->triangles)
+            {
+                geometry::Triangle transformedTri;
+                for (int i = 0; i < 3; ++i)
+                {
+                    transformedTri.vertices[i].x = transformMatrix.m0 * tri.vertices[i].x + transformMatrix.m4 * tri.vertices[i].y +
+                                                   transformMatrix.m8 * tri.vertices[i].z + transformMatrix.m12;
+                    transformedTri.vertices[i].y = transformMatrix.m1 * tri.vertices[i].x + transformMatrix.m5 * tri.vertices[i].y +
+                                                   transformMatrix.m9 * tri.vertices[i].z + transformMatrix.m13;
+                    transformedTri.vertices[i].z = transformMatrix.m2 * tri.vertices[i].x + transformMatrix.m6 * tri.vertices[i].y +
+                                                   transformMatrix.m10 * tri.vertices[i].z + transformMatrix.m14;
+                }
+                transformedMesh->triangles.push_back(transformedTri);
+            }
+            return transformedMesh;
+        }
+
+        /**
          * Return the color of this object.
          */
         renderer::Color getColor() const

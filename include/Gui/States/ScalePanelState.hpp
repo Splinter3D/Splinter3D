@@ -2,16 +2,20 @@
 #pragma once
 #include <Objects3D/Object3D.hpp>
 #include <Scene/Scene.hpp>
+#include <Splinter3D/Events/EventBus.hpp>
+#include <Splinter3D/Events/ObjectSelectedEvent.hpp>
+#include <Splinter3D/Utils/Singleton.hpp>
 
 namespace gui::states
 {
-    class ScalePanelState
+    class ScalePanelState : public splinter3D::utils::Singleton<ScalePanelState>
     {
       public:
-        static ScalePanelState& instance()
+        ScalePanelState()
         {
-            static ScalePanelState state;
-            return state;
+            splinter3D::events::EventBus::getInstance()
+                .subscribe<scene::events::ObjectSelectedEvent>(
+                    [this](const scene::events::ObjectSelectedEvent& e) { resetOnSelectionChange(e); });
         }
 
         // Scale values
@@ -29,14 +33,9 @@ namespace gui::states
         // Whether to maintain uniform scaling across all axes
         bool uniformScale{true};
 
-        int lastSelectedObjectIndex{-1};
-
         void applyToTarget()
         {
-            scene::Scene instance = scene::Scene::getInstance();
-
-            int                 currentSelectedObjectIndex = scene::Scene::getInstance().getSelectedIndex();
-            scene::SceneObject* target                     = scene::Scene::getInstance().getSelected();
+            scene::SceneObject* target = scene::Scene::getInstance().getSelected();
             if (!target)
                 return;
             objects3D::Transform t = target->getTransform();
@@ -47,6 +46,30 @@ namespace gui::states
         }
 
       private:
-        ScalePanelState() = default;
+        void resetOnSelectionChange(const scene::events::ObjectSelectedEvent& e)
+        {
+            int index = e.index;
+            if (index < 0)
+            {
+                std::cout << "No object selected, resetting scale to defaults." << std::endl;
+                // No object selected, reset to defaults
+                scaleX = scaleY = scaleZ = 100.0f;
+                scaleXi = scaleYi = scaleZi = 100;
+            }
+            else
+            {
+                std::cout << "Object selected with index: " << index << ", resetting scale to object's current scale." << std::endl;
+                auto* obj = scene::Scene::getInstance().getSelected();
+                if (!obj)
+                    return;
+                const auto t = obj->getTransform();
+                scaleX       = t.scale.x * 100.0f;
+                scaleY       = t.scale.y * 100.0f;
+                scaleZ       = t.scale.z * 100.0f;
+                scaleXi      = (int) scaleX;
+                scaleYi      = (int) scaleY;
+                scaleZi      = (int) scaleZ;
+            }
+        }
     };
 } // namespace gui::states

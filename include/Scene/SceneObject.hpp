@@ -24,6 +24,7 @@ namespace scene
         void setColor(const renderer::Color& c);
 
         objects3D::Transform getTransform() const;
+        geometry::Mesh*      getTransformedMesh() const;
         void                 setTransform(const objects3D::Transform& transform);
 
       private:

@@ -11,7 +11,7 @@ namespace scene
 
     bool SceneObject::isHit(const geometry::Ray& ray)
     {
-        for (const auto& tri : obj.getMesh()->triangles)
+        for (const auto& tri : obj.getTransformedMesh()->triangles)
         {
             const geometry::Vec3 edge1 = tri.vertices[1] - tri.vertices[0];
             const geometry::Vec3 edge2 = tri.vertices[2] - tri.vertices[0];
@@ -57,5 +57,10 @@ namespace scene
     {
         obj.setColor(c);
         rObj.setColor(c);
+    }
+
+    geometry::Mesh* SceneObject::getTransformedMesh() const
+    {
+        return obj.getTransformedMesh();
     }
 } // namespace scene

@@ -20,8 +20,9 @@ namespace renderer
         void draw(renderer::IRenderer& renderer) const;
         void setColor(const Color& c);
 
-        void onTransformChanged() override;
-        void onAppearanceChanged() override;
+        void            onTransformChanged() override;
+        void            onAppearanceChanged() override;
+        geometry::Mesh* getTransformedMesh() const;
 
       private:
         void  rebuildMatrix();

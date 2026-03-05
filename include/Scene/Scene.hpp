@@ -10,6 +10,8 @@
 #include <Renderer/Color.hpp>
 #include <Renderer/IRenderer.hpp>
 #include <Scene/SceneObject.hpp>
+#include <Splinter3D/Events/EventBus.hpp>
+#include <Splinter3D/Events/ObjectSelectedEvent.hpp>
 #include <Splinter3D/Utils/Singleton.hpp>
 #include <iostream>
 #include <memory>
@@ -35,18 +37,20 @@ namespace scene
 
         void handleClick(const geometry::Ray& ray)
         {
-            for (size_t i = 0; i < _objects.size(); ++i)
+            for (auto& obj : _objects)
             {
-                _objects[i]->setColor({255, 255, 255, 255}); // Reset color for all objects
-            } // Reset selection before checking for hits TODO Remove this
-            for (size_t i = 0; i < _objects.size(); ++i)
+                obj->setColor({255, 255, 255, 255}); // Reset color of all objects
+            }
+            for (int i = 0; i < (int) _objects.size(); ++i)
             {
-                if (_objects[i]->isHit(ray))
+                if (_objects[(size_t) i]->isHit(ray))
                 {
-                    _selectedObjectIndex     = (int) i;
-                    _lastSelectedObjectIndex = _selectedObjectIndex;
-                    std::cout << "Object " << i << " is hit!" << std::endl;
+                    _selectedObjectIndex     = i;
+                    _lastSelectedObjectIndex = i;
                     _objects[(size_t) _selectedObjectIndex]->setColor({255, 0, 0, 255}); // Highlight the selected object
+
+                    splinter3D::events::EventBus::getInstance()
+                        .publish(scene::events::ObjectSelectedEvent{i});
                     return;
                 }
             }
@@ -55,6 +59,8 @@ namespace scene
             {
                 _objects[(size_t) _selectedObjectIndex]->setColor({255, 0, 0, 255}); // Highlight the selected object
             }
+            splinter3D::events::EventBus::getInstance()
+                .publish(scene::events::ObjectSelectedEvent{_selectedObjectIndex});
         }
 
         int getSelectedIndex() const
@@ -64,7 +70,6 @@ namespace scene
 
         SceneObject* getSelected()
         {
-            std::cout << "Selected index: " << _selectedObjectIndex << std::endl;
             if (_selectedObjectIndex < 0)
                 return nullptr;
             return _objects[(size_t) _selectedObjectIndex].get();

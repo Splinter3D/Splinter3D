@@ -11,7 +11,7 @@ namespace gui::panels
                         float px, float py,
                         float /*pw*/, float /*ph*/) const
         {
-            auto& state = gui::states::ScalePanelState::instance();
+            auto& state = gui::states::ScalePanelState::getInstance();
 
             constexpr float kPad        = 10.0f;
             constexpr float kFieldH     = 24.0f;
