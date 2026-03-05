@@ -20,8 +20,6 @@ namespace scene
 {
     struct Scene : public splinter3D::utils::Singleton<Scene>
     {
-        Scene() = default;
-
         void addObject(const std::string& stlPath, renderer::Color color = {255, 255, 255, 255})
         {
             _objects.emplace_back(std::make_unique<SceneObject>(stlPath, color));
@@ -75,9 +73,15 @@ namespace scene
             return _objects[(size_t) _selectedObjectIndex].get();
         }
 
+      protected:
+        Scene()           = default;
+        ~Scene() noexcept = default;
+
       private:
         std::vector<std::unique_ptr<SceneObject>> _objects;
         int                                       _selectedObjectIndex{-1};
         int                                       _lastSelectedObjectIndex{-1};
+
+        friend class Singleton<Scene>;
     };
 } // namespace scene

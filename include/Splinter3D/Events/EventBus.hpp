@@ -11,8 +11,6 @@ namespace splinter3D::events
     class EventBus : public splinter3D::utils::Singleton<EventBus>
     {
       public:
-        EventBus() = default;
-
         template <typename Event>
         void subscribe(std::function<void(const Event&)> handler)
         {
@@ -29,7 +27,12 @@ namespace splinter3D::events
                     h(&event);
         }
 
+      protected:
+        EventBus()           = default;
+        ~EventBus() noexcept = default;
+
       private:
+        friend class Singleton<EventBus>;
         std::unordered_map<std::type_index, std::vector<std::function<void(const void*)>>> _handlers;
     };
 } // namespace splinter3D::events

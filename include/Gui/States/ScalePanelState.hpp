@@ -11,13 +11,6 @@ namespace gui::states
     class ScalePanelState : public splinter3D::utils::Singleton<ScalePanelState>
     {
       public:
-        ScalePanelState()
-        {
-            splinter3D::events::EventBus::getInstance()
-                .subscribe<scene::events::ObjectSelectedEvent>(
-                    [this](const scene::events::ObjectSelectedEvent& e) { resetOnSelectionChange(e); });
-        }
-
         // Scale values
         float scaleX{100.0f};
         float scaleY{100.0f};
@@ -45,6 +38,16 @@ namespace gui::states
             target->setTransform(t);
         }
 
+      protected:
+        ScalePanelState() noexcept
+        {
+            splinter3D::events::EventBus::getInstance()
+                .subscribe<scene::events::ObjectSelectedEvent>(
+                    [this](const scene::events::ObjectSelectedEvent& e) { resetOnSelectionChange(e); });
+        }
+
+        ~ScalePanelState() noexcept = default;
+
       private:
         void resetOnSelectionChange(const scene::events::ObjectSelectedEvent& e)
         {
@@ -71,5 +74,7 @@ namespace gui::states
                 scaleZi      = (int) scaleZ;
             }
         }
+
+        friend class Singleton<ScalePanelState>;
     };
 } // namespace gui::states
