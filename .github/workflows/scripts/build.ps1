@@ -151,14 +151,21 @@ cmake @cmakeArgs
 if ($LASTEXITCODE -ne 0) { Fail "CMake configure failed" }
 
 Write-Host "Building ($Config)"
-cmake --build $buildDir --config $Config -- /m:$(Get-Process -Id $PID -ErrorAction SilentlyContinue | ForEach-Object { [Environment]::ProcessorCount })
+# Ensure MSBuild writes outputs into the build tree by overriding OutDir when
+# using Visual Studio/MSBuild. This keeps artifacts under $buildDir\$Config\
+$procCount = [Environment]::ProcessorCount
+$outDirMsbuild = Join-Path $buildDir $Config
+# ensure trailing backslash for MSBuild OutDir
+if ($outDirMsbuild[-1] -ne '\') { $outDirMsbuild = "$outDirMsbuild\" }
+$msbuildArgs = @("/m:$procCount", "/p:OutDir=$outDirMsbuild")
+cmake --build $buildDir --config $Config -- $msbuildArgs
 if ($LASTEXITCODE -ne 0) { Fail "Build failed" }
 
 # Ensure the splinter3D target(s) are explicitly built (try both possible target names)
 $targetsToTry = @('splinter3D','splinter3D-app')
 foreach ($t in $targetsToTry) {
   Write-Host "Attempting to build target: $t"
-  cmake --build $buildDir --config $Config --target $t -- /m:$(Get-Process -Id $PID -ErrorAction SilentlyContinue | ForEach-Object { [Environment]::ProcessorCount }) 2>$null
+  cmake --build $buildDir --config $Config --target $t -- $msbuildArgs 2>$null
 }
 
 # Prepare staging area
@@ -259,6 +266,21 @@ $sha.Hash | Out-File -FilePath $shaFile -Encoding ascii
 Write-Host "Packaging complete: $zipPath"
 Write-Host "SHA256: $($sha.Hash) -> $shaFile"
 Write-Host "build.ps1 finished. Staging: $staging; Output: $outDir"
+
+# If a top-level Release folder was left behind and it's empty, remove it to keep
+# the repository clean (some MSBuild setups create this folder transiently).
+$topLevelRelease = Join-Path $ProjectRoot 'Release'
+if (Test-Path $topLevelRelease) {
+  try {
+    $entries = Get-ChildItem -LiteralPath $topLevelRelease -Force -ErrorAction SilentlyContinue
+    if (-not $entries -or $entries.Count -eq 0) {
+      Remove-Item -Recurse -Force $topLevelRelease -ErrorAction SilentlyContinue
+      if (-not (Test-Path $topLevelRelease)) { Write-Host "Removed empty top-level Release folder: $topLevelRelease" }
+    }
+  } catch {
+    Write-Warning "Failed to inspect or remove top-level Release folder: $_"
+  }
+}
 
 # Remove staging directory now that the ZIP is created, unless DevMode is active
 if (-not $DevMode) {
