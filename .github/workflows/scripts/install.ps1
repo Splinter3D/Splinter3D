@@ -250,6 +250,37 @@ if (Test-Path $jsonPath) {
   Log-Warn ("vcpkg.json not found at {0}; no dependencies installed." -f $jsonPath)
 }
 
+# After vcpkg install, try to locate msgfmt in vcpkg-installed tool locations and add to PATH for this session
+try {
+  $msgfmtFound = $false
+  $msgfmtCandidates = @()
+  $installedCandidate = Join-Path $vcRoot "installed\$Triplet\tools\gettext\bin"
+  $msgfmtCandidates += $installedCandidate
+  # also check packages/<pkg>/tools/gettext/bin
+  $pkgDir = Join-Path $vcRoot 'packages'
+  if (Test-Path $pkgDir) {
+    $pkgMatches = Get-ChildItem -Path $pkgDir -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -like 'gettext_*' }
+    foreach ($m in $pkgMatches) {
+      $p = Join-Path $m.FullName 'tools\gettext\bin'
+      $msgfmtCandidates += $p
+    }
+  }
+  foreach ($cand in $msgfmtCandidates) {
+    if (-not $cand) { continue }
+    $exe = Join-Path $cand 'msgfmt.exe'
+    if (Test-Path $exe) {
+      # prepend to PATH for the current process so subsequent CMake runs find msgfmt
+      $env:PATH = "$cand;$env:PATH"
+      Log-Milestone ("Found msgfmt at {0}; prepended to PATH" -f $exe)
+      $msgfmtFound = $true
+      break
+    }
+  }
+  if (-not $msgfmtFound) { Log-Info 'msgfmt not found in vcpkg installed tool locations' }
+} catch {
+  Log-Warn ("Error while searching for msgfmt in vcpkg locations: {0}" -f $_)
+}
+
 if ($SetupMSVC) { Import-VcvarsEnvironment -Arch 'x64' }
 Pop-Location
 
