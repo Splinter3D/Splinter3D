@@ -165,6 +165,7 @@ namespace renderer
         geometry::Vec3 getMousePosition() const override;
         geometry::Vec3 getMouseDelta() const override;
         float          getDeltaTime() const override;
+        geometry::Ray  getMouseRay() const override;
 
 #pragma endregion
 #pragma region Private

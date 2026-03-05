@@ -282,6 +282,14 @@ namespace renderer
         return GetFrameTime();
     }
 
+    geometry::Ray RaylibRenderer::getMouseRay() const
+    {
+        Ray ray = GetMouseRay(GetMousePosition(), impl_->camera);
+        return geometry::Ray{
+            {ray.position.x, ray.position.y, ray.position.z},
+            {ray.direction.x, ray.direction.y, ray.direction.z}};
+    }
+
 #pragma endregion
 #pragma region CAMERA
 

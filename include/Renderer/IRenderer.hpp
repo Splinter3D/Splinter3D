@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Geometry/Mesh.hpp>
+#include <Geometry/Ray.hpp>
 #include <Geometry/Triangle.hpp>
 #include <Geometry/Vec3.hpp>
 #include <Gui/IGuiComponent.hpp>
@@ -137,6 +138,7 @@ namespace renderer
         virtual bool           isKeyDown(Key key) const               = 0;
         virtual bool           isKeyPressed(Key key) const            = 0;
         virtual bool           isMouseButtonDown(int button) const    = 0;
+        virtual geometry::Ray  getMouseRay() const                    = 0;
         virtual bool           isMouseButtonPressed(int button) const = 0;
         virtual geometry::Vec3 getMousePosition() const               = 0;
         virtual geometry::Vec3 getMouseDelta() const                  = 0;

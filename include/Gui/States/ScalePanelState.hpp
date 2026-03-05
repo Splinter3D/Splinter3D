@@ -1,6 +1,7 @@
 // ScalePanelState.hpp
 #pragma once
 #include <Objects3D/Object3D.hpp>
+#include <Scene/Scene.hpp>
 
 namespace gui::states
 {
@@ -28,10 +29,14 @@ namespace gui::states
         // Whether to maintain uniform scaling across all axes
         bool uniformScale{true};
 
-        objects3D::Object3D* target{nullptr};
+        int lastSelectedObjectIndex{-1};
 
         void applyToTarget()
         {
+            scene::Scene instance = scene::Scene::getInstance();
+
+            int                 currentSelectedObjectIndex = scene::Scene::getInstance().getSelectedIndex();
+            scene::SceneObject* target                     = scene::Scene::getInstance().getSelected();
             if (!target)
                 return;
             objects3D::Transform t = target->getTransform();

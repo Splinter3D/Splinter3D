@@ -63,7 +63,11 @@ int main()
         toolbar.update(renderer);
 
         renderer.begin3D();
-
+        if (renderer.isMouseButtonPressed((int) renderer::MouseButton::Left))
+        {
+            auto ray = renderer.getMouseRay();
+            scene::Scene::getInstance().handleClick(ray);
+        }
         renderer.drawGrid(10, 1.0f);
         renderer.drawAxis(2.0f);
         scene::Scene::getInstance().draw(renderer);

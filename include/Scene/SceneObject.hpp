@@ -19,7 +19,12 @@ namespace scene
             rObj.setColor(color);
         }
 
-        void draw(renderer::IRenderer& renderer) const; // declare only
+        void draw(renderer::IRenderer& renderer) const;
+        bool isHit(const geometry::Ray& ray);
+        void setColor(const renderer::Color& c);
+
+        objects3D::Transform getTransform() const;
+        void                 setTransform(const objects3D::Transform& transform);
 
       private:
         objects3D::Object3D    obj;
