@@ -6,6 +6,10 @@ on:
       - feat/create_exe
   workflow_dispatch:
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   check-windows-build:
     name: Check Windows install & build
