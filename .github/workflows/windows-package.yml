@@ -1,4 +1,4 @@
-name: Build and Release ZIP
+name: Windows Package
 
 on:
   push:
@@ -37,55 +37,15 @@ jobs:
           $zip = Join-Path ${{ github.workspace }} 'output\release-package.zip'
           if (Test-Path $zip) { Write-Host "Found package: $zip" } else { Write-Error 'release-package.zip not found'; exit 1 }
 
-      # REST API
-      - name: Create GitHub Release
-        id: create_release
-        shell: pwsh
+      - name: Create Release and upload assets (softprops action)
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ${{ github.workspace }}\output\release-package.zip
+            ${{ github.workspace }}\output\release-package.zip.sha256
+          tag_name: windows-package-${{ github.run_number }}
+          name: windows-package-${{ github.run_number }}
+          body: |
+            Automated build: windows-package-${{ github.run_number }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-          TAG: windows-package-${{ github.run_number }}
-          RELEASE_NAME: windows-package-${{ github.run_number }}
-        run: |
-          $token = $Env:GITHUB_TOKEN
-          $repo = $Env:REPO
-          $tag = $Env:TAG
-          $name = $Env:RELEASE_NAME
-          $uri = "https://api.github.com/repos/$repo/releases"
-          $headers = @{ Authorization = "token $token"; "User-Agent" = "GitHub Actions" }
-          $body = @{ tag_name = $tag; name = $name; draft = $false; prerelease = $false } | ConvertTo-Json
-          $resp = Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $body -ContentType 'application/json'
-          $upload_url = $resp.upload_url -replace '\{\?.*',''
-          Add-Content -Path $Env:GITHUB_OUTPUT -Value "release_upload_url=$upload_url"
-
-      # REST API
-      - name: Upload ZIP to Release
-        shell: pwsh
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          UPLOAD_URL: ${{ steps.create_release.outputs.release_upload_url }}
-        run: |
-          $token = $Env:GITHUB_TOKEN
-          $uploadUrl = $Env:UPLOAD_URL
-          $assetPath = "${{ github.workspace }}\output\release-package.zip"
-          $name = 'release-package.zip'
-          $uri = "$uploadUrl?name=$name"
-          $bytes = [System.IO.File]::ReadAllBytes($assetPath)
-          $headers = @{ Authorization = "token $token"; "User-Agent" = "GitHub Actions"; "Content-Type" = "application/zip" }
-          Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $bytes
-
-      # REST API
-      - name: Upload SHA256 to Release
-        shell: pwsh
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          UPLOAD_URL: ${{ steps.create_release.outputs.release_upload_url }}
-        run: |
-          $token = $Env:GITHUB_TOKEN
-          $uploadUrl = $Env:UPLOAD_URL
-          $assetPath = "${{ github.workspace }}\output\release-package.zip.sha256"
-          $name = 'release-package.zip.sha256'
-          $uri = "$uploadUrl?name=$name"
-          $bytes = [System.IO.File]::ReadAllBytes($assetPath)
-          $headers = @{ Authorization = "token $token"; "User-Agent" = "GitHub Actions"; "Content-Type" = "text/plain" }
-          Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $bytes
