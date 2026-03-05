@@ -1,78 +1,89 @@
-name: Build Windows package
+name: Build and Release ZIP
 
 on:
   push:
-    branches:
-      - feat/create_exe
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
   contents: write
-  packages: write
 
 jobs:
-  check-windows-build:
-    name: Check Windows install & build
+  build-and-release:
     runs-on: windows-latest
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      # Preparing the environment for build: bootstrapped vcpkg, integrated it, imported the MSVC environment, and installed all manifest dependencies
-      - name: Run install.ps1
+      # vcpkg, system tools
+      - name: Install dependencies
+        shell: pwsh
         run: |
           pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/install.ps1 ${{ github.workspace }}
-        shell: pwsh
 
-      # Building .zip package with .exe and trads
-      - name: Run build.ps1
+      # creates staging/output for .zip
+      - name: Build package
+        shell: pwsh
         run: |
           pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/build.ps1 ${{ github.workspace }}
-        shell: pwsh
 
-      - name: Verify package
+      - name: Verify package exists
+        shell: pwsh
         run: |
           $zip = Join-Path ${{ github.workspace }} 'output\release-package.zip'
-          if (Test-Path $zip) { Write-Host "Found package: $zip" } else { Write-Error "release-package.zip not found in output"; exit 1 }
-        shell: pwsh
+          if (Test-Path $zip) { Write-Host "Found package: $zip" } else { Write-Error 'release-package.zip not found'; exit 1 }
 
-      - name: Upload packaged artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-package
-          path: output
-
+      # REST API
       - name: Create GitHub Release
         id: create_release
-        uses: actions/create-release@v1
+        shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: windows-package-${{ github.run_number }}
-          release_name: windows-package-${{ github.run_number }}
-          draft: false
-          prerelease: false
+          REPO: ${{ github.repository }}
+          TAG: windows-package-${{ github.run_number }}
+          RELEASE_NAME: windows-package-${{ github.run_number }}
+        run: |
+          $token = $Env:GITHUB_TOKEN
+          $repo = $Env:REPO
+          $tag = $Env:TAG
+          $name = $Env:RELEASE_NAME
+          $uri = "https://api.github.com/repos/$repo/releases"
+          $headers = @{ Authorization = "token $token"; "User-Agent" = "GitHub Actions" }
+          $body = @{ tag_name = $tag; name = $name; draft = $false; prerelease = $false } | ConvertTo-Json
+          $resp = Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $body -ContentType 'application/json'
+          $upload_url = $resp.upload_url -replace '\{\?.*',''
+          Add-Content -Path $Env:GITHUB_OUTPUT -Value "release_upload_url=$upload_url"
 
+      # REST API
       - name: Upload ZIP to Release
-        uses: actions/upload-release-asset@v1
+        shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ github.workspace }}\output\release-package.zip
-          asset_name: release-package.zip
-          asset_content_type: application/zip
+          UPLOAD_URL: ${{ steps.create_release.outputs.release_upload_url }}
+        run: |
+          $token = $Env:GITHUB_TOKEN
+          $uploadUrl = $Env:UPLOAD_URL
+          $assetPath = "${{ github.workspace }}\output\release-package.zip"
+          $name = 'release-package.zip'
+          $uri = "$uploadUrl?name=$name"
+          $bytes = [System.IO.File]::ReadAllBytes($assetPath)
+          $headers = @{ Authorization = "token $token"; "User-Agent" = "GitHub Actions"; "Content-Type" = "application/zip" }
+          Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $bytes
 
+      # REST API
       - name: Upload SHA256 to Release
-        uses: actions/upload-release-asset@v1
+        shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ github.workspace }}\output\release-package.zip.sha256
-          asset_name: release-package.zip.sha256
-          asset_content_type: text/plain
+          UPLOAD_URL: ${{ steps.create_release.outputs.release_upload_url }}
+        run: |
+          $token = $Env:GITHUB_TOKEN
+          $uploadUrl = $Env:UPLOAD_URL
+          $assetPath = "${{ github.workspace }}\output\release-package.zip.sha256"
+          $name = 'release-package.zip.sha256'
+          $uri = "$uploadUrl?name=$name"
+          $bytes = [System.IO.File]::ReadAllBytes($assetPath)
+          $headers = @{ Authorization = "token $token"; "User-Agent" = "GitHub Actions"; "Content-Type" = "text/plain" }
+          Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $bytes
