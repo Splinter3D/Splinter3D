@@ -16,6 +16,24 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Cache vcpkg repository
+        uses: actions/cache@v4
+        with:
+          path: vcpkg
+          key: vcpkg-repo-${{ runner.os }}-v1
+          restore-keys: |
+            vcpkg-repo-${{ runner.os }}-
+
+      - name: Cache vcpkg installed packages and downloads
+        uses: actions/cache@v4
+        with:
+          path: |
+            vcpkg_installed
+            vcpkg/downloads
+          key: vcpkg-installed-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}-x64-windows
+          restore-keys: |
+            vcpkg-installed-${{ runner.os }}-
+
       #preparing the environment for build: bootstrapped vcpkg, integrated it, imported the MSVC environment, and installed all manifest dependencies
       - name: Run install.ps1
         run: |
