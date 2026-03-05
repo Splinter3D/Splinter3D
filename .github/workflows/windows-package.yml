@@ -2,7 +2,9 @@ name: Build and Release ZIP
 
 on:
   push:
-    branches: [ main, feat/create_exe ]
+    branches:
+    - main
+    - feat/create_exe
   workflow_dispatch:
 
 permissions:
