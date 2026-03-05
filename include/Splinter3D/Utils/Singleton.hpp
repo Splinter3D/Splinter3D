@@ -11,7 +11,7 @@ namespace splinter3D::utils
      * @tparam C The class to make a singleton.
      */
     template <class C>
-    class SPLINTER3D_API Singleton : public NonCopyable
+    class Singleton : public NonCopyable
     {
       public:
         /**

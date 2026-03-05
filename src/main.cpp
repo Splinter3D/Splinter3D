@@ -5,12 +5,17 @@
 ** main
 */
 
+#ifndef RAYLIB_NO_WINDOWS_H
+#define RAYLIB_NO_WINDOWS_H
+#endif
+
 #include <Geometry/Utils/MeshUtils.hpp>
 #include <Gui/CenterredToolBar.hpp>
 #include <Objects3D/Object3D.hpp>
 #include <Renderer/RaylibRenderer.hpp>
 #include <Renderer/RenderObject.hpp>
 #include <Splinter3D/Utils/Locale.hpp>
+#include <Splinter3D/Utils/OSCompatibility.hpp>
 
 #define _(String) gettext(String)
 
@@ -36,6 +41,10 @@ int main()
 {
     splinter::utils::Locale::init("splinter3D", "./locale");
 
+    // Install cross-platform signal handlers and suppress ^C echo on POSIX
+    splinter::utils::oscompat::InstallSignalHandlers();
+    splinter::utils::oscompat::disableCtrlCEcho();
+
     // splinter::utils::Locale::setLanguage("fr");
     // splinter::utils::Locale::setLanguage("es");
     // splinter::utils::Locale::setLanguage("de");
@@ -57,7 +66,7 @@ int main()
 
     gui::CenteredToolbar toolbar(18.0f, 52.0f, 14.0f);
 
-    while (!renderer.shouldClose())
+    while (!renderer.shouldClose() && !splinter::utils::oscompat::SignalReceived())
     {
         float dt = renderer.beginFrame();
         renderer.updateCamera(dt);
@@ -78,5 +87,7 @@ int main()
         toolbar.draw();
         renderer.endFrame();
     }
+    // restore terminal state if needed
+    splinter::utils::oscompat::restoreTerminal();
     return 0;
 }

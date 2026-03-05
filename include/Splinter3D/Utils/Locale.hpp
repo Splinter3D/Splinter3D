@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <Splinter3D/Utils/OSCompatibility.hpp>
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
@@ -15,6 +16,25 @@
 #include <libintl.h>
 #include <locale.h>
 #include <string>
+
+// Safe getenv wrapper that avoids MSVC deprecation warnings
+static inline std::string getenv_string(const char* name)
+{
+#if defined(SPLINTER3D_WINDOWS)
+    char*  buf = nullptr;
+    size_t len = 0;
+    if (_dupenv_s(&buf, &len, name) == 0 && buf != nullptr)
+    {
+        std::string s(buf);
+        free(buf);
+        return s;
+    }
+    return std::string();
+#else
+    const char* v = std::getenv(name);
+    return v ? std::string(v) : std::string();
+#endif
+}
 
 namespace splinter::utils
 {
@@ -241,37 +261,37 @@ namespace splinter::utils
         static std::string detectSystemLanguage()
         {
             // Try LANG environment variable (Unix-like systems)
-            const char* lang = std::getenv("LANG");
-            if (lang != nullptr && lang[0] != '\0')
+            std::string lang = getenv_string("LANG");
+            if (!lang.empty())
             {
                 std::cerr << "[Locale::detectSystemLanguage] Found LANG: " << lang << std::endl;
-                return extractLanguageCode(lang);
+                return extractLanguageCode(lang.c_str());
             }
 
             // Try LC_ALL environment variable
-            const char* lc_all = std::getenv("LC_ALL");
-            if (lc_all != nullptr && lc_all[0] != '\0')
+            std::string lc_all = getenv_string("LC_ALL");
+            if (!lc_all.empty())
             {
                 std::cerr << "[Locale::detectSystemLanguage] Found LC_ALL: " << lc_all << std::endl;
-                return extractLanguageCode(lc_all);
+                return extractLanguageCode(lc_all.c_str());
             }
 
             // Try LANGUAGE environment variable
-            const char* language = std::getenv("LANGUAGE");
-            if (language != nullptr && language[0] != '\0')
+            std::string language = getenv_string("LANGUAGE");
+            if (!language.empty())
             {
                 std::cerr << "[Locale::detectSystemLanguage] Found LANGUAGE: " << language << std::endl;
-                return extractLanguageCode(language);
+                return extractLanguageCode(language.c_str());
             }
 
             // Windows fallback (check system locale via environment)
             // This is a simplified approach; more robust Windows detection
             // would require Windows API calls
-            const char* windows_lang = std::getenv("USERLANG");
-            if (windows_lang != nullptr && windows_lang[0] != '\0')
+            std::string windows_lang = getenv_string("USERLANG");
+            if (!windows_lang.empty())
             {
                 std::cerr << "[Locale::detectSystemLanguage] Found USERLANG: " << windows_lang << std::endl;
-                return extractLanguageCode(windows_lang);
+                return extractLanguageCode(windows_lang.c_str());
             }
 
             // Default to English

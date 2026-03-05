@@ -9,6 +9,10 @@ function(apply_compiler_warnings target)
                 /EHsc
                 /Zc:__cplusplus
                 /wd4275
+                /wd4702
+            /wd4100
+            /wd4996
+            /wd4456
                 /wd4251
                 /wd4201
         )

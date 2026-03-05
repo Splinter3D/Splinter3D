@@ -13,9 +13,26 @@ function Fail([string]$msg) {
 
 # Normalize ProjectRoot
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
-  if ($env:GITHUB_WORKSPACE) { $ProjectRoot = $env:GITHUB_WORKSPACE } else { $ProjectRoot = (Get-Location).Path }
+  if ($env:GITHUB_WORKSPACE) {
+    $ProjectRoot = $env:GITHUB_WORKSPACE
+  } else {
+    # default to repository root relative to this script when possible
+    try {
+      $repoRootGuess = Join-Path $PSScriptRoot '..\..\..'
+      $repoRootResolved = Resolve-Path -LiteralPath $repoRootGuess -ErrorAction Stop
+      $ProjectRoot = $repoRootResolved[0].ProviderPath
+    } catch {
+      # fallback to current location
+      $ProjectRoot = (Get-Location).Path
+    }
+  }
 }
-try { $ProjectRoot = (Resolve-Path $ProjectRoot).Path } catch { Fail "Project root not found: $ProjectRoot" }
+try {
+  $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot -ErrorAction Stop).Path
+} catch {
+  Log-Warn "Project root path could not be resolved: $ProjectRoot. Falling back to current directory."
+  $ProjectRoot = (Get-Location).Path
+}
 Write-Host "install.ps1 starting (ProjectRoot: $ProjectRoot)"
 
 # Setup logging directory and helpers
@@ -74,9 +91,14 @@ function Run-As-Administrator {
     if ($Triplet) { $args += '-Triplet'; $args += $Triplet }
     if ($SetupMSVC) { $args += '-SetupMSVC' }
     if ($DevMode) { $args += '-DevMode' }
-    Start-Process -FilePath powershell -ArgumentList $args -Verb RunAs -Wait
-    Log-Info 'Elevated process launched; exiting current process.'
-    exit
+    try {
+      Start-Process -FilePath powershell -ArgumentList $args -Verb RunAs -WorkingDirectory $ProjectRoot -Wait
+      Log-Info 'Elevated process launched; exiting current process.'
+      exit
+    } catch {
+      Log-ErrorMsg ("Failed to relaunch elevated process: {0}" -f $_)
+      Fail 'Elevation canceled or failed; please run the script from an elevated PowerShell manually.'
+    }
   }
 }
 
@@ -114,6 +136,85 @@ if ($SetupMSVC) {
 
 ## Install dependencies using manifest mode when a vcpkg.json manifest exists.
 $jsonPath = Join-Path $ProjectRoot 'vcpkg.json'
+## Ensure required external tools (cmake, msgfmt) are present or try to install via winget
+function Ensure-Command-With-Winget([string]$cmd, [string]$wingetId) {
+  try {
+    if (Get-Command $cmd -ErrorAction SilentlyContinue) { Log-Info "$cmd present"; return $true }
+  } catch { }
+  if (-not (Get-Command winget -ErrorAction SilentlyContinue)) { Log-Warn "winget not available; cannot install $cmd"; return $false }
+  Log-Action "Attempting to install $cmd via winget ($wingetId)"
+  try {
+    & winget install --id $wingetId --accept-package-agreements --accept-source-agreements -e
+    if ($LASTEXITCODE -eq 0 -and (Get-Command $cmd -ErrorAction SilentlyContinue)) { Log-Milestone "$cmd installed via winget"; return $true }
+    Log-Warn "$cmd installation via winget did not succeed or command still not found"
+    return $false
+  } catch {
+    Log-Warn ("winget install threw an exception: {0}" -f $_)
+    return $false
+  }
+}
+
+# Ensure Chocolatey is available (install it if missing)
+function Ensure-Chocolatey() {
+  if (Get-Command choco -ErrorAction SilentlyContinue) { Log-Info 'choco present'; return $true }
+  Log-Action 'Chocolatey not found; attempting automated install (this requires elevation)'
+  try {
+    Set-ExecutionPolicy Bypass -Scope Process -Force
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+    $script = (New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')
+    if (-not $script) { Log-Warn 'Failed to download Chocolatey install script'; return $false }
+    Invoke-Expression $script
+    Start-Sleep -Seconds 2
+    # Reload PATH from system and user environment so the current session can see newly-installed programs
+    try {
+      $machinePath = [System.Environment]::GetEnvironmentVariable('Path','Machine')
+      $userPath = [System.Environment]::GetEnvironmentVariable('Path','User')
+      $combined = ($machinePath + ';' + $userPath).Trim(';')
+      if ($combined) {
+        $env:Path = $combined
+        Log-Info 'Session PATH reloaded from system/user environment'
+      }
+    } catch {
+      Log-Warn ("Failed to reload session PATH: {0}" -f $_)
+    }
+    if (Get-Command choco -ErrorAction SilentlyContinue) { Log-Milestone 'Chocolatey installed'; return $true }
+    Log-Warn 'Chocolatey install did not make choco available in this session'
+    return $false
+  } catch {
+    Log-Warn ("Chocolatey install failed: {0}" -f $_)
+    return $false
+  }
+}
+
+# Install a command using Chocolatey
+function Ensure-Command-With-Choco([string]$cmd, [string]$chocoPkg) {
+  try { if (Get-Command $cmd -ErrorAction SilentlyContinue) { Log-Info "$cmd present"; return $true } } catch { }
+  if (-not (Get-Command choco -ErrorAction SilentlyContinue)) { Log-Warn 'choco not available; cannot install with Chocolatey'; return $false }
+  Log-Action "Attempting to install $chocoPkg via choco"
+  try {
+    & choco install $chocoPkg -y --no-progress
+    Start-Sleep -Seconds 2
+    if (Get-Command $cmd -ErrorAction SilentlyContinue) { Log-Milestone "$cmd installed via choco"; return $true }
+    Log-Warn "$cmd installation via choco did not succeed or command still not found"
+    return $false
+  } catch {
+    Log-Warn ("choco install threw an exception: {0}" -f $_)
+    return $false
+  }
+}
+
+## Try to ensure cmake and msgfmt are present (winget-only)
+## Try to ensure cmake and msgfmt are present: prefer Chocolatey, then fall back to winget
+$chocoAvailable = Ensure-Chocolatey
+if ($chocoAvailable) {
+  $cmakeOk = Ensure-Command-With-Choco 'cmake' 'cmake'
+  $msgfmtOk = Ensure-Command-With-Choco 'msgfmt' 'gettext'
+} else {
+  $cmakeOk = Ensure-Command-With-Winget 'cmake' 'Kitware.CMake'
+  $msgfmtOk = Ensure-Command-With-Winget 'msgfmt' 'GnuWin32.Gettext'
+}
+if (-not $cmakeOk) { Log-Warn 'CMake not available; CMake configure may fail.' }
+if (-not $msgfmtOk) { Log-Warn 'msgfmt not available; gettext tools may be missing for configure.' }
 if (Test-Path $jsonPath) {
   Log-Action ("Found manifest at {0} - running manifest install (triplet: {1})" -f $jsonPath, $Triplet)
   try {
