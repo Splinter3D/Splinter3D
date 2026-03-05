@@ -204,15 +204,36 @@ function Ensure-Command-With-Choco([string]$cmd, [string]$chocoPkg) {
 }
 
 ## Try to ensure cmake and msgfmt are present (winget-only)
-## Try to ensure cmake and msgfmt are present: prefer Chocolatey, then fall back to winget
+## Try to ensure cmake and msgfmt are present: prefer Chocolatey and use .choco-dependencies if provided,
+## otherwise fall back to winget for missing tools.
 $chocoAvailable = Ensure-Chocolatey
-if ($chocoAvailable) {
-  $cmakeOk = Ensure-Command-With-Choco 'cmake' 'cmake'
-  $msgfmtOk = Ensure-Command-With-Choco 'msgfmt' 'gettext'
-} else {
-  $cmakeOk = Ensure-Command-With-Winget 'cmake' 'Kitware.CMake'
-  $msgfmtOk = Ensure-Command-With-Winget 'msgfmt' 'GnuWin32.Gettext'
+$chocoDepsFile = Join-Path $ProjectRoot '.choco-dependencies'
+if ($chocoAvailable -and (Test-Path $chocoDepsFile)) {
+  Log-Action ("Found .choco-dependencies at {0}; installing listed packages" -f $chocoDepsFile)
+  try {
+    $lines = Get-Content -Path $chocoDepsFile -ErrorAction Stop
+    foreach ($line in $lines) {
+      $pkg = $line.Trim()
+      if ([string]::IsNullOrWhiteSpace($pkg)) { continue }
+      if ($pkg.StartsWith('#')) { continue }
+      if ($pkg -match '^(.*?)#') { $pkg = $matches[1].Trim() }
+      if (-not $pkg) { continue }
+      Log-Action ("Installing Chocolatey package: {0}" -f $pkg)
+      try {
+        & choco install $pkg -y --no-progress
+        if ($LASTEXITCODE -eq 0) { Log-Milestone ("choco: {0} installed" -f $pkg) } else { Log-Warn ("choco install {0} exited with {1}" -f $pkg, $LASTEXITCODE) }
+      } catch {
+        Log-Warn ("Exception when installing {0} via choco: {1}" -f $pkg, $_)
+      }
+    }
+  } catch {
+    Log-Warn ("Failed to read .choco-dependencies: {0}" -f $_)
+  }
 }
+
+# Verify tools are available; if missing, attempt winget as fallback
+if (Get-Command cmake -ErrorAction SilentlyContinue) { $cmakeOk = $true } else { $cmakeOk = Ensure-Command-With-Winget 'cmake' 'Kitware.CMake' }
+if (Get-Command msgfmt -ErrorAction SilentlyContinue) { $msgfmtOk = $true } else { $msgfmtOk = Ensure-Command-With-Winget 'msgfmt' 'GnuWin32.Gettext' }
 if (-not $cmakeOk) { Log-Warn 'CMake not available; CMake configure may fail.' }
 if (-not $msgfmtOk) { Log-Warn 'msgfmt not available; gettext tools may be missing for configure.' }
 if (Test-Path $jsonPath) {
