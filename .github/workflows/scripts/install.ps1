@@ -231,6 +231,44 @@ if ($chocoAvailable -and (Test-Path $chocoDepsFile)) {
   }
 }
 
+# Reload session PATH from system/user environment so this script (and subsequent steps) can see newly-installed choco packages
+try {
+  $machinePath = [System.Environment]::GetEnvironmentVariable('Path','Machine')
+  $userPath = [System.Environment]::GetEnvironmentVariable('Path','User')
+  $combined = ($machinePath + ';' + $userPath).Trim(';')
+  if ($combined) {
+    $env:Path = $combined
+    Log-Info 'Session PATH reloaded from system/user environment after choco installs'
+  }
+} catch {
+  Log-Warn ("Failed to reload session PATH after choco installs: {0}" -f $_)
+}
+
+# Also try to locate msgfmt in common Chocolatey install locations and add to PATH if found
+try {
+  $chocoMsgfmtPaths = @(
+    "C:\Program Files\gettext-iconv\bin",
+    "C:\Program Files\gettext\bin",
+    "C:\ProgramData\chocolatey\lib\gettext*\tools\*",
+    "C:\ProgramData\chocolatey\lib\gettext-iconv*\tools\*"
+  )
+  foreach ($p in $chocoMsgfmtPaths) {
+    try {
+      $matches = Get-ChildItem -Path $p -Filter 'msgfmt.exe' -Recurse -ErrorAction SilentlyContinue | ForEach-Object { $_.DirectoryName }
+      if ($matches -and $matches.Count -gt 0) {
+        $first = $matches[0]
+        if ($env:PATH -notlike "*$first*") {
+          $env:PATH = "$first;$env:PATH"
+          Log-Milestone ("Prepended Chocolatey msgfmt path to PATH: {0}" -f $first)
+        }
+        break
+      }
+    } catch { }
+  }
+} catch {
+  Log-Warn ("Error while searching common Chocolatey locations for msgfmt: {0}" -f $_)
+}
+
 # Verify tools are available; if missing, attempt winget as fallback
 if (Get-Command cmake -ErrorAction SilentlyContinue) { $cmakeOk = $true } else { $cmakeOk = Ensure-Command-With-Winget 'cmake' 'Kitware.CMake' }
 if (Get-Command msgfmt -ErrorAction SilentlyContinue) { $msgfmtOk = $true } else { $msgfmtOk = Ensure-Command-With-Winget 'msgfmt' 'GnuWin32.Gettext' }

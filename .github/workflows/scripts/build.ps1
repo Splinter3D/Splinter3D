@@ -114,6 +114,30 @@ if (-not (Get-Command msgfmt -ErrorAction SilentlyContinue)) {
   Write-Host "msgfmt found: $(Get-Command msgfmt | Select-Object -ExpandProperty Source)"
 }
 
+# If msgfmt still not on PATH, check common Chocolatey install locations and prepends their bin folders
+if (-not (Get-Command msgfmt -ErrorAction SilentlyContinue)) {
+  Write-Host 'msgfmt still not found; searching common Chocolatey install locations...'
+  $chocoCandidates = @(
+    'C:\Program Files\gettext-iconv\bin',
+    'C:\Program Files\gettext\bin',
+    'C:\ProgramData\chocolatey\lib\gettext*\tools\*',
+    'C:\ProgramData\chocolatey\lib\gettext-iconv*\tools\*'
+  )
+  foreach ($pattern in $chocoCandidates) {
+    try {
+      $found = Get-ChildItem -Path $pattern -Filter 'msgfmt.exe' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+      if ($found) {
+        $dir = Split-Path -Path $found.FullName -Parent
+        $env:PATH = "$dir;$env:PATH"
+        Write-Host "Found msgfmt at $($found.FullName); prepended $dir to PATH"
+        break
+      }
+    } catch { }
+  }
+  if (-not (Get-Command msgfmt -ErrorAction SilentlyContinue)) { Write-Host 'msgfmt still not found after searching Chocolatey locations.' }
+  else { Write-Host "msgfmt now: $(Get-Command msgfmt | Select-Object -ExpandProperty Source)" }
+}
+
 # Configure CMake
 $cmakeArgs = @('-S', $ProjectRoot, '-B', $buildDir, '-G', 'Visual Studio 17 2022', '-A', 'x64', '-DWindows=ON')
 if (Test-Path $vcpkgToolchain) { $cmakeArgs += "-DCMAKE_TOOLCHAIN_FILE=$vcpkgToolchain" }
