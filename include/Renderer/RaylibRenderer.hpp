@@ -115,8 +115,8 @@ namespace renderer
         ITexture* createIcon(int width, int height, const std::function<void(void* canvas)>& painter) override;
         void      drawRectangleLines(float x, float y, float width, float height, Color color, Layer layer = Layer::UI) const override;
         void      drawRectangle(float x, float y, float width, float height, Color color, Layer layer = Layer::UI) const override;
-        void      drawValueBox(float x, float y, float width, float height, const char* label, int& value, int min, int max, bool& editMode, Layer layer = Layer::UI) const;
-        void      drawCheckbox(float x, float y, float size, const char* label, bool& checked, Layer layer = Layer::UI) const;
+        void      drawValueBox(float x, float y, float width, float height, const char* label, int& value, int min, int max, bool& editMode, Layer layer = Layer::UI) const override;
+        void      drawCheckbox(float x, float y, float size, const char* label, bool& checked, Layer layer = Layer::UI) const override;
         void      drawTexture(float x, float y, float width, float height, const ITexture* texture, Layer layer = Layer::UI) const override;
         void      drawButton(float x, float y, float width, float height, const ITexture* icon, const std::function<void()>& onClick, Layer layer = Layer::UI) const override;
         void      drawPanel(float x, float y, float width, float height, Layer layer = Layer::Overlay) const override;

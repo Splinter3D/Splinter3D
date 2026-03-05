@@ -17,7 +17,7 @@ namespace gui
         /**
          * Initializes the toolbar, creating its buttons. Should be called once before the first draw().
          */
-        void initialize(renderer::IRenderer& renderer);
+        void initialize(renderer::IRenderer& renderer) override;
 
         /**
          * Draws the toolbar and its buttons. Should be called every frame after update().

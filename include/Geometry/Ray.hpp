@@ -8,4 +8,4 @@ namespace geometry
         Vec3 origin;
         Vec3 direction;
     };
-}
+} // namespace geometry
