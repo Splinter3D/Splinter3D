@@ -10,58 +10,79 @@
 #endif
 
 #include <Geometry/Utils/MeshUtils.hpp>
+#define RAYGUI_IMPLEMENTATION
 #include <Gui/CenterredToolBar.hpp>
 #include <Objects3D/Object3D.hpp>
 #include <Renderer/RaylibRenderer.hpp>
 #include <Renderer/RenderObject.hpp>
+#include <Splinter3D/Utils/DataRoot.hpp>
 #include <Splinter3D/Utils/Locale.hpp>
 #include <Splinter3D/Utils/OSCompatibility.hpp>
+#include <filesystem>
+#include <iostream>
+
+#if !defined(_WIN32)
+#include <limits.h>
+#include <unistd.h>
+#endif
 
 #define _(String) gettext(String)
 
-#define RAYGUI_IMPLEMENTATION
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#pragma GCC diagnostic ignored "-Wsign-conversion"
-#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#pragma GCC diagnostic ignored "-Wshadow"
-#pragma GCC diagnostic ignored "-Wmissing-declarations"
-#pragma GCC diagnostic ignored "-Wcast-qual"
-#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
-#pragma GCC diagnostic ignored "-Wcast-align"
-#endif
-#include <Renderer/RayGUI.hpp>
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-
-int main()
+int main(int argc, char** argv)
 {
-    splinter::utils::Locale::init("splinter3D", "./locale");
+    std::filesystem::path exePath;
+    try
+    {
+#if !defined(_WIN32)
+        char    buf[PATH_MAX];
+        ssize_t len = readlink("/proc/self/exe", buf, sizeof(buf) - 1);
+        if (len != -1)
+        {
+            buf[len] = '\0';
+            exePath  = std::filesystem::path(buf);
+        }
+#endif
+        if (exePath.empty() && argc > 0)
+        {
+            exePath = std::filesystem::absolute(argv[0]);
+        }
+        if (!exePath.empty())
+        {
+            std::error_code ec;
+            std::filesystem::current_path(exePath.parent_path(), ec);
+        }
+    }
+    catch (...)
+    { }
+
+    // Resolve data root (where `locale` and `assets` live).
+    std::filesystem::path dataRoot = splinter::utils::findDataRoot(exePath);
+    if (dataRoot.empty())
+        dataRoot = std::filesystem::current_path();
+
+    // Initialize localization (point to the detected locale folder)
+    splinter::utils::Locale::init("splinter3D", (dataRoot / "locale").string().c_str());
 
     // Install cross-platform signal handlers and suppress ^C echo on POSIX
     splinter::utils::oscompat::InstallSignalHandlers();
     splinter::utils::oscompat::disableCtrlCEcho();
 
-    // splinter::utils::Locale::setLanguage("fr");
-    // splinter::utils::Locale::setLanguage("es");
-    // splinter::utils::Locale::setLanguage("de");
-
+    // Example UI strings (ensure gettext is wired)
     std::cout << _("Play") << std::endl;
     std::cout << _("Settings") << std::endl;
     std::cout << _("Quit") << std::endl;
 
+    // Setup renderer
     renderer::Config         cfg{1280, 720, "Prototype 3D Slicer", 60};
     renderer::RaylibRenderer renderer(cfg);
 
-    objects3D::Object3D    obj = objects3D::Object3D::fromSTL("assets/stl/binary/magnolia_binary.stl");
+    // Load object and bind to renderer (resolve path relative to data root)
+    std::filesystem::path  stlPath = dataRoot / "assets" / "stl" / "binary" / "magnolia_binary.stl";
+    objects3D::Object3D    obj     = objects3D::Object3D::fromSTL(stlPath.string());
     renderer::RenderObject rObj;
     rObj.bind(obj);
 
     auto meshBounds = geometry::meshutils::computeMeshBounds(*obj.mesh);
-
     geometry::meshutils::frameCameraOnMesh(renderer, meshBounds);
 
     gui::CenteredToolbar toolbar(18.0f, 52.0f, 14.0f);
@@ -87,6 +108,7 @@ int main()
         toolbar.draw();
         renderer.endFrame();
     }
+
     // restore terminal state if needed
     splinter::utils::oscompat::restoreTerminal();
     return 0;
