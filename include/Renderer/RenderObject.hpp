@@ -1,50 +1,30 @@
 #pragma once
-
 #include <Objects3D/Object3D.hpp>
 #include <Objects3D/ObjectObserver.hpp>
+#include <Renderer/Color.hpp>
 #include <raylib.h>
 #include <raymath.h>
 
 namespace renderer
 {
+    class IRenderer;
+
     struct RenderObject : objects3D::ObjectObserver
     {
         const objects3D::Object3D* object = nullptr;
         Matrix                     modelMatrix;
 
-        RenderObject() = default;
+        RenderObject(Color color = Color{255, 255, 255, 255});
 
-        /**
-         * Binds this RenderObject to an Object3D, allowing it to receive transform and appearance updates.
-         */
-        void bind(objects3D::Object3D& obj)
-        {
-            object = &obj;
-            obj.attach(this);
-            rebuildMatrix();
-        }
+        void bind(objects3D::Object3D& obj);
+        void draw(renderer::IRenderer& renderer) const;
+        void setColor(const Color& c);
 
-        /**
-         * ObjectObserver implementation - called when the observed Object3D's transform changes. Rebuilds the model matrix.
-         */
-        void onTransformChanged() override
-        {
-            rebuildMatrix();
-        }
+        void onTransformChanged() override;
+        void onAppearanceChanged() override;
 
-        /**
-         * ObjectObserver implementation - called when the observed Object3D's appearance changes. Currently does nothing.
-         */
-        void onAppearanceChanged() override
-        {
-            // TODO: use the new appearance when drawing the object
-        }
-
-        void rebuildMatrix()
-        {
-            Matrix objectMatrix = object->getTransform().toMatrix();
-
-            modelMatrix = objectMatrix;
-        }
+      private:
+        void  rebuildMatrix();
+        Color _color;
     };
 } // namespace renderer

@@ -1,7 +1,9 @@
 #include <Gui/CenteredToolbar.hpp>
 #include <Gui/Panels/ScalePanel.hpp>
 #include <Gui/States/ScalePanelState.hpp>
+#include <Gui/Utils/FileDialog.hpp>
 #include <Renderer/IRenderer.hpp>
+#include <Scene/Scene.hpp>
 #include <iostream>
 
 namespace gui
@@ -19,7 +21,11 @@ namespace gui
         // Import
         buttons_.emplace_back(Button::Builder("import")
                                   .icon([&renderer](void* c) { renderer.drawImportIcon(c); })
-                                  .action([]() { std::cout << "[Toolbar] Import\n"; })
+                                  .action([]() {
+                                      auto path = gui::utils::pickSTLFile();
+                                      if (path.has_value())
+                                          scene::Scene::getInstance().addObject(*path);
+                                  })
                                   .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::I}, "Import (I)")
                                   .build(renderer));
 
