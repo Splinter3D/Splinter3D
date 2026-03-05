@@ -1,4 +1,4 @@
-name: Windows Package
+name: Build and Release
 
 on:
   push:
@@ -23,13 +23,13 @@ jobs:
       - name: Install dependencies
         shell: pwsh
         run: |
-          pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/install.ps1 ${{ github.workspace }}
+          pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/Windows/install.ps1 ${{ github.workspace }}
 
       # creates staging/output for .zip
       - name: Build package
         shell: pwsh
         run: |
-          pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/build.ps1 ${{ github.workspace }}
+          pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/Windows/build.ps1 ${{ github.workspace }}
 
       - name: Verify package exists
         shell: pwsh
@@ -41,8 +41,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            ${{ github.workspace }}\output\release-package.zip
-            ${{ github.workspace }}\output\release-package.zip.sha256
+            output/release-package.zip
+            output/release-package.zip.sha256
           tag_name: windows-package-${{ github.run_number }}
           name: windows-package-${{ github.run_number }}
           body: |
