@@ -154,6 +154,13 @@ Write-Host "Building ($Config)"
 cmake --build $buildDir --config $Config -- /m:$(Get-Process -Id $PID -ErrorAction SilentlyContinue | ForEach-Object { [Environment]::ProcessorCount })
 if ($LASTEXITCODE -ne 0) { Fail "Build failed" }
 
+# Ensure the splinter3D target(s) are explicitly built (try both possible target names)
+$targetsToTry = @('splinter3D','splinter3D-app')
+foreach ($t in $targetsToTry) {
+  Write-Host "Attempting to build target: $t"
+  cmake --build $buildDir --config $Config --target $t -- /m:$(Get-Process -Id $PID -ErrorAction SilentlyContinue | ForEach-Object { [Environment]::ProcessorCount }) 2>$null
+}
+
 # Prepare staging area
 $staging = Join-Path $ProjectRoot 'staging'
 if (Test-Path $staging) { Remove-Item -Recurse -Force $staging }
@@ -163,14 +170,47 @@ New-Item -ItemType Directory -Path $staging | Out-Null
 $binDir = Join-Path $staging 'bin'
 New-Item -ItemType Directory -Path $binDir | Out-Null
 
-# Heuristic: look for any .exe in build tree that matches project name or top-level exe
-$exeNames = @('splinter3D.exe')
-foreach ($exe in $exeNames) {
-  $found = Get-ChildItem -Path $buildDir -Recurse -Filter $exe -ErrorAction SilentlyContinue | Select-Object -First 1
-  if ($found) {
-    Copy-Item -Path $found.FullName -Destination (Join-Path $binDir $exe) -Force
-    Write-Host "Copied $exe to staging/bin"
+# Heuristic: look for any .exe in build tree whose name contains 'splinter3D' (covers splinter3D.exe and splinter3D-app.exe)
+Write-Host 'Searching build output for splinter3D executable...'
+
+# Primary search: executables under the build directory
+$foundExe = Get-ChildItem -Path $buildDir -Recurse -Filter '*.exe' -ErrorAction SilentlyContinue |
+  Where-Object { $_.Name -like '*splinter3D*.exe' -or $_.Name -eq 'splinter3D.exe' } |
+  Sort-Object LastWriteTime -Descending | Select-Object -First 1
+
+# If not found, also check common MSVC output locations (project-root\Release, project-root\$Config, build\$Config)
+if (-not $foundExe) {
+  $extraCandidates = @(
+    (Join-Path $ProjectRoot $Config),
+    (Join-Path $ProjectRoot 'Release'),
+    (Join-Path $buildDir $Config),
+    (Join-Path $buildDir 'Release'),
+    (Join-Path $ProjectRoot 'bin'),
+    (Join-Path $buildDir 'bin')
+  ) | Where-Object { $_ -and (Test-Path $_) } | Get-Unique
+
+  foreach ($dir in $extraCandidates) {
+    try {
+      $cand = Get-ChildItem -Path $dir -Recurse -Filter '*.exe' -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -like '*splinter3D*.exe' -or $_.Name -eq 'splinter3D.exe' } |
+        Sort-Object LastWriteTime -Descending | Select-Object -First 1
+      if ($cand) { $foundExe = $cand; break }
+    } catch { }
   }
+
+  # Also check for a top-level Release exe placed at ProjectRoot\Release\splinter3D.exe
+  if (-not $foundExe) {
+    $topExe = Join-Path (Join-Path $ProjectRoot 'Release') 'splinter3D.exe'
+    if (Test-Path $topExe) { $foundExe = Get-Item $topExe }
+  }
+}
+
+if ($foundExe) {
+  $destPath = Join-Path $binDir 'splinter3D.exe'
+  Copy-Item -Path $foundExe.FullName -Destination $destPath -Force
+  Write-Host "Copied $($foundExe.FullName) to staging/bin as splinter3D.exe"
+} else {
+  Write-Warning 'No splinter3D executable found in build tree; build may have failed or target name differs.'
 }
 
 # Copy any runtime DLLs next to the exe into staging/bin
