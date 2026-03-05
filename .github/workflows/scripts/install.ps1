@@ -105,43 +105,27 @@ function Run-As-Administrator {
 ## Begin execution: bootstrap vcpkg into project root and install deps (classic mode)
 Run-As-Administrator
 
-# vcpkg root and executable
+# Clone/bootstrap vcpkg into the project root (not the parent folder)
 $vcRoot = Join-Path $ProjectRoot 'vcpkg'
-$vcpkgExe = Join-Path $vcRoot 'vcpkg.exe'
-
-# If vcpkg executable is already present (restored from cache), skip clone/bootstrap
-if (Test-Path $vcpkgExe) {
-  Log-Info "Found existing vcpkg executable at $vcpkgExe; skipping clone/bootstrap"
-  Push-Location $vcRoot
-} else {
-  # If vcpkg folder exists but no exe, attempt bootstrap
-  if (Test-Path $vcRoot) {
-    Push-Location $vcRoot
-    if (Test-Path .\bootstrap-vcpkg.bat) {
-      Log-Action 'Running bootstrap-vcpkg.bat'
-      try { & .\bootstrap-vcpkg.bat; Log-Milestone 'bootstrap-vcpkg completed' } catch { Log-ErrorMsg ("bootstrap-vcpkg failed: {0}" -f $_) }
-    } else {
-      Pop-Location
-      Log-Action "vcpkg folder exists but bootstrap-vcpkg.bat missing; cloning fresh into $vcRoot"
-      Remove-Item -Recurse -Force $vcRoot -ErrorAction SilentlyContinue
-      try { git clone https://github.com/microsoft/vcpkg.git $vcRoot; Push-Location $vcRoot; Log-Milestone 'vcpkg clone completed' } catch { Log-ErrorMsg ("git clone failed: {0}" -f $_); Fail 'git clone failed' }
-      if (Test-Path .\bootstrap-vcpkg.bat) { try { & .\bootstrap-vcpkg.bat; Log-Milestone 'bootstrap-vcpkg completed' } catch { Log-ErrorMsg ("bootstrap-vcpkg failed: {0}" -f $_) } }
-    }
-  } else {
-    Log-Action "Cloning vcpkg into $vcRoot"
-    try { git clone https://github.com/microsoft/vcpkg.git $vcRoot; Push-Location $vcRoot; Log-Milestone 'vcpkg clone completed' } catch { Log-ErrorMsg ("git clone failed: {0}" -f $_); Fail 'git clone failed' }
-    if (Test-Path .\bootstrap-vcpkg.bat) { Log-Action 'Running bootstrap-vcpkg.bat'; try { & .\bootstrap-vcpkg.bat; Log-Milestone 'bootstrap-vcpkg completed' } catch { Log-ErrorMsg ("bootstrap-vcpkg failed: {0}" -f $_) } }
-  }
+if (-not (Test-Path $vcRoot)) {
+  Log-Action "Cloning vcpkg into $vcRoot"
+  try { git clone https://github.com/microsoft/vcpkg.git $vcRoot; Log-Milestone 'vcpkg clone completed' } catch { Log-ErrorMsg ("git clone failed: {0}" -f $_); Fail 'git clone failed' }
 }
-
-# Ensure vcpkg.exe exists now
+Push-Location $vcRoot
+if (Test-Path .\bootstrap-vcpkg.bat) {
+  Log-Action 'Running bootstrap-vcpkg.bat'
+  try { & .\bootstrap-vcpkg.bat; Log-Milestone 'bootstrap-vcpkg completed' } catch { Log-ErrorMsg ("bootstrap-vcpkg failed: {0}" -f $_); }
+} else {
+  Log-Warn 'bootstrap-vcpkg.bat missing'
+}
+$vcpkgExe = Join-Path $vcRoot 'vcpkg.exe'
 if (Test-Path $vcpkgExe) {
   Log-Action 'Registering vcpkg (integrate install)'
   try { & $vcpkgExe integrate install; Log-Milestone 'vcpkg integrated (user)'} catch { Log-ErrorMsg ("vcpkg integrate failed: {0}" -f $_) }
 } else {
-  Log-ErrorMsg 'vcpkg.exe missing after bootstrap/restore; aborting'
+  Log-ErrorMsg 'vcpkg.exe missing after bootstrap; aborting'
   Pop-Location
-  Fail 'vcpkg.exe missing after bootstrap/restore'
+  Fail 'vcpkg.exe missing after bootstrap'
 }
 $LogInfoMsg = $null
 ## Import MSVC environment before attempting to install via vcpkg (required for detect_compiler)
@@ -291,51 +275,14 @@ if (Get-Command msgfmt -ErrorAction SilentlyContinue) { $msgfmtOk = $true } else
 if (-not $cmakeOk) { Log-Warn 'CMake not available; CMake configure may fail.' }
 if (-not $msgfmtOk) { Log-Warn 'msgfmt not available; gettext tools may be missing for configure.' }
 if (Test-Path $jsonPath) {
-  Log-Action ("Found manifest at {0} - computing manifest deps (triplet: {1})" -f $jsonPath, $Triplet)
+  Log-Action ("Found manifest at {0} - running manifest install (triplet: {1})" -f $jsonPath, $Triplet)
   try {
-    # Unset VCPKG_ROOT for the process to avoid side-effects and use explicit --vcpkg-root
-    try { [System.Environment]::SetEnvironmentVariable('VCPKG_ROOT',$null,'Process'); Log-Info 'VCPKG_ROOT unset for process' } catch { Log-Warn ("Failed to unset VCPKG_ROOT: {0}" -f $_) }
-
-    # Read manifest and extract dependency names
-    $manifest = Get-Content $jsonPath -Raw | ConvertFrom-Json
-    $deps = @()
-    if ($manifest.dependencies) { $deps += $manifest.dependencies }
-    # handle possible 'features' or object entries
-    $needed = @()
-    foreach ($d in $deps) {
-      if ($d -is [string]) { $needed += $d } else {
-        if ($d.name) { $needed += $d.name }
-      }
-    }
-
-    if ($needed.Count -eq 0) { Log-Info 'No dependencies listed in vcpkg.json; skipping install.' } else {
-      # Query installed packages from vcpkg
-      $installedRaw = & $vcpkgExe list 2>$null
-      $installed = @()
-      if ($installedRaw) {
-        foreach ($line in $installedRaw) {
-          $parts = $line -split ':'
-          if ($parts.Length -ge 1) { $installed += $parts[0].Trim() }
-        }
-      }
-
-      # Compute missing packages (compare by package name prefix)
-      $toInstall = @()
-      foreach ($p in $needed) {
-        $nameOnly = ($p -split '#')[0] -split '@' | Select-Object -First 1
-        if (-not ($installed -contains $nameOnly)) { $toInstall += $p }
-      }
-
-      if ($toInstall.Count -eq 0) {
-        Log-Info 'All vcpkg manifest packages already installed; skipping vcpkg install.'
-      } else {
-        Log-Action ("Installing missing vcpkg packages: {0}" -f ($toInstall -join ', '))
-        & $vcpkgExe install --vcpkg-root $vcRoot --triplet $Triplet $toInstall
-        if ($LASTEXITCODE -eq 0) { Log-Milestone 'vcpkg install completed' } else { Log-ErrorMsg ("vcpkg install failed (exit {0})" -f $LASTEXITCODE) }
-      }
-    }
+    Log-Action 'Unsetting VCPKG_ROOT for this process and invoking vcpkg with explicit --vcpkg-root'
+    try { [System.Environment]::SetEnvironmentVariable('VCPKG_ROOT',$null,'Process'); Log-Info 'VCPKG_ROOT unset for process' } catch { Log-Warn "Failed to unset VCPKG_ROOT: $_" }
+    & $vcpkgExe install --vcpkg-root $vcRoot --triplet $Triplet
+    if ($LASTEXITCODE -eq 0) { Log-Milestone 'vcpkg manifest install completed successfully' } else { Log-ErrorMsg ("vcpkg manifest install failed (exit {0})" -f $LASTEXITCODE) }
   } catch {
-    Log-ErrorMsg ("vcpkg manifest install/check threw an exception: {0}" -f $_)
+    Log-ErrorMsg ("vcpkg manifest install threw an exception: {0}" -f $_)
   }
 } else {
   Log-Warn ("vcpkg.json not found at {0}; no dependencies installed." -f $jsonPath)
