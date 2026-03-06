@@ -4,13 +4,14 @@ on:
   push:
     branches:
       - main
+      - feat/create_exe
 
 permissions:
   contents: write
 
 jobs:
   build-and-release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
