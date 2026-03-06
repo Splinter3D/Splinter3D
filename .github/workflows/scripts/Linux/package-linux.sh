@@ -42,7 +42,9 @@ if [[ -z "$VERSION" ]]; then
     die "Cannot parse version from .cz.toml"
 fi
 
-PACKAGE_NAME="splinter3D-${VERSION}-linux-${TRIPLET}.tar.xz"
+# Extract architecture from triplet (e.g., x64-linux -> x64)
+ARCH="${TRIPLET%%-*}"
+PACKAGE_NAME="splinter3D-${VERSION}-linux-${ARCH}.tar.xz"
 PACKAGE_PATH="${OUTPUT_DIR}/${PACKAGE_NAME}"
 SHA256_FILE="${PACKAGE_PATH}.sha256"
 
