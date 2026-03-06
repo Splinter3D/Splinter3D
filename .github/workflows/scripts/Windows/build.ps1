@@ -277,7 +277,26 @@ $outDir = Join-Path $ProjectRoot $OutDirName
 if (Test-Path $outDir) { Remove-Item -Recurse -Force $outDir }
 New-Item -ItemType Directory -Path $outDir | Out-Null
 
-$zipPath = Join-Path $outDir 'release-package.zip'
+# Auto-detect version from .cz.toml
+$czFile = Join-Path $ProjectRoot '.cz.toml'
+$version = '0.0.0'  # fallback
+if (Test-Path $czFile) {
+  try {
+    $content = Get-Content $czFile -Raw
+    if ($content -match 'version\s*=\s*"v?([0-9.]+)"') {
+      $version = $matches[1]
+      Write-Host "Auto-detected version: $version"
+    }
+  } catch {
+    Write-Warning "Could not parse version from .cz.toml; using default: $version"
+  }
+}
+
+# Extract architecture from triplet (e.g., x64-windows -> x64)
+$arch = $Triplet -split '-' | Select-Object -First 1
+
+$zipName = "splinter3D-${version}-windows-${arch}.zip"
+$zipPath = Join-Path $outDir $zipName
 if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 
 Write-Host "Creating ZIP: $zipPath"
