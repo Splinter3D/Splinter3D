@@ -68,6 +68,17 @@ namespace renderer
         bool*       outEdit;
     };
 
+    struct ValueBoxFloatCmd
+    {
+        float       x, y, w, h;
+        std::string label;
+        float       value;
+        float       min, max;
+        bool        editMode;
+        float*      outValue;
+        bool*       outEdit;
+    };
+
     struct CheckboxCmd
     {
         float       x, y, size;
@@ -76,7 +87,7 @@ namespace renderer
         bool*       outChecked;
     };
 
-    using DrawCmd = std::variant<RectCmd, RectLinesCmd, TextureCmd, TextCmd, LineCmd, GridCmd, TriangleCmd, ValueBoxCmd, CheckboxCmd>;
+    using DrawCmd = std::variant<RectCmd, RectLinesCmd, TextureCmd, TextCmd, LineCmd, GridCmd, TriangleCmd, ValueBoxCmd, ValueBoxFloatCmd, CheckboxCmd>;
 
 #pragma endregion
 #pragma region Texture
@@ -116,6 +127,7 @@ namespace renderer
         void      drawRectangleLines(float x, float y, float width, float height, Color color, Layer layer = Layer::UI) const override;
         void      drawRectangle(float x, float y, float width, float height, Color color, Layer layer = Layer::UI) const override;
         void      drawValueBox(float x, float y, float width, float height, const char* label, int& value, int min, int max, bool& editMode, Layer layer = Layer::UI) const override;
+        void      drawFloatValueBox(float x, float y, float width, float height, const char* label, float& value, float min, float max, bool& editMode, Layer layer = Layer::UI) const override;
         void      drawCheckbox(float x, float y, float size, const char* label, bool& checked, Layer layer = Layer::UI) const override;
         void      drawTexture(float x, float y, float width, float height, const ITexture* texture, Layer layer = Layer::UI) const override;
         void      drawButton(float x, float y, float width, float height, const ITexture* icon, const std::function<void()>& onClick, Layer layer = Layer::UI) const override;
@@ -129,6 +141,7 @@ namespace renderer
         void drawExportIcon(void* canvas) override;
         void drawSliceIcon(void* canvas) override;
         void drawScaleIcon(void* canvas) override;
+        void drawTransformIcon(void* canvas) override;
         void drawPreviewIcon(void* canvas) override;
 
         // --------------------
