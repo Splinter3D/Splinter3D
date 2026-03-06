@@ -33,6 +33,7 @@ function(apply_compiler_warnings target)
                 -Wall -Wextra -Werror -Wpedantic
                 -Wconversion -Wsign-conversion
                 -Wshadow -Wnull-dereference
+                -Wno-unknown-pragmas
                 -Wundef -Wuninitialized -Winit-self
                 -Wredundant-decls
                 -Wcast-align -Wcast-qual

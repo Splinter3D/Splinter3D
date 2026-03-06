@@ -41,7 +41,6 @@ namespace splinter3D::utils::oscompat
     inline void InstallSignalHandlers()
     {
 #if defined(SPLINTER3D_POSIX)
-        auto SigHandler = [](int) { s_signalReceived.store(true); };
         signal(SIGINT, +[](int s) { (void)s; s_signalReceived.store(true); });
         signal(SIGTERM, +[](int s) { (void)s; s_signalReceived.store(true); });
 #else
@@ -71,7 +70,7 @@ namespace splinter3D::utils::oscompat
             atexit([]() { tcsetattr(STDIN_FILENO, TCSANOW, &origTerm); });
             struct termios newTerm = origTerm;
 #ifdef ECHOCTL
-            newTerm.c_lflag &= ~ECHOCTL;
+            newTerm.c_lflag &= ~static_cast<tcflag_t>(ECHOCTL);
 #endif
             tcsetattr(STDIN_FILENO, TCSANOW, &newTerm);
         }
