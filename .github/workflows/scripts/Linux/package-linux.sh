@@ -57,10 +57,16 @@ if [[ ! -d "$BUILD_DIR" ]]; then
     die "Build directory not found: $BUILD_DIR"
 fi
 
-SPLINTER_EXE=$(find "$BUILD_DIR" -type f \( -name "splinter3D" -o -name "splinter3D-app" \) 2>/dev/null | head -1)
+# Try to find executable in build directory first, then project root
+# (CMake may output executable to either location depending on configuration)
+SPLINTER_EXE=""
+for search_dir in "$BUILD_DIR" "$PROJECT_ROOT"; do
+    SPLINTER_EXE=$(find "$search_dir" -maxdepth 1 -type f \( -name "splinter3D" -o -name "splinter3D-app" \) 2>/dev/null | head -1)
+    [[ -n "$SPLINTER_EXE" ]] && break
+done
 
 if [[ -z "$SPLINTER_EXE" ]]; then
-    die "Executable not found in $BUILD_DIR"
+    die "Executable not found in $BUILD_DIR or $PROJECT_ROOT"
 fi
 
 msg "Found executable: $SPLINTER_EXE"
