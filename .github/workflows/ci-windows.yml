@@ -36,7 +36,7 @@ jobs:
           $zip = Join-Path ${{ github.workspace }} 'output\release-package.zip'
           if (Test-Path $zip) { Write-Host "Found package: $zip" } else { Write-Error 'release-package.zip not found'; exit 1 }
 
-      - name: Create Release and upload assets (softprops action)
+      - name: Create Release and upload assets
         uses: softprops/action-gh-release@v1
         with:
           files: |
