@@ -175,7 +175,7 @@ if (-not (Get-Command msgfmt -ErrorAction SilentlyContinue)) {
 }
 
 # Configure CMake
-$cmakeArgs = @('-S', $ProjectRoot, '-B', $buildDir, '-G', 'Visual Studio 17 2022', '-A', 'x64', '-DWindows=ON')
+$cmakeArgs = @('-S', $ProjectRoot, '-B', $buildDir, '-G', 'Visual Studio 17 2022', '-A', 'x64')
 if (Test-Path $vcpkgToolchain) { $cmakeArgs += "-DCMAKE_TOOLCHAIN_FILE=$vcpkgToolchain" }
 if ($cmakeToolPaths) { $cmakeArgs += $cmakeToolPaths }
 
