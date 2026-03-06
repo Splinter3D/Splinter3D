@@ -1,4 +1,5 @@
-#include "Input/InputManager.hpp"
+#include <Input/Actions.hpp>
+#include <Input/InputManager.hpp>
 
 namespace input
 {
@@ -19,6 +20,33 @@ namespace input
             if (allDown && renderer.isKeyPressed(b.keys.back()))
                 b.fn();
         }
+    }
+
+    void InputManager::trigger(Action action)
+    {
+        for (auto& b : _bindings)
+            if (b.action == action)
+            {
+                b.fn();
+                return;
+            }
+    }
+
+    std::string InputManager::getActionKeyBindings(Action action) const
+    {
+        for (const auto& b : _bindings)
+            if (b.action == action)
+            {
+                std::string result;
+                for (size_t i = 0; i < b.keys.size(); ++i)
+                {
+                    if (i > 0)
+                        result += " + ";
+                    result += renderer::to_string(b.keys[i]);
+                }
+                return result;
+            }
+        return {};
     }
 
 } // namespace input

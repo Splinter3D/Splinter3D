@@ -36,8 +36,8 @@ namespace gui::states
         RotationPannelState() noexcept
         {
             splinter3D::events::EventBus::getInstance()
-                .subscribe<scene::events::ObjectSelectedEvent>(
-                    [this](const scene::events::ObjectSelectedEvent& e) { resetOnSelectionChange(e); });
+                .subscribe<splinter3D::events::ObjectSelectedEvent>(
+                    [this](const splinter3D::events::ObjectSelectedEvent& e) { resetOnSelectionChange(e); });
         }
 
         ~RotationPannelState() noexcept = default;
@@ -48,7 +48,7 @@ namespace gui::states
          * If an object is selected (index >= 0), it retrieves the object's current rotation and updates the rotation values accordingly.
          * If no object is selected (index -1), it resets the rotation values to 0 for all axes.
          */
-        void resetOnSelectionChange(const scene::events::ObjectSelectedEvent& e);
+        void resetOnSelectionChange(const splinter3D::events::ObjectSelectedEvent& e);
 
         friend class Singleton<RotationPannelState>;
     };

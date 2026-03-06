@@ -38,7 +38,7 @@ namespace scene
                 _objects[(size_t) _selectedObjectIndex]->setColor({255, 0, 0, 255}); // Highlight the selected object
 
                 splinter3D::events::EventBus::getInstance()
-                    .publish(scene::events::ObjectSelectedEvent{i});
+                    .publish(splinter3D::events::ObjectSelectedEvent{i});
                 return;
             }
         }
@@ -48,7 +48,7 @@ namespace scene
             _objects[(size_t) _selectedObjectIndex]->setColor({255, 0, 0, 255}); // Highlight the selected object
         }
         splinter3D::events::EventBus::getInstance()
-            .publish(scene::events::ObjectSelectedEvent{_selectedObjectIndex});
+            .publish(splinter3D::events::ObjectSelectedEvent{_selectedObjectIndex});
     }
 
     int Scene::getSelectedIndex() const
@@ -73,7 +73,7 @@ namespace scene
         _lastSelectedObjectIndex = -1;
 
         splinter3D::events::EventBus::getInstance()
-            .publish(scene::events::ObjectSelectedEvent{-1});
+            .publish(splinter3D::events::ObjectSelectedEvent{-1});
     }
 
     void Scene::duplicateSelected()
