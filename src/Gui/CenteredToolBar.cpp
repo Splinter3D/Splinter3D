@@ -1,5 +1,7 @@
 #include <Gui/CenteredToolbar.hpp>
+#include <Gui/Panels/MovePanel.hpp>
 #include <Gui/Panels/ScalePanel.hpp>
+#include <Gui/States/MovePanelState.hpp>
 #include <Gui/States/ScalePanelState.hpp>
 #include <Gui/Utils/FileDialog.hpp>
 #include <Renderer/IRenderer.hpp>
@@ -46,8 +48,8 @@ namespace gui
         // Slice
         buttons_.emplace_back(Button::Builder("slice")
                                   .icon([&renderer](void* c) { renderer.drawSliceIcon(c); })
-                                  .action([]() { std::cout << "[Toolbar] Slice\n"; })
                                   .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::L}, "Slice (L)")
+                                  .panel(panels::MovePanel())
                                   .build(renderer));
 
         // Scale (has panel)

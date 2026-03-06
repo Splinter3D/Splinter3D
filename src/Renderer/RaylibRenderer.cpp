@@ -205,6 +205,24 @@ namespace renderer
                         if (c.outValue)
                             *c.outValue = val;
                     }
+                    else if constexpr (std::is_same_v<T, ValueBoxFloatCmd>)
+                    {
+                        float val  = c.value;
+                        bool  edit = c.editMode; // local copy
+                        if (GuiFloatValueBox({c.x, c.y, c.w, c.h}, c.label.c_str(),
+                                             &val, c.min, c.max, edit))
+                        {
+                            if (c.outEdit)
+                                *c.outEdit = !edit; // toggle using local, not c.editMode
+                        }
+                        else
+                        {
+                            if (c.outEdit)
+                                *c.outEdit = edit; // write back any internal state changes
+                        }
+                        if (c.outValue)
+                            *c.outValue = val;
+                    }
                     else if constexpr (std::is_same_v<T, CheckboxCmd>)
                     {
                         bool checked = c.checked;
@@ -428,6 +446,11 @@ namespace renderer
     void RaylibRenderer::drawValueBox(float x, float y, float w, float h, const char* label, int& value, int min, int max, bool& editMode, Layer layer) const
     {
         drawQueue_[layer].push_back(ValueBoxCmd{x, y, w, h, label, value, min, max, editMode, &value, &editMode});
+    }
+
+    void RaylibRenderer::drawFloatValueBox(float x, float y, float w, float h, const char* label, float& value, float min, float max, bool& editMode, Layer layer) const
+    {
+        drawQueue_[layer].push_back(ValueBoxFloatCmd{x, y, w, h, label, value, min, max, editMode, &value, &editMode});
     }
 
     void RaylibRenderer::drawCheckbox(float x, float y, float size, const char* label, bool& checked, Layer layer) const
