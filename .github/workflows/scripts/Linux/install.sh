@@ -14,6 +14,10 @@ sudo apt-get install -y \
     pkg-config \
     git \
     gettext \
-    xz-utils
+    xz-utils \
+    libxinerama-dev \
+    libxcursor-dev \
+    xorg-dev \
+    libglu1-mesa-dev
 
 echo "[install.sh] ✓ System dependencies installed"
