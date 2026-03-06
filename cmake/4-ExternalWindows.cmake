@@ -2,9 +2,10 @@
 
 find_package(glfw3 CONFIG REQUIRED)
 find_package(raylib CONFIG REQUIRED)
+find_package(nfd CONFIG REQUIRED)
 
 # Third-party libs; `intl` handled below via an imported target when available
-set(THIRD_PARTY_LIBS raylib glfw)
+set(THIRD_PARTY_LIBS raylib glfw nfd::nfd)
 
 # Try to locate the vcpkg-provided intl import library and DLL (vcpkg_installed/*/{lib,bin})
 file(GLOB VCPKG_INTL_LIBS "${CMAKE_SOURCE_DIR}/vcpkg_installed/*/lib/intl.lib")
@@ -36,5 +37,8 @@ else()
         list(APPEND THIRD_PARTY_LIBS ${INTL_LIB})
     endif()
 endif()
+
+# Add Windows-specific libraries for nativefiledialog-extended
+list(APPEND THIRD_PARTY_LIBS ole32 shell32 uuid)
 
 #######################################
