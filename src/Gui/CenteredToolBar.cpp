@@ -1,6 +1,10 @@
 #include <Gui/CenteredToolbar.hpp>
+#include <Gui/Panels/RotationPanel.hpp>
 #include <Gui/Panels/ScalePanel.hpp>
+#include <Gui/Panels/TransformPanel.hpp>
+#include <Gui/States/RotationPanelState.hpp>
 #include <Gui/States/ScalePanelState.hpp>
+#include <Gui/States/TransformPanelState.hpp>
 #include <Gui/Utils/FileDialog.hpp>
 #include <Renderer/IRenderer.hpp>
 #include <Scene/Scene.hpp>
@@ -70,18 +74,18 @@ namespace gui
                                   .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::E}, "Export (E)")
                                   .build(renderer));
 
-        // Preview
-        buttons_.emplace_back(Button::Builder("preview")
-                                  .icon([&renderer](void* c) { renderer.drawPreviewIcon(c); })
-                                  .action([]() { std::cout << "[Toolbar] Preview\n"; })
-                                  .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::P}, "Preview (P)")
+        // Rotation (has panel)
+        buttons_.emplace_back(Button::Builder("rotation")
+                                  .icon([&renderer](void* c) { renderer.drawRotationIcon(c); })
+                                  .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::R}, "Rotation (R)")
+                                  .panel(panels::RotationPanel())
                                   .build(renderer));
 
-        // Slice
-        buttons_.emplace_back(Button::Builder("slice")
-                                  .icon([&renderer](void* c) { renderer.drawSliceIcon(c); })
-                                  .action([]() { std::cout << "[Toolbar] Slice\n"; })
-                                  .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::L}, "Slice (L)")
+        // Transform (has panel)
+        buttons_.emplace_back(Button::Builder("transform")
+                                  .icon([&renderer](void* c) { renderer.drawTransformIcon(c); })
+                                  .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::T}, "Transform (T)")
+                                  .panel(panels::TransformPanel())
                                   .build(renderer));
 
         // Scale (has panel)

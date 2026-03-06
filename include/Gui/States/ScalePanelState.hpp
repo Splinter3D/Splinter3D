@@ -16,9 +16,9 @@ namespace gui::states
         float scaleY{100.0f};
         float scaleZ{100.0f};
         // Input scale values (Used to sync the scale values after editing)
-        int scaleXi{100};
-        int scaleYi{100};
-        int scaleZi{100};
+        float scaleXInput{100.0f};
+        float scaleYInput{100.0f};
+        float scaleZInput{100.0f};
         // Edit mode flags for each axis
         bool editX{false};
         bool editY{false};
@@ -66,7 +66,7 @@ namespace gui::states
             if (index < 0)
             {
                 scaleX = scaleY = scaleZ = 100.0f;
-                scaleXi = scaleYi = scaleZi = 100;
+                scaleXInput = scaleYInput = scaleZInput = 100.0f;
             }
             else
             {
@@ -77,9 +77,9 @@ namespace gui::states
                 scaleX       = t.scale.x * 100.0f;
                 scaleY       = t.scale.y * 100.0f;
                 scaleZ       = t.scale.z * 100.0f;
-                scaleXi      = (int) scaleX;
-                scaleYi      = (int) scaleY;
-                scaleZi      = (int) scaleZ;
+                scaleXInput  = scaleX;
+                scaleYInput  = scaleY;
+                scaleZInput  = scaleZ;
             }
         }
 
