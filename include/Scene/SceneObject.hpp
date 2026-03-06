@@ -26,6 +26,8 @@ namespace scene
             rObj.setColor(other.rObj.getColor());
         }
 
+        ~SceneObject() = default;
+
         void draw(renderer::IRenderer& renderer) const;
         bool isHit(const geometry::Ray& ray);
         void setColor(const renderer::Color& c);

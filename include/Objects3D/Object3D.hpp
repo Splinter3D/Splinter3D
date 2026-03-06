@@ -27,6 +27,11 @@ namespace objects3D
             _transform = other._transform;
         }
 
+        ~Object3D()
+        {
+            delete _mesh;
+        }
+
         /**
          * Load the mesh from an STL file and create an Object3D.
          */
@@ -45,6 +50,14 @@ namespace objects3D
         {
             if (std::find(observers.begin(), observers.end(), obs) == observers.end())
                 observers.push_back(obs);
+        }
+
+        /**
+         * Detaches an observer from this object. The observer will no longer receive notifications.
+         */
+        void detach(ObjectObserver* obs)
+        {
+            observers.erase(std::remove(observers.begin(), observers.end(), obs), observers.end());
         }
 
         /**
