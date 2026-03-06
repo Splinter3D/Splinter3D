@@ -18,7 +18,7 @@ namespace gui::pannels
         const renderer::Color kAxisY{67, 160, 71, 255};
         const renderer::Color kAxisZ{30, 136, 229, 255};
 
-        r.drawText(px + kPad, py + kPad, "Transform", 16, renderer::Layer::Overlay);
+        r.drawText(px + kPad, py + kPad, "Rotation", 16, renderer::Layer::Overlay);
 
         float fy = py + kPad + 24.0f;
 
