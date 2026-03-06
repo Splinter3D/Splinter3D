@@ -24,6 +24,11 @@ namespace renderer
         _color = c;
     }
 
+    renderer::Color RenderObject::getColor() const
+    {
+        return _color;
+    }
+
     void RenderObject::onTransformChanged()
     {
         rebuildMatrix();

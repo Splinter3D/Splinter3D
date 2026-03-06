@@ -44,6 +44,15 @@ namespace objects3D
         }
 
         /**
+         * Create a new Object3D by copying the mesh and transform of another Object3D. The observers are NOT copied.
+         */
+        Object3D(const Object3D& other)
+        {
+            _mesh      = new geometry::Mesh(*other._mesh);
+            _transform = other._transform;
+        }
+
+        /**
          * Load the mesh from an STL file and create an Object3D.
          */
         inline static Object3D fromSTL(const std::string& stlFile)

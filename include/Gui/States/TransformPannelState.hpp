@@ -1,4 +1,4 @@
-// TransformPanelState.hpp
+// TransformPannelState.hpp
 #pragma once
 #include <Objects3D/Object3D.hpp>
 #include <Scene/Scene.hpp>
@@ -8,7 +8,7 @@
 
 namespace gui::states
 {
-    class TransformPanelState : public splinter3D::utils::Singleton<TransformPanelState>
+    class TransformPannelState : public splinter3D::utils::Singleton<TransformPannelState>
     {
       public:
         // Position values
@@ -27,30 +27,20 @@ namespace gui::states
         /**
          * Applies the current position values to the selected object in the scene.
          */
-        void applyToTarget()
-        {
-            scene::SceneObject* target = scene::Scene::getInstance().getSelected();
-            if (!target)
-                return;
-            objects3D::Transform t = target->getTransform();
-            t.position.x           = posX;
-            t.position.y           = posY;
-            t.position.z           = posZ;
-            target->setTransform(t);
-        }
+        void applyToTarget();
 
       protected:
         /**
          * Constructor that subscribes to ObjectSelectedEvent to reset position values when the selection changes.
          */
-        TransformPanelState() noexcept
+        TransformPannelState() noexcept
         {
             splinter3D::events::EventBus::getInstance()
                 .subscribe<scene::events::ObjectSelectedEvent>(
                     [this](const scene::events::ObjectSelectedEvent& e) { resetOnSelectionChange(e); });
         }
 
-        ~TransformPanelState() noexcept = default;
+        ~TransformPannelState() noexcept = default;
 
       private:
         /**
@@ -58,29 +48,8 @@ namespace gui::states
          * If an object is selected (index >= 0), it retrieves the object's current position and updates the position values accordingly.
          * If no object is selected (index -1), it resets the position values to 0 for all axes.
          */
-        void resetOnSelectionChange(const scene::events::ObjectSelectedEvent& e)
-        {
-            int index = e.index;
-            if (index < 0)
-            {
-                posX = posY = posZ = 0.0f;
-                posXi = posYi = posZi = 0;
-            }
-            else
-            {
-                auto* obj = scene::Scene::getInstance().getSelected();
-                if (!obj)
-                    return;
-                const auto t = obj->getTransform();
-                posX         = t.position.x;
-                posY         = t.position.y;
-                posZ         = t.position.z;
-                posXi        = (int) posX;
-                posYi        = (int) posY;
-                posZi        = (int) posZ;
-            }
-        }
+        void resetOnSelectionChange(const scene::events::ObjectSelectedEvent& e);
 
-        friend class Singleton<TransformPanelState>;
+        friend class Singleton<TransformPannelState>;
     };
 } // namespace gui::states

@@ -18,60 +18,22 @@
 
 namespace scene
 {
-    struct Scene : public splinter3D::utils::Singleton<Scene>
+    class Scene : public splinter3D::utils::Singleton<Scene>
     {
-        void addObject(const std::string& stlPath, renderer::Color color = {255, 255, 255, 255})
-        {
-            _objects.emplace_back(std::make_unique<SceneObject>(stlPath, color));
-        }
 
-        void draw(renderer::IRenderer& renderer) const
-        {
-            for (const auto& obj : _objects)
-            {
-                obj->draw(renderer);
-            }
-        }
+      public:
+        void addObject(const std::string& stlPath, renderer::Color color = {255, 255, 255, 255});
 
-        void handleClick(const geometry::Ray& ray)
-        {
-            for (auto& obj : _objects)
-            {
-                obj->setColor({255, 255, 255, 255}); // Reset color of all objects
-            }
-            for (int i = 0; i < (int) _objects.size(); ++i)
-            {
-                if (_objects[(size_t) i]->isHit(ray))
-                {
-                    _selectedObjectIndex     = i;
-                    _lastSelectedObjectIndex = i;
-                    _objects[(size_t) _selectedObjectIndex]->setColor({255, 0, 0, 255}); // Highlight the selected object
+        void draw(renderer::IRenderer& renderer) const;
 
-                    splinter3D::events::EventBus::getInstance()
-                        .publish(scene::events::ObjectSelectedEvent{i});
-                    return;
-                }
-            }
-            _selectedObjectIndex = _lastSelectedObjectIndex; // Keeping the last selected if no new object is hit
-            if (_selectedObjectIndex >= 0 && _selectedObjectIndex < (int) _objects.size())
-            {
-                _objects[(size_t) _selectedObjectIndex]->setColor({255, 0, 0, 255}); // Highlight the selected object
-            }
-            splinter3D::events::EventBus::getInstance()
-                .publish(scene::events::ObjectSelectedEvent{_selectedObjectIndex});
-        }
+        void handleClick(const geometry::Ray& ray);
 
-        int getSelectedIndex() const
-        {
-            return _selectedObjectIndex;
-        }
+        int getSelectedIndex() const;
 
-        SceneObject* getSelected()
-        {
-            if (_selectedObjectIndex < 0)
-                return nullptr;
-            return _objects[(size_t) _selectedObjectIndex].get();
-        }
+        SceneObject* getSelected();
+
+        void removeSelected();
+        void duplicateSelected();
 
         std::unique_ptr<geometry::Mesh> getSelectedMesh(bool applyTransform = true)
         {
