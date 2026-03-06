@@ -204,123 +204,7 @@ foreach ($t in $targetsToTry) {
   cmake --build $buildDir --config $Config --target $t -- $msbuildArgs 2>$null
 }
 
-# Prepare staging area
-$staging = Join-Path $ProjectRoot 'staging'
-if (Test-Path $staging) { Remove-Item -Recurse -Force $staging }
-New-Item -ItemType Directory -Path $staging | Out-Null
-
-# Find executables produced by the build and copy them into staging/bin
-$binDir = Join-Path $staging 'bin'
-New-Item -ItemType Directory -Path $binDir | Out-Null
-
-# Heuristic: look for any .exe in build tree whose name contains 'splinter3D' (covers splinter3D.exe and splinter3D-app.exe)
-Write-Host 'Searching build output for splinter3D executable...'
-
-# Primary search: executables under the build directory
-$foundExe = Get-ChildItem -Path $buildDir -Recurse -Filter '*.exe' -ErrorAction SilentlyContinue |
-  Where-Object { $_.Name -like '*splinter3D*.exe' -or $_.Name -eq 'splinter3D.exe' } |
-  Sort-Object LastWriteTime -Descending | Select-Object -First 1
-
-# If not found, also check common MSVC output locations (project-root\Release, project-root\$Config, build\$Config)
-if (-not $foundExe) {
-  $extraCandidates = @(
-    (Join-Path $ProjectRoot $Config),
-    (Join-Path $ProjectRoot 'Release'),
-    (Join-Path $buildDir $Config),
-    (Join-Path $buildDir 'Release'),
-    (Join-Path $ProjectRoot 'bin'),
-    (Join-Path $buildDir 'bin')
-  ) | Where-Object { $_ -and (Test-Path $_) } | Get-Unique
-
-  foreach ($dir in $extraCandidates) {
-    try {
-      $cand = Get-ChildItem -Path $dir -Recurse -Filter '*.exe' -ErrorAction SilentlyContinue |
-        Where-Object { $_.Name -like '*splinter3D*.exe' -or $_.Name -eq 'splinter3D.exe' } |
-        Sort-Object LastWriteTime -Descending | Select-Object -First 1
-      if ($cand) { $foundExe = $cand; break }
-    } catch { }
-  }
-
-  # Also check for a top-level Release exe placed at ProjectRoot\Release\splinter3D.exe
-  if (-not $foundExe) {
-    $topExe = Join-Path (Join-Path $ProjectRoot 'Release') 'splinter3D.exe'
-    if (Test-Path $topExe) { $foundExe = Get-Item $topExe }
-  }
-}
-
-if ($foundExe) {
-  $destPath = Join-Path $binDir 'splinter3D.exe'
-  Copy-Item -Path $foundExe.FullName -Destination $destPath -Force
-  Write-Host "Copied $($foundExe.FullName) to staging/bin as splinter3D.exe"
-} else {
-  Write-Warning 'No splinter3D executable found in build tree; build may have failed or target name differs.'
-}
-
-# Copy any runtime DLLs next to the exe into staging/bin
-$dlls = Get-ChildItem -Path $buildDir -Recurse -Filter '*.dll' -ErrorAction SilentlyContinue
-foreach ($d in $dlls) {
-  Copy-Item -Path $d.FullName -Destination (Join-Path $binDir $d.Name) -Force
-}
-
-# Copy locale and assets
-if (Test-Path (Join-Path $ProjectRoot 'locale')) { Copy-Item -Path (Join-Path $ProjectRoot 'locale') -Destination (Join-Path $staging 'locale') -Recurse -Force }
-if (Test-Path (Join-Path $ProjectRoot 'assets')) { Copy-Item -Path (Join-Path $ProjectRoot 'assets') -Destination (Join-Path $staging 'assets') -Recurse -Force }
-
-# Copy other useful files
-foreach ($f in @('README.md','LICENSE*')) {
-  $src = Join-Path $ProjectRoot $f
-  if (Get-ChildItem -Path $src -ErrorAction SilentlyContinue) { Copy-Item -Path $src -Destination $staging -Recurse -Force }
-}
-
-# Create output dir and package
-$outDir = Join-Path $ProjectRoot $OutDirName
-if (Test-Path $outDir) { Remove-Item -Recurse -Force $outDir }
-New-Item -ItemType Directory -Path $outDir | Out-Null
-
-# Auto-detect version from .cz.toml
-$czFile = Join-Path $ProjectRoot '.cz.toml'
-$version = '0.0.0'  # fallback
-if (Test-Path $czFile) {
-  try {
-    $content = Get-Content $czFile -Raw
-    if ($content -match 'version\s*=\s*"v?([0-9.]+)"') {
-      $version = $matches[1]
-      Write-Host "Auto-detected version: $version"
-    }
-  } catch {
-    Write-Warning "Could not parse version from .cz.toml; using default: $version"
-  }
-}
-
-# Extract architecture from triplet (e.g., x64-windows -> x64)
-$arch = $Triplet -split '-' | Select-Object -First 1
-
-$zipName = "splinter3D-${version}-windows-${arch}.zip"
-$zipPath = Join-Path $outDir $zipName
-if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
-
-Write-Host "Creating ZIP: $zipPath"
-try {
-  # Remove source PO files from staging so the distributable contains only compiled .mo files
-  $poFiles = Get-ChildItem -Path $staging -Recurse -Filter '*.po' -ErrorAction SilentlyContinue
-  if ($poFiles) {
-    Write-Host "Removing source PO files from staging..."
-    foreach ($f in $poFiles) { Remove-Item -Path $f.FullName -Force -ErrorAction SilentlyContinue }
-  }
-
-  Compress-Archive -Path (Join-Path $staging '*') -DestinationPath $zipPath -Force
-} catch {
-  Fail "Failed to create ZIP: $_"
-}
-
-# Write SHA256
-$sha = Get-FileHash -Path $zipPath -Algorithm SHA256
-$shaFile = "$zipPath.sha256"
-$sha.Hash | Out-File -FilePath $shaFile -Encoding ascii
-
-Write-Host "Packaging complete: $zipPath"
-Write-Host "SHA256: $($sha.Hash) -> $shaFile"
-Write-Host "build.ps1 finished. Staging: $staging; Output: $outDir"
+# Clean up any stray Release folder left behind by some MSBuild configurations
 
 # If a top-level Release folder was left behind and it's empty, remove it to keep
 # the repository clean (some MSBuild setups create this folder transiently).
@@ -337,16 +221,18 @@ if (Test-Path $topLevelRelease) {
   }
 }
 
-# Remove staging directory now that the ZIP is created, unless DevMode is active
-if (-not $DevMode) {
-  try {
-    Remove-Item -Recurse -Force $staging -ErrorAction SilentlyContinue
-    Write-Host "Removed staging directory: $staging"
-  } catch {
-    Write-Warning "Failed to remove staging directory: $_"
-  }
-} else {
-  Write-Host 'DevMode active; keeping staging for inspection.'
+Write-Host "build.ps1 finished. Now calling package-windows.ps1..."
+
+# Call the packaging script
+$packageScript = Join-Path (Split-Path -Parent $PSCommandPath) 'package-windows.ps1'
+if (-not (Test-Path $packageScript)) {
+  Fail "Packaging script not found: $packageScript"
+}
+
+& $packageScript -ProjectRoot $ProjectRoot -BuildDirName $BuildDirName -Triplet $Triplet -OutDirName $OutDirName $(if ($DevMode) { '-DevMode' } else { '' })
+
+if ($LASTEXITCODE -ne 0) {
+  Fail "Packaging script failed with exit code: $LASTEXITCODE"
 }
 
 if ($DevMode) {
