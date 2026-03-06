@@ -17,7 +17,7 @@ namespace objects3D
         inline Matrix toMatrix() const
         {
             return MatrixScale(scale.x, scale.y, scale.z) *
-                   MatrixRotateXYZ(rotation.toRaylib()) *
+                   MatrixRotateXYZ(rotation.toRadian().toRaylib()) *
                    MatrixTranslate(position.x, position.y, position.z);
         }
     };
