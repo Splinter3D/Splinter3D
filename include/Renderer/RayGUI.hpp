@@ -1086,7 +1086,7 @@ typedef enum
  *
  ************************************************************************************/
 
-#if defined(RAYGUI_IMPLEMENTATION)
+// #if defined(RAYGUI_IMPLEMENTATION)
 
 #define _CRT_SECURE_NO_WARNINGS
 

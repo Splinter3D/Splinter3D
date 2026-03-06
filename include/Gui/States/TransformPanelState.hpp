@@ -11,11 +11,11 @@ namespace gui::states
     class TransformPanelState : public splinter3D::utils::Singleton<TransformPanelState>
     {
       public:
-        // Scale values
+        // Position values
         float posX{0.0f};
         float posY{0.0f};
         float posZ{0.0f};
-        // Input scale values (Used to sync the scale values after editing)
+        // Input position values (Used to sync the position values after editing)
         float posXi{0.0f};
         float posYi{0.0f};
         float posZi{0.0f};

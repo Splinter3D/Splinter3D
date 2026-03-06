@@ -115,6 +115,7 @@ namespace renderer
         virtual void drawScaleIcon(void* canvas)     = 0;
         virtual void drawTransformIcon(void* canvas) = 0;
         virtual void drawPreviewIcon(void* canvas)   = 0;
+        virtual void drawRotationIcon(void* canvas)  = 0;
 
         // 3D Drawing
         virtual void drawTriangle(const geometry::Triangle& tri, Color color, Layer layer = Layer::World) = 0;

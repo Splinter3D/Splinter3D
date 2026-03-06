@@ -496,6 +496,16 @@ namespace renderer
         ImageDrawCircle(img, 32, 32, 4, {255, 255, 255, 255});
     }
 
+    void RaylibRenderer::drawRotationIcon(void* canvas)
+    {
+        Image*        img = static_cast<Image*>(canvas);
+        const ::Color c{100, 180, 255, 255};
+
+        // Circular arrow (simplified)
+        ImageDrawCircleLines(img, 32, 32, 18, c);
+        ImageDrawTriangle(img, {32, 10}, {28, 16}, {36, 16}, c);
+    }
+
     void RaylibRenderer::drawScaleIcon(void* canvas)
     {
         Image*        img = static_cast<Image*>(canvas);
