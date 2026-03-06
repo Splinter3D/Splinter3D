@@ -93,11 +93,85 @@ if ($foundToolPath) {
   $cmakeToolPaths = ""
 }
 
-# Check msgfmt availability (install.ps1 should have set it up in PATH)
-if (Get-Command msgfmt -ErrorAction SilentlyContinue) {
-  Write-Host "msgfmt found: $(Get-Command msgfmt | Select-Object -ExpandProperty Source)"
+# Ensure msgfmt is available to CMake: if not in PATH, try a few places and prepend the folder when found
+if (-not (Get-Command msgfmt -ErrorAction SilentlyContinue)) {
+  Write-Host 'msgfmt not found on PATH. Searching vcpkg roots for msgfmt.exe...'
+  $msgfmtCandidates = @()
+  foreach ($root in $vcpkgRootCandidates) {
+    if (-not (Test-Path $root)) { continue }
+    try {
+      # Search recursively under candidate roots (covers installed/<triplet>/tools and packages/*/tools)
+      $c = Get-ChildItem -Path (Join-Path $root '*') -Filter 'msgfmt.exe' -Recurse -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }
+      if ($c) { $msgfmtCandidates += $c }
+    } catch { }
+  }
+  if ($msgfmtCandidates.Count -gt 0) {
+    $msgfmtExe = $msgfmtCandidates[0]
+    $msgfmtDir = Split-Path -Path $msgfmtExe -Parent
+    Write-Host "Found msgfmt at: $msgfmtExe -- prepending $msgfmtDir to PATH"
+    $env:PATH = "$msgfmtDir;$env:PATH"
+  } else {
+    Write-Host 'No msgfmt.exe found under vcpkg roots. Trying common Chocolatey locations...'
+    # Try common Chocolatey locations
+    $chocoCandidates = @(
+      'C:\Program Files\gettext-iconv\bin',
+      'C:\Program Files\gettext\bin',
+      'C:\ProgramData\chocolatey\lib\gettext*\tools\*',
+      'C:\ProgramData\chocolatey\lib\gettext-iconv*\tools\*'
+    )
+    foreach ($pattern in $chocoCandidates) {
+      try {
+        $found = Get-ChildItem -Path $pattern -Filter 'msgfmt.exe' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($found) {
+          $dir = Split-Path -Path $found.FullName -Parent
+          $env:PATH = "$dir;$env:PATH"
+          Write-Host "Found msgfmt at $($found.FullName); prepended $dir to PATH"
+          break
+        }
+      } catch { }
+    }
+
+    # Final fallback: search the build tree for any msgfmt.exe (useful when vcpkg installs into build/vcpkg_installed)
+    if (-not (Get-Command msgfmt -ErrorAction SilentlyContinue)) {
+      try {
+        Write-Host 'Final scan: searching build directory for msgfmt.exe...'
+        $found = Get-ChildItem -Path $buildDir -Filter 'msgfmt.exe' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($found) {
+          $dir = Split-Path -Path $found.FullName -Parent
+          $env:PATH = "$dir;$env:PATH"
+          Write-Host "Found msgfmt at $($found.FullName); prepended $dir to PATH"
+        } else {
+          Write-Host 'Final scan: msgfmt.exe not found in build tree.'
+        }
+      } catch { Write-Host "Final scan error: $_" }
+    }
+  }
 } else {
-  Write-Host 'WARNING: msgfmt not found in PATH. If translations fail to build, run install.ps1 again or ensure gettext is installed.'
+  Write-Host "msgfmt found: $(Get-Command msgfmt | Select-Object -ExpandProperty Source)"
+}
+
+# If msgfmt still not on PATH, check common Chocolatey install locations and prepends their bin folders
+if (-not (Get-Command msgfmt -ErrorAction SilentlyContinue)) {
+  Write-Host 'msgfmt still not found; searching common Chocolatey install locations...'
+  $chocoCandidates = @(
+    'C:\Program Files\gettext-iconv\bin',
+    'C:\Program Files\gettext\bin',
+    'C:\ProgramData\chocolatey\lib\gettext*\tools\*',
+    'C:\ProgramData\chocolatey\lib\gettext-iconv*\tools\*'
+  )
+  foreach ($pattern in $chocoCandidates) {
+    try {
+      $found = Get-ChildItem -Path $pattern -Filter 'msgfmt.exe' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+      if ($found) {
+        $dir = Split-Path -Path $found.FullName -Parent
+        $env:PATH = "$dir;$env:PATH"
+        Write-Host "Found msgfmt at $($found.FullName); prepended $dir to PATH"
+        break
+      }
+    } catch { }
+  }
+  if (-not (Get-Command msgfmt -ErrorAction SilentlyContinue)) { Write-Host 'msgfmt still not found after searching Chocolatey locations.' }
+  else { Write-Host "msgfmt now: $(Get-Command msgfmt | Select-Object -ExpandProperty Source)" }
 }
 
 # Configure CMake
