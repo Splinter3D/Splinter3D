@@ -143,6 +143,7 @@ namespace renderer
         void drawScaleIcon(void* canvas) override;
         void drawTransformIcon(void* canvas) override;
         void drawPreviewIcon(void* canvas) override;
+        void drawRotationIcon(void* canvas) override;
 
         // --------------------
         // Drawing 3D

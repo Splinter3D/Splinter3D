@@ -1086,7 +1086,7 @@ typedef enum
  *
  ************************************************************************************/
 
-#if defined(RAYGUI_IMPLEMENTATION)
+#if defined(RAYGUI_IMPLEMENTATION) // Line to comment while developing
 
 #define _CRT_SECURE_NO_WARNINGS
 
@@ -5024,9 +5024,9 @@ int GuiValueBox(Rectangle bounds, const char* text, int* value, int minValue, in
 
             int keyCount = (int) strlen(textValue);
 
-            // Add or remove minus symbol
             if (IsKeyPressed(KEY_MINUS))
             {
+
                 if (textValue[0] == '-')
                 {
                     for (int i = 0; i < keyCount; i++)
@@ -5081,7 +5081,21 @@ int GuiValueBox(Rectangle bounds, const char* text, int* value, int minValue, in
             }
 
             if (valueHasChanged)
+            {
                 *value = TextToInteger(textValue);
+                if (*value > maxValue)
+                {
+                    *value              = maxValue;
+                    textValue[keyCount] = '\0';
+                    keyCount--;
+                }
+                else if (*value < minValue)
+                {
+                    *value              = minValue;
+                    textValue[keyCount] = '\0';
+                    keyCount--;
+                }
+            }
 
             // NOTE: We are not clamp values until user input finishes
             // if (*value > maxValue) *value = maxValue;
@@ -5208,42 +5222,40 @@ int GuiFloatValueBox(Rectangle bounds, const char* text, float* value, float min
 
             int keyCount = (int) strlen(textValue);
 
-            // Add or remove minus symbol
-            if (IsKeyPressed(KEY_MINUS))
-            {
-                if (textValue[0] == '-')
-                {
-                    for (int i = 0; i < keyCount; i++)
-                    {
-                        textValue[i] = textValue[i + 1];
-                    }
-                    keyCount--;
-                    valueHasChanged = true;
-                }
-                else if (keyCount < RAYGUI_VALUEBOX_MAX_CHARS - 1)
-                {
-                    if (keyCount == 0)
-                    {
-                        textValue[0] = '0';
-                        textValue[1] = '\0';
-                        keyCount++;
-                    }
-                    for (int i = keyCount; i > -1; i--)
-                    {
-                        textValue[i + 1] = textValue[i];
-                    }
-                    textValue[0] = '-';
-                    keyCount++;
-                    valueHasChanged = true;
-                }
-            }
-
-            // Only allow keys in range [48..57] and one dot symbol
+            // Only allow keys in range [48..57] and one dot symbol and one minus symbol
             if (keyCount < RAYGUI_VALUEBOX_MAX_CHARS)
             {
                 if (GetTextWidth(textValue) < bounds.width)
                 {
                     int key = GetCharPressed();
+                    if (key == 45)
+                    {
+                        if (textValue[0] == '-')
+                        {
+                            for (int i = 0; i < keyCount; i++)
+                            {
+                                textValue[i] = textValue[i + 1];
+                            }
+                            keyCount--;
+                            valueHasChanged = true;
+                        }
+                        else if (keyCount < RAYGUI_VALUEBOX_MAX_CHARS - 1)
+                        {
+                            if (keyCount == 0)
+                            {
+                                textValue[0] = '0';
+                                textValue[1] = '\0';
+                                keyCount++;
+                            }
+                            for (int i = keyCount; i > -1; i--)
+                            {
+                                textValue[i + 1] = textValue[i];
+                            }
+                            textValue[0] = '-';
+                            keyCount++;
+                            valueHasChanged = true;
+                        }
+                    }
                     if ((key >= 48) && (key <= 57))
                     {
                         textValue[keyCount] = (char) key;
@@ -5286,6 +5298,34 @@ int GuiFloatValueBox(Rectangle bounds, const char* text, float* value, float min
             {
                 textBuffer = textValue;
                 *value     = TextToFloat(textValue);
+                if (*value > maxValue)
+                {
+                    *value = maxValue;
+                    if ((int) maxValue == maxValue)
+                    {
+                        snprintf(textValue, sizeof(textValue), "%i", (int) maxValue);
+                    }
+                    else
+                    {
+                        snprintf(textValue, sizeof(textValue), "%.2f", (double) maxValue);
+                    }
+                    textBuffer = textValue;
+                    keyCount--;
+                }
+                else if (*value < minValue)
+                {
+                    *value = minValue;
+                    if ((int) minValue == minValue)
+                    {
+                        snprintf(textValue, sizeof(textValue), "%i", (int) minValue);
+                    }
+                    else
+                    {
+                        snprintf(textValue, sizeof(textValue), "%.2f", (double) minValue);
+                    }
+                    textBuffer = textValue;
+                    keyCount--;
+                }
             }
 
             // NOTE: We are not clamp values until user input finishes

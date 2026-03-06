@@ -45,5 +45,13 @@ namespace geometry
         {
             return Vector3{x, y, z};
         }
+
+        inline Vec3 toRadian() const
+        {
+            return Vec3{
+                x * (PI / 180.0f),
+                y * (PI / 180.0f),
+                z * (PI / 180.0f)};
+        }
     };
 } // namespace geometry
