@@ -52,10 +52,10 @@ namespace gui
                                       if (!exported)
                                           std::cout << "[Toolbar] Export failed: no object selected\n";
                                   })
-                                  .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::E, renderer::Key::Shift}, "Export (E)")
+                                  .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::E, renderer::Key::Shift}, "Export All (E)")
                                   .build(renderer));
 
-        buttons_.emplace_back(Button::Builder("export all")
+        buttons_.emplace_back(Button::Builder("export")
                                   .icon([&renderer](void* c) { renderer.drawExportIcon(c); })
                                   .action([]() {
                                       auto path = gui::utils::saveSTLFile();
