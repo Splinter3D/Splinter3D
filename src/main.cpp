@@ -7,7 +7,7 @@
 
 #include <Geometry/Utils/MeshUtils.hpp>
 #include <Gui/CenteredToolbar.hpp>
-#include <Gui/States/ScalePanelState.hpp>
+#include <Gui/States/ScalePannelState.hpp>
 #include <Objects3D/Object3D.hpp>
 #include <Renderer/RaylibRenderer.hpp>
 #include <Scene/Scene.hpp>
