@@ -73,17 +73,24 @@ namespace scene
             return _objects[(size_t) _selectedObjectIndex].get();
         }
 
-        bool exportSelected(const std::string& outputPath)
+        std::unique_ptr<geometry::Mesh> getSelectedMesh(bool applyTransform = true)
         {
             SceneObject* selected = getSelected();
             if (!selected)
-                return false;
+                return nullptr;
+            if (applyTransform)
+                return std::make_unique<geometry::Mesh>(*selected->getTransformedMesh());
+            return std::make_unique<geometry::Mesh>(*selected->getObject3D()->getMesh());
+        }
 
-            std::unique_ptr<geometry::Mesh> mesh(selected->getTransformedMesh());
-            if (!mesh)
-                return false;
-
-            return mesh->toAsciiSTL(outputPath);
+        std::vector<objects3D::Object3D> getAllObjects3D() const
+        {
+            std::vector<objects3D::Object3D> result;
+            for (const auto& obj : _objects)
+            {
+                result.push_back(*obj->getObject3D());
+            }
+            return result;
         }
 
       protected:

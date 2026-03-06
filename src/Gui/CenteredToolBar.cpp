@@ -16,7 +16,7 @@ namespace gui
     void CenteredToolbar::initialize(renderer::IRenderer& renderer)
     {
         buttons_.clear();
-        buttons_.reserve(5);
+        buttons_.reserve(6);
 
         // Import
         buttons_.emplace_back(Button::Builder("import")
@@ -29,15 +29,41 @@ namespace gui
                                   .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::I}, "Import (I)")
                                   .build(renderer));
 
-        // Export
+        // Export All
         buttons_.emplace_back(Button::Builder("export")
                                   .icon([&renderer](void* c) { renderer.drawExportIcon(c); })
                                   .action([]() {
                                       auto path = gui::utils::saveSTLFile();
                                       if (!path.has_value())
                                           return;
+                                      std::vector<objects3D::Object3D> objects = scene::Scene::getInstance().getAllObjects3D();
+                                      if (objects.empty())
+                                      {
+                                          std::cout << "[Toolbar] Export failed: no objects in scene\n";
+                                          return;
+                                      }
+                                      objects3D::Object3D combined(objects, true);
+                                      geometry::Mesh*     selectedMesh = combined.getMesh();
+                                      bool                exported     = selectedMesh->toAsciiSTL(*path);
+                                      if (!exported)
+                                          std::cout << "[Toolbar] Export failed: no object selected\n";
+                                  })
+                                  .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::E, renderer::Key::Shift}, "Export (E)")
+                                  .build(renderer));
 
-                                      bool exported = scene::Scene::getInstance().exportSelected(*path);
+        buttons_.emplace_back(Button::Builder("export all")
+                                  .icon([&renderer](void* c) { renderer.drawExportIcon(c); })
+                                  .action([]() {
+                                      auto path = gui::utils::saveSTLFile();
+                                      if (!path.has_value())
+                                          return;
+                                      std::unique_ptr<geometry::Mesh> selectedMesh = scene::Scene::getInstance().getSelectedMesh(true);
+                                      if (!selectedMesh)
+                                      {
+                                          std::cout << "[Toolbar] Export failed: no object selected\n";
+                                          return;
+                                      }
+                                      bool exported = selectedMesh->toAsciiSTL(*path);
                                       if (!exported)
                                           std::cout << "[Toolbar] Export failed: no object selected\n";
                                   })

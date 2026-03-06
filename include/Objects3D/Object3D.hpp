@@ -19,6 +19,31 @@ namespace objects3D
         { }
 
         /**
+         * Constructs a new Object3D by combining the meshes of the given objects.
+         * All the objects' meshes will be merged into a single mesh for this Object3D.
+         * @attention The original meshes of the input objects will NOT be modified.
+         * @param objects The list of Object3D instances whose meshes will be combined to create this Object3D.
+         * @param applyTransforms If true, the current transforms of the input objects will be applied to their meshes before merging.
+         */
+        Object3D(const std::vector<objects3D::Object3D>& objects, bool applyTransforms = true)
+        {
+            _mesh = new geometry::Mesh();
+            for (const auto& obj : objects)
+            {
+                if (applyTransforms)
+                {
+                    geometry::Mesh* mesh = obj.getTransformedMesh();
+                    _mesh->triangles.insert(_mesh->triangles.end(), mesh->triangles.begin(), mesh->triangles.end());
+                }
+                else
+                {
+                    geometry::Mesh* mesh = obj.getMesh();
+                    _mesh->triangles.insert(_mesh->triangles.end(), mesh->triangles.begin(), mesh->triangles.end());
+                }
+            }
+        }
+
+        /**
          * Load the mesh from an STL file and create an Object3D.
          */
         inline static Object3D fromSTL(const std::string& stlFile)
