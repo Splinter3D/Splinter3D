@@ -4,6 +4,7 @@ on:
   push:
     branches:
     - main
+    - feat/create_exe
 
 permissions:
   contents: write
