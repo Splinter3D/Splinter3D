@@ -1,4 +1,4 @@
-// ScalePanelState.hpp
+// ScalePannelState.hpp
 #pragma once
 #include <Objects3D/Object3D.hpp>
 #include <Scene/Scene.hpp>
@@ -8,7 +8,7 @@
 
 namespace gui::states
 {
-    class ScalePanelState : public splinter3D::utils::Singleton<ScalePanelState>
+    class ScalePannelState : public splinter3D::utils::Singleton<ScalePannelState>
     {
       public:
         // Scale values
@@ -29,30 +29,20 @@ namespace gui::states
         /**
          * Applies the current scale values to the selected object in the scene.
          */
-        void applyToTarget()
-        {
-            scene::SceneObject* target = scene::Scene::getInstance().getSelected();
-            if (!target)
-                return;
-            objects3D::Transform t = target->getTransform();
-            t.scale.x              = scaleX / 100.0f;
-            t.scale.y              = scaleY / 100.0f;
-            t.scale.z              = scaleZ / 100.0f;
-            target->setTransform(t);
-        }
+        void applyToTarget();
 
       protected:
         /**
          * Constructor that subscribes to ObjectSelectedEvent to reset scale values when the selection changes.
          */
-        ScalePanelState() noexcept
+        ScalePannelState() noexcept
         {
             splinter3D::events::EventBus::getInstance()
                 .subscribe<scene::events::ObjectSelectedEvent>(
                     [this](const scene::events::ObjectSelectedEvent& e) { resetOnSelectionChange(e); });
         }
 
-        ~ScalePanelState() noexcept = default;
+        ~ScalePannelState() noexcept = default;
 
       private:
         /**
@@ -60,29 +50,8 @@ namespace gui::states
          * If an object is selected (index >= 0), it retrieves the object's current scale and updates the scale values accordingly.
          * If no object is selected (index -1), it resets the scale values to 100% (1.0 scale) for all axes.
          */
-        void resetOnSelectionChange(const scene::events::ObjectSelectedEvent& e)
-        {
-            int index = e.index;
-            if (index < 0)
-            {
-                scaleX = scaleY = scaleZ = 100.0f;
-                scaleXInput = scaleYInput = scaleZInput = 100.0f;
-            }
-            else
-            {
-                auto* obj = scene::Scene::getInstance().getSelected();
-                if (!obj)
-                    return;
-                const auto t = obj->getTransform();
-                scaleX       = t.scale.x * 100.0f;
-                scaleY       = t.scale.y * 100.0f;
-                scaleZ       = t.scale.z * 100.0f;
-                scaleXInput  = scaleX;
-                scaleYInput  = scaleY;
-                scaleZInput  = scaleZ;
-            }
-        }
+        void resetOnSelectionChange(const scene::events::ObjectSelectedEvent& e);
 
-        friend class Singleton<ScalePanelState>;
+        friend class Singleton<ScalePannelState>;
     };
 } // namespace gui::states

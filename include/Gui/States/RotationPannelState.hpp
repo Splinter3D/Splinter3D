@@ -1,4 +1,4 @@
-// RotationPanelState.hpp
+// RotationPannelState.hpp
 #pragma once
 #include <Objects3D/Object3D.hpp>
 #include <Scene/Scene.hpp>
@@ -8,7 +8,7 @@
 
 namespace gui::states
 {
-    class RotationPanelState : public splinter3D::utils::Singleton<RotationPanelState>
+    class RotationPannelState : public splinter3D::utils::Singleton<RotationPannelState>
     {
       public:
         // Rotation values for the selected object
@@ -27,30 +27,20 @@ namespace gui::states
         /**
          * Applies the current rotation values to the selected object in the scene.
          */
-        void applyToTarget()
-        {
-            scene::SceneObject* target = scene::Scene::getInstance().getSelected();
-            if (!target)
-                return;
-            objects3D::Transform t = target->getTransform();
-            t.rotation.x           = rotX;
-            t.rotation.y           = rotY;
-            t.rotation.z           = rotZ;
-            target->setTransform(t);
-        }
+        void applyToTarget();
 
       protected:
         /**
          * Constructor that subscribes to ObjectSelectedEvent to reset rotation values when the selection changes.
          */
-        RotationPanelState() noexcept
+        RotationPannelState() noexcept
         {
             splinter3D::events::EventBus::getInstance()
                 .subscribe<scene::events::ObjectSelectedEvent>(
                     [this](const scene::events::ObjectSelectedEvent& e) { resetOnSelectionChange(e); });
         }
 
-        ~RotationPanelState() noexcept = default;
+        ~RotationPannelState() noexcept = default;
 
       private:
         /**
@@ -58,29 +48,8 @@ namespace gui::states
          * If an object is selected (index >= 0), it retrieves the object's current rotation and updates the rotation values accordingly.
          * If no object is selected (index -1), it resets the rotation values to 0 for all axes.
          */
-        void resetOnSelectionChange(const scene::events::ObjectSelectedEvent& e)
-        {
-            int index = e.index;
-            if (index < 0)
-            {
-                rotX = rotY = rotZ = 0.0f;
-                rotXInput = rotYInput = rotZInput = 0;
-            }
-            else
-            {
-                auto* obj = scene::Scene::getInstance().getSelected();
-                if (!obj)
-                    return;
-                const auto t = obj->getTransform();
-                rotX         = t.rotation.x;
-                rotY         = t.rotation.y;
-                rotZ         = t.rotation.z;
-                rotXInput    = rotX;
-                rotYInput    = rotY;
-                rotZInput    = rotZ;
-            }
-        }
+        void resetOnSelectionChange(const scene::events::ObjectSelectedEvent& e);
 
-        friend class Singleton<RotationPanelState>;
+        friend class Singleton<RotationPannelState>;
     };
 } // namespace gui::states

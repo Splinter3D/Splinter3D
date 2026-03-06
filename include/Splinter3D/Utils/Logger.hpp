@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Splinter3D/Api.hpp>
 #include <Splinter3D/Utils/Singleton.hpp>
 #include <iostream>
 #include <mutex>
@@ -16,7 +15,7 @@ namespace splinter3D::utils
      * It provides two methods, `cout` and `cerr`, which are thread-safe
      * versions of `std::cout` and `std::cerr`.
      */
-    class SPLINTER3D_API Logger : public Singleton<Logger>
+    class Logger : public Singleton<Logger>
     {
       public:
         /**

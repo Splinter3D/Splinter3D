@@ -11,15 +11,15 @@ namespace gui
                    bool                       hasShortcut,
                    std::string                tooltip,
                    std::vector<renderer::Key> shortcutKey,
-                   bool                       hasPanel,
-                   PanelDrawFn                panelDrawFn)
+                   bool                       hasPannel,
+                   PannelDrawFn               pannelDrawFn)
         : id_(std::move(id))
         , action_(std::move(action))
         , hasShortcut_(hasShortcut)
         , tooltip_(std::move(tooltip))
         , shortcutKeys_(shortcutKey)
-        , hasPanel_(hasPanel)
-        , panelDrawFn_(std::move(panelDrawFn))
+        , hasPannel_(hasPannel)
+        , pannelDrawFn_(std::move(pannelDrawFn))
     {
         // Bake the icon once into a GPU texture
         if (drawIcon)
@@ -35,11 +35,11 @@ namespace gui
 
         if (hovered && renderer.isMouseButtonPressed((int) renderer::MouseButton::Left))
         {
-            if (hasPanel_)
-                panelOpen_ = !panelOpen_;
+            if (hasPannel_)
+                pannelOpen_ = !pannelOpen_;
             else
             {
-                panelOpen_ = false;
+                pannelOpen_ = false;
                 if (action_)
                     action_();
             }
@@ -76,8 +76,8 @@ namespace gui
             const bool shortcutTriggered = modifiersHeld && hasNonModifierKey && nonModifierPressed;
             if (shortcutTriggered)
             {
-                if (hasPanel_)
-                    panelOpen_ = !panelOpen_;
+                if (hasPannel_)
+                    pannelOpen_ = !pannelOpen_;
                 else if (action_)
                     action_();
             }
@@ -87,7 +87,7 @@ namespace gui
     void Button::draw(const renderer::IRenderer& renderer) const
     {
         // Base — UI layer
-        if (panelOpen_)
+        if (pannelOpen_)
             renderer.drawRectangle(x, y, width, height, renderer::Palette::Secondary, renderer::Layer::UI);
         else
             renderer.drawRectangle(x, y, width, height, renderer::Palette::Primary, renderer::Layer::UI);
@@ -103,10 +103,10 @@ namespace gui
             renderer.drawTexture(ix, iy, iconSize, iconSize, iconTexture_, renderer::Layer::UI);
         }
 
-        // Overlay layer — hover tint, tooltip, panel
+        // Overlay layer — hover tint, tooltip, pannel
         const bool hovered = isHovered(renderer);
 
-        if (hovered && !panelOpen_)
+        if (hovered && !pannelOpen_)
             renderer.drawRectangle(x, y, width, height,
                                    renderer::Color(renderer::Palette::Secondary.r,
                                                    renderer::Palette::Secondary.g,
@@ -117,8 +117,8 @@ namespace gui
         if (hovered && hoverTimer_ >= kTooltipDelay)
             drawTooltip(renderer);
 
-        if (panelOpen_)
-            drawPanel(renderer);
+        if (pannelOpen_)
+            drawPannel(renderer);
     }
 
     bool Button::isHovered(const renderer::IRenderer& renderer) const
@@ -145,23 +145,23 @@ namespace gui
         renderer.drawText(tx + kPad, ty + (kH - 14.0f) * 0.5f, tooltip_.c_str(), 14, renderer::Layer::Overlay);
     }
 
-    void Button::drawPanel(const renderer::IRenderer& renderer) const
+    void Button::drawPannel(const renderer::IRenderer& renderer) const
     {
-        if (!panelDrawFn_)
+        if (!pannelDrawFn_)
             return;
 
-        float px       = x + (width - kPanelW) * 0.5f;
-        px             = std::max(4.0f, std::min(px, (float) renderer.getScreenWidth() - kPanelW - 4.0f));
-        const float py = y + height + kPanelGap;
+        float px       = x + (width - kPannelW) * 0.5f;
+        px             = std::max(4.0f, std::min(px, (float) renderer.getScreenWidth() - kPannelW - 4.0f));
+        const float py = y + height + kPannelGap;
 
         // Shadow
-        renderer.drawRectangle(px + 4.0f, py + 4.0f, kPanelW, kPanelH, renderer::Palette::Muted, renderer::Layer::UI);
+        renderer.drawRectangle(px + 4.0f, py + 4.0f, kPannelW, kPannelH, renderer::Palette::Muted, renderer::Layer::UI);
 
         // Background + border
-        renderer.drawRectangle(px, py, kPanelW, kPanelH, renderer::Palette::Background, renderer::Layer::UI);
-        renderer.drawRectangleLines(px, py, kPanelW, kPanelH, renderer::Palette::Secondary, renderer::Layer::UI);
+        renderer.drawRectangle(px, py, kPannelW, kPannelH, renderer::Palette::Background, renderer::Layer::UI);
+        renderer.drawRectangleLines(px, py, kPannelW, kPannelH, renderer::Palette::Secondary, renderer::Layer::UI);
 
-        panelDrawFn_(renderer, px, py, kPanelW, kPanelH);
+        pannelDrawFn_(renderer, px, py, kPannelW, kPannelH);
     }
 
 } // namespace gui
