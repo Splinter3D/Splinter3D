@@ -63,4 +63,27 @@ namespace scene
         return _objects[(size_t) _selectedObjectIndex].get();
     }
 
+    void Scene::removeSelected()
+    {
+        if (_selectedObjectIndex < 0 || _selectedObjectIndex >= (int) _objects.size())
+            return;
+
+        _objects.erase(_objects.begin() + _selectedObjectIndex);
+        _selectedObjectIndex     = -1;
+        _lastSelectedObjectIndex = -1;
+
+        splinter3D::events::EventBus::getInstance()
+            .publish(scene::events::ObjectSelectedEvent{-1});
+    }
+
+    void Scene::duplicateSelected()
+    {
+        if (_selectedObjectIndex < 0 || _selectedObjectIndex >= (int) _objects.size())
+            return;
+
+        const auto& selectedObj = _objects[(size_t) _selectedObjectIndex];
+        auto        newObj      = std::make_unique<SceneObject>(*selectedObj);
+        _objects.push_back(std::move(newObj));
+    }
+
 } // namespace scene

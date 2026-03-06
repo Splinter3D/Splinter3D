@@ -58,6 +58,7 @@ namespace renderer
         Enter     = 257,
         Tab       = 258,
         Backspace = 259,
+        Suppr     = 261,
         Shift     = 340,
         Ctrl      = 341,
         Alt       = 342,

@@ -19,6 +19,13 @@ namespace scene
             rObj.setColor(color);
         }
 
+        SceneObject(const SceneObject& other)
+            : obj(other.obj)
+        {
+            rObj.bind(obj);
+            rObj.setColor(other.rObj.getColor());
+        }
+
         void draw(renderer::IRenderer& renderer) const;
         bool isHit(const geometry::Ray& ray);
         void setColor(const renderer::Color& c);

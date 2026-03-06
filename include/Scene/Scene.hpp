@@ -32,6 +32,9 @@ namespace scene
 
         SceneObject* getSelected();
 
+        void removeSelected();
+        void duplicateSelected();
+
       protected:
         Scene()           = default;
         ~Scene() noexcept = default;
