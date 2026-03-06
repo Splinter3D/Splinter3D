@@ -133,8 +133,10 @@ namespace renderer
         void      drawButton(float x, float y, float width, float height, const ITexture* icon, const std::function<void()>& onClick, Layer layer = Layer::UI) const override;
         void      drawPanel(float x, float y, float width, float height, Layer layer = Layer::Overlay) const override;
         void      drawText(float x, float y, const char* text, int fontSize, Layer layer = Layer::UI) const override;
-        float     measureTextWidth(const char* text, int fontSize) const override;
         void*     getCanvas() const override;
+
+        // Gui utilities
+        float measureTextWidth(const char* text, int fontSize) const override;
 
         // Specific icon painters
         void drawImportIcon(void* canvas) override;

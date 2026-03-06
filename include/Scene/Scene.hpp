@@ -13,7 +13,6 @@
 #include <Splinter3D/Events/EventBus.hpp>
 #include <Splinter3D/Events/ObjectSelectedEvent.hpp>
 #include <Splinter3D/Utils/Singleton.hpp>
-#include <iostream>
 #include <memory>
 
 namespace scene

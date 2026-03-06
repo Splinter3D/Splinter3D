@@ -423,11 +423,6 @@ namespace renderer
         drawQueue_[layer].push_back(TextCmd{text, (int) x, (int) y, fontSize, Palette::Secondary});
     }
 
-    float RaylibRenderer::measureTextWidth(const char* text, int fontSize) const
-    {
-        return static_cast<float>(MeasureText(text, fontSize));
-    }
-
     void RaylibRenderer::drawRectangle(float x, float y, float width, float height, Color color, Layer layer) const
     {
         drawQueue_[layer].push_back(RectCmd{x, y, width, height, color});
@@ -456,6 +451,13 @@ namespace renderer
     void RaylibRenderer::drawCheckbox(float x, float y, float size, const char* label, bool& checked, Layer layer) const
     {
         drawQueue_[layer].push_back(CheckboxCmd{x, y, size, label, checked, &checked});
+    }
+
+#pragma region GUI Utils
+
+    float RaylibRenderer::measureTextWidth(const char* text, int fontSize) const
+    {
+        return static_cast<float>(MeasureText(text, fontSize));
     }
 
 #pragma endregion

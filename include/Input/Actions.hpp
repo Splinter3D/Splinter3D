@@ -5,6 +5,11 @@ namespace input
     enum class Action
     {
         DeleteSelectedObject,
-        DuplicateSelectedObject
+        DuplicateSelectedObject,
+        Import,
+        Export,
+        Rotation,
+        Transform,
+        Scale
     };
 }

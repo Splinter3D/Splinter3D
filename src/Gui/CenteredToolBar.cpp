@@ -6,9 +6,10 @@
 #include <Gui/States/ScalePannelState.hpp>
 #include <Gui/States/TransformPannelState.hpp>
 #include <Gui/Utils/FileDialog.hpp>
+#include <Input/Actions.hpp>
+#include <Input/InputManager.hpp>
 #include <Renderer/IRenderer.hpp>
 #include <Scene/Scene.hpp>
-#include <iostream>
 
 namespace gui
 {
@@ -25,41 +26,43 @@ namespace gui
         // Import
         buttons_.emplace_back(Button::Builder("import")
                                   .icon([&renderer](void* c) { renderer.drawImportIcon(c); })
-                                  .action([]() {
-                                      auto path = gui::utils::pickSTLFile();
-                                      if (path.has_value())
-                                          scene::Scene::getInstance().addObject(*path);
-                                  })
-                                  .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::I}, "Import (I)")
+                                  .action([]() { input::InputManager::getInstance().trigger(input::Action::Import); })
+                                  .tooltip("Import (Ctrl+I)")
                                   .build(renderer));
 
         // Export
         buttons_.emplace_back(Button::Builder("export")
                                   .icon([&renderer](void* c) { renderer.drawExportIcon(c); })
-                                  .action([]() { std::cout << "[Toolbar] Export\n"; })
-                                  .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::E}, "Export (E)")
+                                  .action([]() { input::InputManager::getInstance().trigger(input::Action::Export); })
+                                  .tooltip("Export (Ctrl+E)")
                                   .build(renderer));
 
         // Rotation (has pannel)
         buttons_.emplace_back(Button::Builder("rotation")
                                   .icon([&renderer](void* c) { renderer.drawRotationIcon(c); })
-                                  .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::R}, "Rotation (R)")
+                                  .action([]() { input::InputManager::getInstance().trigger(input::Action::Rotation); })
+                                  .tooltip("Rotation (Ctrl+R)")
                                   .pannel(pannels::RotationPannel())
                                   .build(renderer));
 
         // Transform (has pannel)
         buttons_.emplace_back(Button::Builder("transform")
                                   .icon([&renderer](void* c) { renderer.drawTransformIcon(c); })
-                                  .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::T}, "Transform (T)")
+                                  .action([]() { input::InputManager::getInstance().trigger(input::Action::Transform); })
+                                  .tooltip("Transform (Ctrl+T)")
                                   .pannel(pannels::TransformPannel())
                                   .build(renderer));
 
         // Scale (has pannel)
         buttons_.emplace_back(Button::Builder("scale")
                                   .icon([&renderer](void* c) { renderer.drawScaleIcon(c); })
-                                  .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::S}, "Scale (S)")
+                                  .action([]() { input::InputManager::getInstance().trigger(input::Action::Scale); })
+                                  .tooltip("Scale (Ctrl+S)")
                                   .pannel(pannels::ScalePannel())
                                   .build(renderer));
+
+        for (auto& btn : buttons_)
+            btn.subscribeToPannelEvents();
 
         repositionButtons(renderer);
         _lastScreenWidth  = renderer.getScreenWidth();

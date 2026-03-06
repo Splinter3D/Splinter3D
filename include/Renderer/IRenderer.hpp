@@ -79,6 +79,38 @@ namespace renderer
         Debug   = 3  // debug overlays
     };
 
+    inline std::string to_string(Key key)
+    {
+        for (int i = (int) Key::A; i <= (int) Key::Z; ++i)
+        {
+            if ((int) key == i)
+                return std::string(1, static_cast<char>(i));
+        }
+        switch (key)
+        {
+            case Key::Space:
+                return "Space";
+            case Key::Escape:
+                return "Escape";
+            case Key::Enter:
+                return "Enter";
+            case Key::Tab:
+                return "Tab";
+            case Key::Backspace:
+                return "Backspace";
+            case Key::Suppr:
+                return "Suppr";
+            case Key::Shift:
+                return "Shift";
+            case Key::Ctrl:
+                return "Ctrl";
+            case Key::Alt:
+                return "Alt";
+            default:
+                return "Unknown";
+        }
+    }
+
     /**
      * Interface for a 3D renderer suitable for slicers
      */
@@ -105,7 +137,9 @@ namespace renderer
         virtual void      drawButton(float x, float y, float width, float height, const ITexture* icon, const std::function<void()>& onClick, Layer layer = Layer::UI) const                   = 0;
         virtual void      drawPanel(float x, float y, float width, float height, Layer layer = Layer::Overlay) const                                                                           = 0;
         virtual void      drawText(float x, float y, const char* text, int fontSize, Layer layer = Layer::UI) const                                                                            = 0;
-        virtual float     measureTextWidth(const char* text, int fontSize) const                                                                                                               = 0;
+
+        // Gui utilities
+        virtual float measureTextWidth(const char* text, int fontSize) const = 0;
 
         virtual void* getCanvas() const = 0; // For icon drawing
 

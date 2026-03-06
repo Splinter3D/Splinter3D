@@ -13,9 +13,25 @@ namespace input
       public:
         using ActionFn = std::function<void()>;
 
+        /**
+         * Binds an action to a set of keys and a callback function. The callback will be called when the keys are pressed.
+         */
         void bind(Action action, std::vector<renderer::Key> keys, ActionFn fn);
 
+        /**
+         * Updates the input manager and checks for key presses.
+         */
         void update(const renderer::IRenderer& renderer);
+
+        /**
+         * Manually triggers an action.
+         */
+        void trigger(Action action);
+
+        /**
+         * Gets a string representation of the key bindings for a given action.
+         */
+        std::string getActionKeyBindings(Action action) const;
 
       protected:
         InputManager()  = default;
