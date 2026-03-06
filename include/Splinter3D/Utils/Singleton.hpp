@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Splinter3D/Utils/NonCopyable.hpp>
+#include <type_traits>
 
 namespace splinter3D::utils
 {
@@ -19,15 +20,15 @@ namespace splinter3D::utils
          *
          * @return The singleton instance.
          */
-        static C& getInstance()
+        static C& getInstance() noexcept(std::is_nothrow_default_constructible_v<C>)
         {
             static C instance;
             return instance;
         }
 
       protected:
-        constexpr explicit Singleton() = default;
-        ~Singleton() noexcept          = default;
+        constexpr explicit Singleton() noexcept = default;
+        ~Singleton() noexcept                   = default;
     };
 
 } // namespace splinter3D::utils

@@ -31,7 +31,7 @@
 #include <stdlib.h>
 #endif
 
-namespace splinter::utils::oscompat
+namespace splinter3D::utils::oscompat
 {
 
     // Signal flag set when a console interrupt/close is requested
@@ -90,7 +90,7 @@ namespace splinter::utils::oscompat
     { }
 #endif
 
-} // namespace splinter::utils::oscompat
+} // namespace splinter3D::utils::oscompat
 
 // Provide global POSIX shims on Windows so unqualified 'setenv' and
 // 'vasprintf' calls compile. These are placed in the global C linkage

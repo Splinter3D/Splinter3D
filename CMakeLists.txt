@@ -21,6 +21,7 @@ endif()
 
 include(5-Sources)
 include(6-Linker)
-include(7-Target)
+include(7-Locale)
+include(8-Target)
 
 ########################################

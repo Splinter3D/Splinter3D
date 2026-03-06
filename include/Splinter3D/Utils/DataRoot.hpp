@@ -10,7 +10,7 @@
 #include <filesystem>
 #include <vector>
 
-namespace splinter::utils
+namespace splinter3D::utils
 {
 
     inline std::filesystem::path findDataRoot(const std::filesystem::path& exePath)
@@ -31,4 +31,4 @@ namespace splinter::utils
         return std::filesystem::path();
     }
 
-} // namespace splinter::utils
+} // namespace splinter3D::utils

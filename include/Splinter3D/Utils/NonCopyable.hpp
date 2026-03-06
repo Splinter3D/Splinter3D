@@ -17,8 +17,8 @@ namespace splinter3D::utils
         NonCopyable& operator=(NonCopyable&& rhs)      = delete;
 
       protected:
-        constexpr explicit NonCopyable() = default;
-        ~NonCopyable() noexcept          = default;
+        constexpr explicit NonCopyable() noexcept = default;
+        ~NonCopyable() noexcept                   = default;
     };
 
 } // namespace splinter3D::utils
