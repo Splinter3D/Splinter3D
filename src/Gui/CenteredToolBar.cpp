@@ -1,4 +1,5 @@
 #include <Gui/CenteredToolbar.hpp>
+#include <Gui/Panels/ExportPanel.hpp>
 #include <Gui/Panels/RotationPanel.hpp>
 #include <Gui/Panels/ScalePanel.hpp>
 #include <Gui/Panels/TransformPanel.hpp>
@@ -33,45 +34,10 @@ namespace gui
                                   .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::I}, "Import (I)")
                                   .build(renderer));
 
-        // Export All
         buttons_.emplace_back(Button::Builder("export")
                                   .icon([&renderer](void* c) { renderer.drawExportIcon(c); })
-                                  .action([]() {
-                                      auto path = gui::utils::saveSTLFile();
-                                      if (!path.has_value())
-                                          return;
-                                      std::vector<objects3D::Object3D> objects = scene::Scene::getInstance().getAllObjects3D();
-                                      if (objects.empty())
-                                      {
-                                          std::cout << "[Toolbar] Export failed: no objects in scene\n";
-                                          return;
-                                      }
-                                      objects3D::Object3D combined(objects, true);
-                                      geometry::Mesh*     selectedMesh = combined.getMesh();
-                                      bool                exported     = selectedMesh->toAsciiSTL(*path);
-                                      if (!exported)
-                                          std::cout << "[Toolbar] Export failed: no object selected\n";
-                                  })
-                                  .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::E, renderer::Key::Shift}, "Export All (E)")
-                                  .build(renderer));
-
-        buttons_.emplace_back(Button::Builder("export")
-                                  .icon([&renderer](void* c) { renderer.drawExportIcon(c); })
-                                  .action([]() {
-                                      auto path = gui::utils::saveSTLFile();
-                                      if (!path.has_value())
-                                          return;
-                                      std::unique_ptr<geometry::Mesh> selectedMesh = scene::Scene::getInstance().getSelectedMesh(true);
-                                      if (!selectedMesh)
-                                      {
-                                          std::cout << "[Toolbar] Export failed: no object selected\n";
-                                          return;
-                                      }
-                                      bool exported = selectedMesh->toAsciiSTL(*path);
-                                      if (!exported)
-                                          std::cout << "[Toolbar] Export failed: no object selected\n";
-                                  })
                                   .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::E}, "Export (E)")
+                                  .panel(panels::ExportPanel())
                                   .build(renderer));
 
         // Rotation (has panel)
