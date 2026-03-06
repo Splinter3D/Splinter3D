@@ -1,4 +1,5 @@
 #include <Geometry/Mesh.hpp>
+#include <cstdint>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
