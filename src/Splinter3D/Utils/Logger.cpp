@@ -3,15 +3,15 @@
 namespace splinter3D::utils
 {
 
-    void Logger::_maybeStartThreads(std::ostream& oss, const std::string& msg)
+    void Logger::_maybeStartThreads(std::ostream& os, const std::string& msg)
     {
         if (!_outFile.has_value())
         {
-            _printToConsole(oss, msg);
+            _printToConsole(os, msg);
             return;
         }
         std::thread t1(&Logger::_printToFile, this, std::cref(msg));
-        std::thread t2(&Logger::_printToConsole, this, std::ref(oss), std::cref(msg));
+        std::thread t2(&Logger::_printToConsole, this, std::ref(os), std::cref(msg));
 
         t1.join();
         t2.join();
@@ -26,10 +26,10 @@ namespace splinter3D::utils
         }
     }
 
-    void Logger::_printToConsole(std::ostream& oss, const std::string& msg)
+    void Logger::_printToConsole(std::ostream& os, const std::string& msg)
     {
         std::lock_guard<std::mutex> lock(_consoleMtx);
-        oss << msg << std::endl;
+        os << msg << std::endl;
     }
 
 } // namespace splinter3D::utils

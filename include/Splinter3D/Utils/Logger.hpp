@@ -86,18 +86,18 @@ namespace splinter3D::utils
         std::optional<std::ofstream> _outFile;
 
         template <typename... Args>
-        void _printHelper(std::ostream& oss, Args&&... args)
+        void _printHelper(std::ostream& os, Args&&... args)
         {
             std::ostringstream buffer;
             (buffer << ... << std::forward<Args>(args));
             const std::string msg = buffer.str();
 
-            _maybeStartThreads(oss, msg);
+            _maybeStartThreads(os, msg);
         }
 
-        void _maybeStartThreads(std::ostream& oss, const std::string& msg);
+        void _maybeStartThreads(std::ostream& os, const std::string& msg);
         void _printToFile(const std::string& msg);
-        void _printToConsole(std::ostream& oss, const std::string& msg);
+        void _printToConsole(std::ostream& os, const std::string& msg);
 
         friend class Singleton<Logger>;
     };
