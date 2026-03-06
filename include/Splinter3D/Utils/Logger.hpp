@@ -16,7 +16,6 @@ namespace splinter3D::utils
      * It provides two methods, `cout` and `cerr`, which are thread-safe
      * versions of `std::cout` and `std::cerr`.
      */
-    // class Logger : public Singleton<Logger>
     class SPLINTER3D_API Logger : public Singleton<Logger>
     {
       public:

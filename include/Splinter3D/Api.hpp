@@ -1,11 +1,7 @@
 #pragma once
 
 #if defined(_WIN32)
-#if defined(SPLINTER3D_BUILD)
-#define SPLINTER3D_API __declspec(dllexport)
-#else
-#define SPLINTER3D_API __declspec(dllimport)
-#endif
+#define SPLINTER3D_API
 #else
 #define SPLINTER3D_API __attribute__((visibility("default")))
 #endif
