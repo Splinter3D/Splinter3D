@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 namespace input
 {
     enum class Action
@@ -8,8 +10,11 @@ namespace input
         DuplicateSelectedObject,
         Import,
         Export,
-        Rotation,
-        Transform,
-        Scale
+        OpenPannelRotation,
+        OpenPannelTransform,
+        OpenPannelScale,
+        Unknown
     };
-}
+
+    Action actionFromString(const std::string& str);
+} // namespace input
