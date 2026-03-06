@@ -32,7 +32,15 @@ namespace gui
         // Export
         buttons_.emplace_back(Button::Builder("export")
                                   .icon([&renderer](void* c) { renderer.drawExportIcon(c); })
-                                  .action([]() { std::cout << "[Toolbar] Export\n"; })
+                                  .action([]() {
+                                      auto path = gui::utils::saveSTLFile();
+                                      if (!path.has_value())
+                                          return;
+
+                                      bool exported = scene::Scene::getInstance().exportSelected(*path);
+                                      if (!exported)
+                                          std::cout << "[Toolbar] Export failed: no object selected\n";
+                                  })
                                   .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::E}, "Export (E)")
                                   .build(renderer));
 

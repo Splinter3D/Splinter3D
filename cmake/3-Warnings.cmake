@@ -31,6 +31,7 @@ function(apply_compiler_warnings target)
                 -Wshadow -Wnull-dereference
                 -Wundef -Wuninitialized -Winit-self
                 -Wredundant-decls
+                -Wno-unknown-pragmas
                 -Wcast-align -Wcast-qual
                 -Wmissing-declarations -Wswitch-default
                 -Wdouble-promotion -Wformat=2 -Wwrite-strings

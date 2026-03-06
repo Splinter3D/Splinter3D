@@ -73,6 +73,19 @@ namespace scene
             return _objects[(size_t) _selectedObjectIndex].get();
         }
 
+        bool exportSelected(const std::string& outputPath)
+        {
+            SceneObject* selected = getSelected();
+            if (!selected)
+                return false;
+
+            std::unique_ptr<geometry::Mesh> mesh(selected->getTransformedMesh());
+            if (!mesh)
+                return false;
+
+            return mesh->toAsciiSTL(outputPath);
+        }
+
       protected:
         Scene()           = default;
         ~Scene() noexcept = default;

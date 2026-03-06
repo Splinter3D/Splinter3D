@@ -29,6 +29,13 @@ namespace geometry
          */
         static Mesh fromSTL(const std::string& filename);
 
+        /**
+         * @brief Writes the mesh to an ASCII STL file.
+         * @param filename The destination file path (will be overwritten).
+         * @return true on success, false otherwise.
+         */
+        bool toAsciiSTL(const std::string& filename) const;
+
       private:
         /**
          * @brief Reads an ASCII STL file and constructs an Mesh.
