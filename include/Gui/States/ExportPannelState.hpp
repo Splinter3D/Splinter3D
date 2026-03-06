@@ -12,7 +12,7 @@
 
 namespace gui::states
 {
-    class ExportPanelState : public splinter3D::utils::Singleton<ExportPanelState>
+    class ExportPannelState : public splinter3D::utils::Singleton<ExportPannelState>
     {
       public:
         enum class TargetMode
@@ -27,8 +27,6 @@ namespace gui::states
             AsciiSTL
         };
 
-        bool exportSelectedChecked{true};
-        bool exportAllChecked{false};
         bool dropdownOpen{false};
 
         TargetMode target{TargetMode::SelectedObject};
@@ -37,19 +35,6 @@ namespace gui::states
         void selectTarget(TargetMode mode)
         {
             target                = mode;
-            exportSelectedChecked = (mode == TargetMode::SelectedObject);
-            exportAllChecked      = !exportSelectedChecked;
-        }
-
-        void handleTargetToggle(TargetMode toggled, bool nowChecked)
-        {
-            if (!nowChecked)
-            {
-                // Keep a valid selection; revert checkbox to the active target
-                selectTarget(target);
-                return;
-            }
-            selectTarget(toggled);
         }
 
         void setFormat(Format fmt)
@@ -57,16 +42,21 @@ namespace gui::states
             format = fmt;
         }
 
+        bool isTargetSelected(TargetMode mode) const
+        {
+            return target == mode;
+        }
+
         std::string formatLabel(Format fmt) const
         {
             switch (fmt)
             {
-            case Format::BinarySTL:
-                return "Binary STL (.stl)";
-            case Format::AsciiSTL:
-                return "ASCII STL (.stl)";
-            default:
-                return "Unknown";
+                case Format::BinarySTL:
+                    return "Binary STL (.stl)";
+                case Format::AsciiSTL:
+                    return "ASCII STL (.stl)";
+                default:
+                    return "Unknown";
             }
         }
 
@@ -123,15 +113,15 @@ namespace gui::states
         {
             switch (format)
             {
-            case Format::BinarySTL:
-                return mesh.toBinarySTL(path);
-            case Format::AsciiSTL:
-                return mesh.toAsciiSTL(path);
-            default:
-                return false;
+                case Format::BinarySTL:
+                    return mesh.toBinarySTL(path);
+                case Format::AsciiSTL:
+                    return mesh.toAsciiSTL(path);
+                default:
+                    return false;
             }
         }
 
-        friend class splinter3D::utils::Singleton<ExportPanelState>;
+        friend class splinter3D::utils::Singleton<ExportPannelState>;
     };
 } // namespace gui::states

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Gui/States/ExportPanelState.hpp>
+#include <Gui/States/ExportPannelState.hpp>
 #include <Renderer/IRenderer.hpp>
 #include <Renderer/Palette.hpp>
 #include <array>
@@ -8,16 +8,15 @@
 
 namespace gui::panels
 {
-    struct ExportPanel
+    struct ExportPannel
     {
         void operator()(const renderer::IRenderer& r,
                         float px, float py,
                         float pw, float /*ph*/) const
         {
-            auto& state = gui::states::ExportPanelState::getInstance();
+            auto& state = gui::states::ExportPannelState::getInstance();
 
-            constexpr float kPad          = 10.0f;
-            constexpr float kCheckboxSize = 16.0f;
+            constexpr float kPad = 10.0f;
 
             const float mouseX = r.getMouseX();
             const float mouseY = r.getMouseY();
@@ -28,16 +27,14 @@ namespace gui::panels
             r.drawText(px + kPad, y, "Export", 16, renderer::Layer::Overlay);
             y += 24.0f;
 
-            drawTargetCheckbox(r, px + kPad, y, kCheckboxSize,
-                               "Export selected object",
-                               state,
-                               gui::states::ExportPanelState::TargetMode::SelectedObject);
+            drawTargetOption(r, px + kPad, y, "Export selected object",
+                             state, gui::states::ExportPannelState::TargetMode::SelectedObject,
+                             mouseX, mouseY, click, clickConsumed);
             y += 24.0f;
 
-            drawTargetCheckbox(r, px + kPad, y, kCheckboxSize,
-                               "Export all objects as one",
-                               state,
-                               gui::states::ExportPanelState::TargetMode::AllAsOne);
+            drawTargetOption(r, px + kPad, y, "Export all objects as one",
+                             state, gui::states::ExportPannelState::TargetMode::AllAsOne,
+                             mouseX, mouseY, click, clickConsumed);
             y += 30.0f;
 
             r.drawText(px + kPad, y, "Format", 14, renderer::Layer::Overlay);
@@ -60,20 +57,44 @@ namespace gui::panels
         }
 
       private:
-        static void drawTargetCheckbox(const renderer::IRenderer& r,
-                                       float x, float y, float size,
-                                       const char* label,
-                                       gui::states::ExportPanelState& state,
-                                       gui::states::ExportPanelState::TargetMode mode)
+        static void drawTargetOption(const renderer::IRenderer&            r,
+                                     float                                 x,
+                                     float                                 y,
+                                     const char*                           label,
+                                     gui::states::ExportPannelState&       state,
+                                     gui::states::ExportPannelState::TargetMode mode,
+                                     float                                 mouseX,
+                                     float                                 mouseY,
+                                     bool                                  click,
+                                     bool&                                 clickConsumed)
         {
-            bool& value = (mode == gui::states::ExportPanelState::TargetMode::SelectedObject)
-                              ? state.exportSelectedChecked
-                              : state.exportAllChecked;
+            constexpr float boxSize   = 16.0f;
+            constexpr float padding   = 8.0f;
+            const bool      isActive  = state.isTargetSelected(mode);
+            const float     labelW    = r.measureTextWidth(label, 14);
+            const float     rowWidth  = boxSize + padding + labelW;
+            const float     rowHeight = boxSize;
+            const bool      hovered   = pointInRect(x, y, rowWidth, rowHeight, mouseX, mouseY);
 
-            const bool previous = value;
-            r.drawCheckbox(x, y, size, label, value, renderer::Layer::Overlay);
-            if (value != previous)
-                state.handleTargetToggle(mode, value);
+            if (hovered)
+            {
+                r.drawRectangle(x - 4.0f, y - 2.0f,
+                                rowWidth + 8.0f, rowHeight + 4.0f,
+                                renderer::Color(210, 215, 232, 120), renderer::Layer::Overlay);
+            }
+
+            r.drawRectangleLines(x, y, boxSize, boxSize, renderer::Palette::Primary, renderer::Layer::Overlay);
+            if (isActive)
+                r.drawRectangle(x + 3.0f, y + 3.0f, boxSize - 6.0f, boxSize - 6.0f,
+                                renderer::Palette::Primary, renderer::Layer::Overlay);
+
+            r.drawText(x + boxSize + padding, y - 2.0f, label, 14, renderer::Layer::Overlay);
+
+            if (hovered && click && !clickConsumed)
+            {
+                state.selectTarget(mode);
+                clickConsumed = true;
+            }
         }
 
         static bool pointInRect(float x, float y, float w, float h, float px, float py)
@@ -81,18 +102,18 @@ namespace gui::panels
             return px >= x && px <= x + w && py >= y && py <= y + h;
         }
 
-        static void drawDropdown(const renderer::IRenderer&     r,
-                                 float                          x,
-                                 float                          y,
-                                 float                          w,
-                                 float                          h,
-                                 float                          mouseX,
-                                 float                          mouseY,
-                                 bool                           click,
-                                 bool&                          clickConsumed,
-                                 gui::states::ExportPanelState& state)
+        static void drawDropdown(const renderer::IRenderer&      r,
+                                 float                           x,
+                                 float                           y,
+                                 float                           w,
+                                 float                           h,
+                                 float                           mouseX,
+                                 float                           mouseY,
+                                 bool                            click,
+                                 bool&                           clickConsumed,
+                                 gui::states::ExportPannelState& state)
         {
-            const bool hovered = pointInRect(x, y, w, h, mouseX, mouseY);
+            const bool            hovered   = pointInRect(x, y, w, h, mouseX, mouseY);
             const renderer::Color baseCol   = hovered ? renderer::Color(218, 222, 236, 255)
                                                       : renderer::Color(238, 240, 248, 255);
             const renderer::Color borderCol = renderer::Palette::Primary;
@@ -115,13 +136,13 @@ namespace gui::panels
 
             struct FormatOption
             {
-                gui::states::ExportPanelState::Format format;
-                const char*                           label;
+                gui::states::ExportPannelState::Format format;
+                const char*                            label;
             };
 
             constexpr std::array<FormatOption, 2> options{{
-                {gui::states::ExportPanelState::Format::BinarySTL, "Binary STL (.stl)"},
-                {gui::states::ExportPanelState::Format::AsciiSTL, "ASCII STL (.stl)"},
+                {gui::states::ExportPannelState::Format::BinarySTL, "Binary STL (.stl)"},
+                {gui::states::ExportPannelState::Format::AsciiSTL, "ASCII STL (.stl)"},
             }};
 
             const float optionsY      = y + h;
@@ -155,7 +176,10 @@ namespace gui::panels
             }
 
             if (click && !clickConsumed && !optionsHovered && !hovered)
+            {
                 state.dropdownOpen = false;
+                clickConsumed      = true;
+            }
         }
 
         template <typename Fn>
@@ -164,13 +188,13 @@ namespace gui::panels
                                       float w, float h,
                                       const char* label,
                                       float mouseX, float mouseY,
-                                      bool click,
+                                      bool  click,
                                       bool& clickConsumed,
-                                      Fn&& onClick)
+                                      Fn&&  onClick)
         {
-            const bool hovered = pointInRect(x, y, w, h, mouseX, mouseY);
-            const renderer::Color fillColor = hovered ? renderer::Color(218, 221, 235, 255)
-                                                      : renderer::Color(236, 238, 248, 255);
+            const bool            hovered     = pointInRect(x, y, w, h, mouseX, mouseY);
+            const renderer::Color fillColor   = hovered ? renderer::Color(218, 221, 235, 255)
+                                                        : renderer::Color(236, 238, 248, 255);
             const renderer::Color borderColor = renderer::Palette::Primary;
 
             r.drawRectangle(x, y, w, h, fillColor, renderer::Layer::Overlay);

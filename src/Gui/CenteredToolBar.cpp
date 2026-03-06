@@ -38,7 +38,7 @@ namespace gui
         buttons_.emplace_back(Button::Builder("export")
                                   .icon([&renderer](void* c) { renderer.drawExportIcon(c); })
                                   .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::E}, "Export (E)")
-                                  .panel(panels::ExportPannel())
+                                  .pannel(panels::ExportPannel())
                                   .build(renderer));
 
         // Rotation (has pannel)
