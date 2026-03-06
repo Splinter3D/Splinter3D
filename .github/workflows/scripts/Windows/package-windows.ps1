@@ -161,3 +161,4 @@ if (-not $DevMode) {
 }
 
 Write-Host "package-windows.ps1 finished. Output: $outDir"
+exit 0

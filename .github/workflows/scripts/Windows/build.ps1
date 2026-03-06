@@ -229,10 +229,28 @@ if (-not (Test-Path $packageScript)) {
   Fail "Packaging script not found: $packageScript"
 }
 
-& $packageScript -ProjectRoot $ProjectRoot -BuildDirName $BuildDirName -Triplet $Triplet -OutDirName $OutDirName $(if ($DevMode) { '-DevMode' } else { '' })
+# Build arguments array cleanly
+$packageArgs = @(
+  '-ProjectRoot', $ProjectRoot,
+  '-BuildDirName', $BuildDirName,
+  '-Triplet', $Triplet,
+  '-OutDirName', $OutDirName
+)
 
-if ($LASTEXITCODE -ne 0) {
-  Fail "Packaging script failed with exit code: $LASTEXITCODE"
+if ($DevMode) {
+  $packageArgs += '-DevMode'
+}
+
+# Call packaging script and capture exit code properly
+try {
+  & $packageScript @packageArgs
+  $packageExitCode = $LASTEXITCODE
+  if ($packageExitCode -ne 0) {
+    Write-Error "Packaging script exited with code: $packageExitCode"
+    exit $packageExitCode
+  }
+} catch {
+  Fail "Packaging script failed: $_"
 }
 
 if ($DevMode) {

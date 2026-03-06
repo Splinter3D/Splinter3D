@@ -4,7 +4,6 @@ on:
   push:
     branches:
     - main
-    - feat/create_exe
 
 permissions:
   contents: write
@@ -25,7 +24,7 @@ jobs:
           pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/Windows/install.ps1 ${{ github.workspace }}
 
       # creates staging/output for .zip
-      - name: Build package
+      - name: Build and package
         shell: pwsh
         run: |
           pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/Windows/build.ps1 ${{ github.workspace }}
