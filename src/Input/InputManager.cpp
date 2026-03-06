@@ -1,4 +1,4 @@
-#include <Input/Actions.hpp>
+#include <Input/Action.hpp>
 #include <Input/InputManager.hpp>
 
 namespace input

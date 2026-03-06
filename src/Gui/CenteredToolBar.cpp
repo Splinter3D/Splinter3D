@@ -6,7 +6,7 @@
 #include <Gui/States/ScalePannelState.hpp>
 #include <Gui/States/TransformPannelState.hpp>
 #include <Gui/Utils/FileDialog.hpp>
-#include <Input/Actions.hpp>
+#include <Input/Action.hpp>
 #include <Input/InputManager.hpp>
 #include <Renderer/IRenderer.hpp>
 #include <Scene/Scene.hpp>

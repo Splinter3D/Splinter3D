@@ -1,5 +1,5 @@
 #pragma once
-#include <Input/Actions.hpp>
+#include <Input/Action.hpp>
 #include <Renderer/IRenderer.hpp>
 #include <Splinter3D/Utils/Singleton.hpp>
 #include <functional>
