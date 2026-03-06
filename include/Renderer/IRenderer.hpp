@@ -109,11 +109,12 @@ namespace renderer
         virtual void* getCanvas() const = 0; // For icon drawing
 
         // Specific icon painters
-        virtual void drawImportIcon(void* canvas)  = 0;
-        virtual void drawExportIcon(void* canvas)  = 0;
-        virtual void drawSliceIcon(void* canvas)   = 0;
-        virtual void drawScaleIcon(void* canvas)   = 0;
-        virtual void drawPreviewIcon(void* canvas) = 0;
+        virtual void drawImportIcon(void* canvas)    = 0;
+        virtual void drawExportIcon(void* canvas)    = 0;
+        virtual void drawSliceIcon(void* canvas)     = 0;
+        virtual void drawScaleIcon(void* canvas)     = 0;
+        virtual void drawTransformIcon(void* canvas) = 0;
+        virtual void drawPreviewIcon(void* canvas)   = 0;
 
         // 3D Drawing
         virtual void drawTriangle(const geometry::Triangle& tri, Color color, Layer layer = Layer::World) = 0;

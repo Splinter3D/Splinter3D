@@ -141,6 +141,7 @@ namespace renderer
         void drawExportIcon(void* canvas) override;
         void drawSliceIcon(void* canvas) override;
         void drawScaleIcon(void* canvas) override;
+        void drawTransformIcon(void* canvas) override;
         void drawPreviewIcon(void* canvas) override;
 
         // --------------------

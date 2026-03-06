@@ -47,7 +47,7 @@ namespace gui
 
         // Transform (has panel)
         buttons_.emplace_back(Button::Builder("Transform")
-                                  .icon([&renderer](void* c) { renderer.drawSliceIcon(c); })
+                                  .icon([&renderer](void* c) { renderer.drawTransformIcon(c); })
                                   .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::T}, "Transform (T)")
                                   .panel(panels::TransformPanel())
                                   .build(renderer));

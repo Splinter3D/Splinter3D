@@ -498,56 +498,53 @@ namespace renderer
 
     void RaylibRenderer::drawScaleIcon(void* canvas)
     {
-        Image* img = static_cast<Image*>(canvas);
+        Image*        img = static_cast<Image*>(canvas);
+        const ::Color c{243, 156, 18, 255};
 
-        const ::Color outline{236, 240, 241, 255};
-        const ::Color accent{255, 193, 7, 255};
+        // Central box
+        ImageDrawRectangleLines(img, {20, 20, 24, 24}, 2, c);
 
-        // Draw central square
-        Rectangle rec = {20, 20, 24, 24};
-        ImageDrawRectangleLines(img, rec, 1, outline);
+        // Corner arrows (diagonal scale feel)
+        // Top-left
+        ImageDrawLine(img, 20, 20, 8, 8, c);
+        ImageDrawTriangle(img, {4, 4}, {14, 8}, {8, 14}, c);
 
-        // Arrow size parameters
-        const int centerX     = 32;
-        const int centerY     = 32;
-        const int arrowLength = 12;
-        const int arrowWidth  = 6;
+        // Top-right
+        ImageDrawLine(img, 44, 20, 56, 8, c);
+        ImageDrawTriangle(img, {60, 4}, {50, 8}, {56, 14}, c);
 
-        // ---- TOP arrow ----
-        ImageDrawLine(img, centerX, 20, centerX, 20 - arrowLength, accent);
-        ImageDrawTriangle(
-            img,
-            {centerX, 20 - arrowLength - 6},
-            {centerX - arrowWidth, 20 - arrowLength},
-            {centerX + arrowWidth, 20 - arrowLength},
-            accent);
+        // Bottom-left
+        ImageDrawLine(img, 20, 44, 8, 56, c);
+        ImageDrawTriangle(img, {4, 60}, {8, 50}, {14, 56}, c);
 
-        // ---- BOTTOM arrow ----
-        ImageDrawLine(img, centerX, 44, centerX, 44 + arrowLength, accent);
-        ImageDrawTriangle(
-            img,
-            {centerX, 44 + arrowLength + 6},
-            {centerX - arrowWidth, 44 + arrowLength},
-            {centerX + arrowWidth, 44 + arrowLength},
-            accent);
+        // Bottom-right
+        ImageDrawLine(img, 44, 44, 56, 56, c);
+        ImageDrawTriangle(img, {60, 60}, {50, 56}, {56, 50}, c);
+    }
 
-        // ---- LEFT arrow ----
-        ImageDrawLine(img, 20, centerY, 20 - arrowLength, centerY, accent);
-        ImageDrawTriangle(
-            img,
-            {20 - arrowLength - 6, centerY},
-            {20 - arrowLength, centerY - arrowWidth},
-            {20 - arrowLength, centerY + arrowWidth},
-            accent);
+    void RaylibRenderer::drawTransformIcon(void* canvas)
+    {
+        Image*        img = static_cast<Image*>(canvas);
+        const ::Color c{100, 180, 255, 255};
 
-        // ---- RIGHT arrow ----
-        ImageDrawLine(img, 44, centerY, 44 + arrowLength, centerY, accent);
-        ImageDrawTriangle(
-            img,
-            {44 + arrowLength + 6, centerY},
-            {44 + arrowLength, centerY - arrowWidth},
-            {44 + arrowLength, centerY + arrowWidth},
-            accent);
+        const int cx = 32, cy = 32;
+        const int len = 14, w = 5;
+
+        // Cross lines
+        ImageDrawLine(img, cx, cy - len, cx, cy + len, c); // vertical
+        ImageDrawLine(img, cx - len, cy, cx + len, cy, c); // horizontal
+
+        // Up arrow
+        ImageDrawTriangle(img, {cx, cy - len - 8}, {cx - w, cy - len}, {cx + w, cy - len}, c);
+
+        // Down arrow
+        ImageDrawTriangle(img, {cx, cy + len + 8}, {cx - w, cy + len}, {cx + w, cy + len}, c);
+
+        // Left arrow
+        ImageDrawTriangle(img, {cx - len - 8, cy}, {cx - len, cy - w}, {cx - len, cy + w}, c);
+
+        // Right arrow
+        ImageDrawTriangle(img, {cx + len + 8, cy}, {cx + len, cy - w}, {cx + len, cy + w}, c);
     }
 
 #pragma endregion
