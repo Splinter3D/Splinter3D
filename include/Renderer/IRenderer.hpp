@@ -79,7 +79,7 @@ namespace renderer
         Debug   = 3  // debug overlays
     };
 
-    inline std::string to_string(Key key)
+    inline std::string stringFromKey(Key key)
     {
         for (int i = (int) Key::A; i <= (int) Key::Z; ++i)
         {
@@ -109,6 +109,35 @@ namespace renderer
             default:
                 return "Unknown";
         }
+    }
+
+    inline Key keyFromString(const std::string& str)
+    {
+        if (str.size() == 1)
+        {
+            char c = str[0];
+            if (c >= 'A' && c <= 'Z')
+                return static_cast<Key>(c);
+        }
+        else if (str == "Space")
+            return Key::Space;
+        else if (str == "Escape")
+            return Key::Escape;
+        else if (str == "Enter")
+            return Key::Enter;
+        else if (str == "Tab")
+            return Key::Tab;
+        else if (str == "Backspace")
+            return Key::Backspace;
+        else if (str == "Suppr")
+            return Key::Suppr;
+        else if (str == "Shift")
+            return Key::Shift;
+        else if (str == "Ctrl")
+            return Key::Ctrl;
+        else if (str == "Alt")
+            return Key::Alt;
+        return Key::Unknown;
     }
 
     /**

@@ -40,7 +40,7 @@ namespace gui
         // Rotation (has pannel)
         buttons_.emplace_back(Button::Builder("rotation")
                                   .icon([&renderer](void* c) { renderer.drawRotationIcon(c); })
-                                  .action([]() { input::InputManager::getInstance().trigger(input::Action::Rotation); })
+                                  .action([]() { input::InputManager::getInstance().trigger(input::Action::OpenPannelRotation); })
                                   .tooltip("Rotation (Ctrl+R)")
                                   .pannel(pannels::RotationPannel())
                                   .build(renderer));
@@ -48,7 +48,7 @@ namespace gui
         // Transform (has pannel)
         buttons_.emplace_back(Button::Builder("transform")
                                   .icon([&renderer](void* c) { renderer.drawTransformIcon(c); })
-                                  .action([]() { input::InputManager::getInstance().trigger(input::Action::Transform); })
+                                  .action([]() { input::InputManager::getInstance().trigger(input::Action::OpenPannelTransform); })
                                   .tooltip("Transform (Ctrl+T)")
                                   .pannel(pannels::TransformPannel())
                                   .build(renderer));
@@ -56,7 +56,7 @@ namespace gui
         // Scale (has pannel)
         buttons_.emplace_back(Button::Builder("scale")
                                   .icon([&renderer](void* c) { renderer.drawScaleIcon(c); })
-                                  .action([]() { input::InputManager::getInstance().trigger(input::Action::Scale); })
+                                  .action([]() { input::InputManager::getInstance().trigger(input::Action::OpenPannelScale); })
                                   .tooltip("Scale (Ctrl+S)")
                                   .pannel(pannels::ScalePannel())
                                   .build(renderer));
