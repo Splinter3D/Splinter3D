@@ -36,6 +36,14 @@ namespace geometry
          */
         bool toAsciiSTL(const std::string& filename) const;
 
+        /**
+         * @brief Writes the mesh to an Binary STL file.
+         * @param filename The destination file path (will be overwritten).
+         * @return true on success, false otherwise.
+         */
+        bool toBinarySTL(const std::string& filename) const;
+
+
       private:
         /**
          * @brief Reads an ASCII STL file and constructs an Mesh.
