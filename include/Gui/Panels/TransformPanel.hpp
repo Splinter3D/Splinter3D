@@ -1,11 +1,11 @@
-// MovePanel.hpp
+// TransformPanel.hpp
 #pragma once
-#include <Gui/States/MovePanelState.hpp>
+#include <Gui/States/TransformPanelState.hpp>
 #include <Renderer/IRenderer.hpp>
 
 namespace gui::panels
 {
-    struct MovePanel
+    struct TransformPanel
     {
         /**
          * Draws the move panel UI using the provided renderer.
@@ -14,7 +14,7 @@ namespace gui::panels
                         float px, float py,
                         float /*pw*/, float /*ph*/) const
         {
-            auto& state = gui::states::MovePanelState::getInstance();
+            auto& state = gui::states::TransformPanelState::getInstance();
 
             constexpr float kPad        = 10.0f;
             constexpr float kFieldH     = 24.0f;
@@ -26,7 +26,7 @@ namespace gui::panels
             const renderer::Color kAxisY{67, 160, 71, 255};
             const renderer::Color kAxisZ{30, 136, 229, 255};
 
-            r.drawText(px + kPad, py + kPad, "Move", 16, renderer::Layer::Overlay);
+            r.drawText(px + kPad, py + kPad, "Transform", 16, renderer::Layer::Overlay);
 
             float fy = py + kPad + 24.0f;
 

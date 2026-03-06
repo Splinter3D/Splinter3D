@@ -1,8 +1,8 @@
 #include <Gui/CenteredToolbar.hpp>
-#include <Gui/Panels/MovePanel.hpp>
 #include <Gui/Panels/ScalePanel.hpp>
-#include <Gui/States/MovePanelState.hpp>
+#include <Gui/Panels/TransformPanel.hpp>
 #include <Gui/States/ScalePanelState.hpp>
+#include <Gui/States/TransformPanelState.hpp>
 #include <Gui/Utils/FileDialog.hpp>
 #include <Renderer/IRenderer.hpp>
 #include <Scene/Scene.hpp>
@@ -45,11 +45,11 @@ namespace gui
                                   .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::P}, "Preview (P)")
                                   .build(renderer));
 
-        // Slice
-        buttons_.emplace_back(Button::Builder("slice")
+        // Transform (has panel)
+        buttons_.emplace_back(Button::Builder("Transform")
                                   .icon([&renderer](void* c) { renderer.drawSliceIcon(c); })
-                                  .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::L}, "Slice (L)")
-                                  .panel(panels::MovePanel())
+                                  .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::T}, "Transform (T)")
+                                  .panel(panels::TransformPanel())
                                   .build(renderer));
 
         // Scale (has panel)

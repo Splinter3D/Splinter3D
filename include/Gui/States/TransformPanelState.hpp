@@ -1,4 +1,4 @@
-// MovePanelState.hpp
+// TransformPanelState.hpp
 #pragma once
 #include <Objects3D/Object3D.hpp>
 #include <Scene/Scene.hpp>
@@ -8,7 +8,7 @@
 
 namespace gui::states
 {
-    class MovePanelState : public splinter3D::utils::Singleton<MovePanelState>
+    class TransformPanelState : public splinter3D::utils::Singleton<TransformPanelState>
     {
       public:
         // Scale values
@@ -43,14 +43,14 @@ namespace gui::states
         /**
          * Constructor that subscribes to ObjectSelectedEvent to reset position values when the selection changes.
          */
-        MovePanelState() noexcept
+        TransformPanelState() noexcept
         {
             splinter3D::events::EventBus::getInstance()
                 .subscribe<scene::events::ObjectSelectedEvent>(
                     [this](const scene::events::ObjectSelectedEvent& e) { resetOnSelectionChange(e); });
         }
 
-        ~MovePanelState() noexcept = default;
+        ~TransformPanelState() noexcept = default;
 
       private:
         /**
@@ -81,6 +81,6 @@ namespace gui::states
             }
         }
 
-        friend class Singleton<MovePanelState>;
+        friend class Singleton<TransformPanelState>;
     };
 } // namespace gui::states
