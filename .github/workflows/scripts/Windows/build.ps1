@@ -229,21 +229,13 @@ if (-not (Test-Path $packageScript)) {
   Fail "Packaging script not found: $packageScript"
 }
 
-# Build arguments array cleanly
-$packageArgs = @(
-  '-ProjectRoot', $ProjectRoot,
-  '-BuildDirName', $BuildDirName,
-  '-Triplet', $Triplet,
-  '-OutDirName', $OutDirName
-)
+# Ensure ProjectRoot is valid before invoking packaging
+if (-not $ProjectRoot -or $ProjectRoot -match '^-') { Fail "Invalid ProjectRoot: $ProjectRoot" }
 
-if ($DevMode) {
-  $packageArgs += '-DevMode'
-}
-
-# Call packaging script and capture exit code properly
+# Call the packaging script using explicit named parameters to avoid
+# ambiguity when passing arguments through arrays or quoting layers.
 try {
-  & $packageScript @packageArgs
+  & $packageScript -ProjectRoot $ProjectRoot -BuildDirName $BuildDirName -Triplet $Triplet -OutDirName $OutDirName
   $packageExitCode = $LASTEXITCODE
   if ($packageExitCode -ne 0) {
     Write-Error "Packaging script exited with code: $packageExitCode"
