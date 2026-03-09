@@ -57,10 +57,11 @@ int main()
         toolbar.update(renderer);
 
         renderer.begin3D();
-        if (renderer.isMouseButtonPressed((int) renderer::MouseButton::Left))
+        if (renderer.isMouseButtonPressed((int) renderer::MouseButton::Left) && !toolbar.isMouseOver(renderer))
         {
-            auto ray = renderer.getMouseRay();
-            scene::Scene::getInstance().handleClick(ray);
+            auto       ray      = renderer.getMouseRay();
+            const bool additive = renderer.isKeyDown(renderer::Key::Ctrl);
+            scene::Scene::getInstance().handleClick(ray, additive);
         }
         renderer.drawGrid(10, 1.0f);
         renderer.drawAxis(2.0f);

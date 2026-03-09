@@ -14,6 +14,8 @@
 #include <Splinter3D/Events/ObjectSelectedEvent.hpp>
 #include <Splinter3D/Utils/Singleton.hpp>
 #include <memory>
+#include <set>
+#include <vector>
 
 namespace scene
 {
@@ -25,24 +27,18 @@ namespace scene
 
         void draw(renderer::IRenderer& renderer) const;
 
-        void handleClick(const geometry::Ray& ray);
+        void handleClick(const geometry::Ray& ray, bool additiveSelection = false);
 
         int getSelectedIndex() const;
 
-        SceneObject* getSelected();
+        SceneObject*                   getSelected();
+        std::vector<SceneObject*>      getSelectedObjects();
+        std::vector<const SceneObject*> getSelectedObjects() const;
 
         void removeSelected();
         void duplicateSelected();
 
-        std::unique_ptr<geometry::Mesh> getSelectedMesh(bool applyTransform = true)
-        {
-            SceneObject* selected = getSelected();
-            if (!selected)
-                return nullptr;
-            if (applyTransform)
-                return std::make_unique<geometry::Mesh>(*selected->getTransformedMesh());
-            return std::make_unique<geometry::Mesh>(*selected->getObject3D()->getMesh());
-        }
+        std::unique_ptr<geometry::Mesh> getSelectedMesh(bool applyTransform = true);
 
         std::vector<objects3D::Object3D> getAllObjects3D() const
         {
@@ -59,9 +55,12 @@ namespace scene
         ~Scene() noexcept = default;
 
       private:
+        void updateSelectionVisuals();
+        void notifySelectionChanged() const;
+
         std::vector<std::unique_ptr<SceneObject>> _objects;
+        std::set<int>                              _selectedObjectIndices;
         int                                       _selectedObjectIndex{-1};
-        int                                       _lastSelectedObjectIndex{-1};
 
         friend class Singleton<Scene>;
     };

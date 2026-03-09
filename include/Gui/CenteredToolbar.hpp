@@ -29,6 +29,11 @@ namespace gui
          */
         void draw(const renderer::IRenderer& renderer) const override;
 
+        /**
+         * Returns true if the mouse is currently hovering the toolbar or one of its panels.
+         */
+        bool isMouseOver(const renderer::IRenderer& renderer) const;
+
       private:
         /**
          * Checks if the screen size has changed since the last frame, and if so, recalculates button positions to keep the toolbar centered.

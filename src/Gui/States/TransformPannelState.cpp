@@ -5,14 +5,22 @@ namespace gui::states
 
     void TransformPannelState::applyToTarget()
     {
-        scene::SceneObject* target = scene::Scene::getInstance().getSelected();
-        if (!target)
+        auto targets = scene::Scene::getInstance().getSelectedObjects();
+        if (targets.empty())
             return;
-        objects3D::Transform t = target->getTransform();
-        t.position.x           = posX;
-        t.position.y           = posY;
-        t.position.z           = posZ;
-        target->setTransform(t);
+
+        for (auto* target : targets)
+        {
+            if (!target)
+                continue;
+            const auto offset     = getOffsetFor(target);
+            objects3D::Transform t = target->getTransform();
+            t.position.x           = posX + offset.x;
+            t.position.y           = posY + offset.y;
+            t.position.z           = posZ + offset.z;
+            target->setTransform(t);
+        }
+        captureSelectionOffsets();
     }
 
     void TransformPannelState::resetOnSelectionChange(const splinter3D::events::ObjectSelectedEvent& e)
@@ -36,6 +44,39 @@ namespace gui::states
             posYi        = (int) posY;
             posZi        = (int) posZ;
         }
+        captureSelectionOffsets();
+    }
+
+    void TransformPannelState::captureSelectionOffsets()
+    {
+        translationOffsets_.clear();
+
+        auto* reference = scene::Scene::getInstance().getSelected();
+        if (!reference)
+            return;
+
+        const auto refTransform = reference->getTransform();
+        for (auto* obj : scene::Scene::getInstance().getSelectedObjects())
+        {
+            if (!obj)
+                continue;
+            const auto t = obj->getTransform();
+            translationOffsets_[obj] = geometry::Vec3(
+                t.position.x - refTransform.position.x,
+                t.position.y - refTransform.position.y,
+                t.position.z - refTransform.position.z);
+        }
+    }
+
+    geometry::Vec3 TransformPannelState::getOffsetFor(const scene::SceneObject* obj) const
+    {
+        if (!obj)
+            return geometry::Vec3();
+
+        auto it = translationOffsets_.find(obj);
+        if (it == translationOffsets_.end())
+            return geometry::Vec3();
+        return it->second;
     }
 
 } // namespace gui::states

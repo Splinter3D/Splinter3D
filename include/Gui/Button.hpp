@@ -145,6 +145,11 @@ namespace gui
             return pannelOpen_;
         }
 
+        float getPannelHeight() const
+        {
+            return hasPannel_ ? kPannelH : 0.0f;
+        }
+
         /**
          * Closes the pannel if it was open.
          */

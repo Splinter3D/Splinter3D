@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include <Gui/CenteredToolbar.hpp>
 #include <Gui/Pannels/ExportPannel.hpp>
 #include <Gui/Pannels/RotationPannel.hpp>
@@ -92,7 +94,7 @@ namespace gui
                     float py = btn.y + btn.height + Button::kPannelGap;
 
                     if (mouse.x >= px && mouse.x <= px + Button::kPannelW &&
-                        mouse.y >= py && mouse.y <= py + Button::kPannelH)
+                        mouse.y >= py && mouse.y <= py + btn.getPannelHeight())
                         return false;
                 }
             }
@@ -118,6 +120,30 @@ namespace gui
     {
         for (const auto& btn : buttons_)
             btn.draw(renderer);
+    }
+
+    bool CenteredToolbar::isMouseOver(const renderer::IRenderer& renderer) const
+    {
+        const auto mouse = renderer.getMousePosition();
+        for (const auto& btn : buttons_)
+        {
+            if (mouse.x >= btn.x && mouse.x <= btn.x + btn.width &&
+                mouse.y >= btn.y && mouse.y <= btn.y + btn.height)
+                return true;
+
+            if (!btn.isPannelOpen())
+                continue;
+
+            float px = btn.x + (btn.width - Button::kPannelW) * 0.5f;
+            px       = std::max(4.0f, std::min(px, (float) renderer.getScreenWidth() - Button::kPannelW - 4.0f));
+            const float py = btn.y + btn.height + Button::kPannelGap;
+            const float ph = btn.getPannelHeight();
+
+            if (mouse.x >= px && mouse.x <= px + Button::kPannelW &&
+                mouse.y >= py && mouse.y <= py + ph)
+                return true;
+        }
+        return false;
     }
 
     void CenteredToolbar::rebuildIfResized(renderer::IRenderer& renderer)

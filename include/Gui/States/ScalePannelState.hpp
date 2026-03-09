@@ -1,10 +1,12 @@
 // ScalePannelState.hpp
 #pragma once
+#include <Geometry/Vec3.hpp>
 #include <Objects3D/Object3D.hpp>
 #include <Scene/Scene.hpp>
 #include <Splinter3D/Events/EventBus.hpp>
 #include <Splinter3D/Events/ObjectSelectedEvent.hpp>
 #include <Splinter3D/Utils/Singleton.hpp>
+#include <unordered_map>
 
 namespace gui::states
 {
@@ -51,6 +53,11 @@ namespace gui::states
          * If no object is selected (index -1), it resets the scale values to 100% (1.0 scale) for all axes.
          */
         void resetOnSelectionChange(const splinter3D::events::ObjectSelectedEvent& e);
+
+        void captureSelectionOffsets();
+        geometry::Vec3 getOffsetFor(const scene::SceneObject* obj) const;
+
+        std::unordered_map<const scene::SceneObject*, geometry::Vec3> scaleOffsets_;
 
         friend class Singleton<ScalePannelState>;
     };

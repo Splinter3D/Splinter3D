@@ -5,7 +5,16 @@
 ** Scene
 */
 
+#include <algorithm>
+#include <vector>
+
 #include <Scene/Scene.hpp>
+
+namespace
+{
+    constexpr renderer::Color kDefaultColor{255, 255, 255, 255};
+    constexpr renderer::Color kSelectedColor{255, 0, 0, 255};
+} // namespace
 
 namespace scene
 {
@@ -18,37 +27,47 @@ namespace scene
     void Scene::draw(renderer::IRenderer& renderer) const
     {
         for (const auto& obj : _objects)
-        {
             obj->draw(renderer);
-        }
     }
 
-    void Scene::handleClick(const geometry::Ray& ray)
+    void Scene::handleClick(const geometry::Ray& ray, bool additiveSelection)
     {
-        for (auto& obj : _objects)
-        {
-            obj->setColor({255, 255, 255, 255}); // Reset color of all objects
-        }
+        int hitIndex = -1;
         for (int i = 0; i < (int) _objects.size(); ++i)
         {
             if (_objects[(size_t) i]->isHit(ray))
             {
-                _selectedObjectIndex     = i;
-                _lastSelectedObjectIndex = i;
-                _objects[(size_t) _selectedObjectIndex]->setColor({255, 0, 0, 255}); // Highlight the selected object
-
-                splinter3D::events::EventBus::getInstance()
-                    .publish(splinter3D::events::ObjectSelectedEvent{i});
-                return;
+                hitIndex = i;
+                break;
             }
         }
-        _selectedObjectIndex = _lastSelectedObjectIndex; // Keeping the last selected if no new object is hit
-        if (_selectedObjectIndex >= 0 && _selectedObjectIndex < (int) _objects.size())
+
+        if (hitIndex >= 0)
         {
-            _objects[(size_t) _selectedObjectIndex]->setColor({255, 0, 0, 255}); // Highlight the selected object
+            if (!additiveSelection)
+                _selectedObjectIndices.clear();
+
+            const bool alreadySelected = _selectedObjectIndices.count(hitIndex) > 0;
+
+            if (additiveSelection && alreadySelected)
+            {
+                _selectedObjectIndices.erase(hitIndex);
+                _selectedObjectIndex = _selectedObjectIndices.empty() ? -1 : *_selectedObjectIndices.rbegin();
+            }
+            else
+            {
+                _selectedObjectIndices.insert(hitIndex);
+                _selectedObjectIndex = hitIndex;
+            }
         }
-        splinter3D::events::EventBus::getInstance()
-            .publish(splinter3D::events::ObjectSelectedEvent{_selectedObjectIndex});
+        else if (!additiveSelection)
+        {
+            _selectedObjectIndices.clear();
+            _selectedObjectIndex = -1;
+        }
+
+        updateSelectionVisuals();
+        notifySelectionChanged();
     }
 
     int Scene::getSelectedIndex() const
@@ -58,22 +77,54 @@ namespace scene
 
     SceneObject* Scene::getSelected()
     {
-        if (_selectedObjectIndex < 0)
+        if (_selectedObjectIndex < 0 || _selectedObjectIndex >= (int) _objects.size())
             return nullptr;
         return _objects[(size_t) _selectedObjectIndex].get();
     }
 
+    std::vector<SceneObject*> Scene::getSelectedObjects()
+    {
+        std::vector<SceneObject*> result;
+        result.reserve(_selectedObjectIndices.size());
+        for (int idx : _selectedObjectIndices)
+        {
+            if (idx >= 0 && idx < (int) _objects.size())
+                result.push_back(_objects[(size_t) idx].get());
+        }
+        return result;
+    }
+
+    std::vector<const SceneObject*> Scene::getSelectedObjects() const
+    {
+        std::vector<const SceneObject*> result;
+        result.reserve(_selectedObjectIndices.size());
+        for (int idx : _selectedObjectIndices)
+        {
+            if (idx >= 0 && idx < (int) _objects.size())
+                result.push_back(_objects[(size_t) idx].get());
+        }
+        return result;
+    }
+
     void Scene::removeSelected()
     {
-        if (_selectedObjectIndex < 0 || _selectedObjectIndex >= (int) _objects.size())
+        if (_selectedObjectIndices.empty())
             return;
 
-        _objects.erase(_objects.begin() + _selectedObjectIndex);
-        _selectedObjectIndex     = -1;
-        _lastSelectedObjectIndex = -1;
+        std::vector<int> toRemove(_selectedObjectIndices.begin(), _selectedObjectIndices.end());
+        std::sort(toRemove.begin(), toRemove.end(), [](int lhs, int rhs) { return lhs > rhs; });
 
-        splinter3D::events::EventBus::getInstance()
-            .publish(splinter3D::events::ObjectSelectedEvent{-1});
+        for (int idx : toRemove)
+        {
+            if (idx >= 0 && idx < (int) _objects.size())
+                _objects.erase(_objects.begin() + idx);
+        }
+
+        _selectedObjectIndices.clear();
+        _selectedObjectIndex = -1;
+
+        updateSelectionVisuals();
+        notifySelectionChanged();
     }
 
     void Scene::duplicateSelected()
@@ -84,6 +135,60 @@ namespace scene
         const auto& selectedObj = _objects[(size_t) _selectedObjectIndex];
         auto        newObj      = std::make_unique<SceneObject>(*selectedObj);
         _objects.push_back(std::move(newObj));
+    }
+
+    std::unique_ptr<geometry::Mesh> Scene::getSelectedMesh(bool applyTransform)
+    {
+        if (_selectedObjectIndices.empty())
+            return nullptr;
+
+        auto combined = std::make_unique<geometry::Mesh>();
+        for (int idx : _selectedObjectIndices)
+        {
+            if (idx < 0 || idx >= (int) _objects.size())
+                continue;
+            auto* sceneObj = _objects[(size_t) idx].get();
+            if (!sceneObj)
+                continue;
+
+            if (applyTransform)
+            {
+                std::unique_ptr<geometry::Mesh> mesh(sceneObj->getTransformedMesh());
+                if (!mesh)
+                    continue;
+                combined->triangles.insert(combined->triangles.end(), mesh->triangles.begin(), mesh->triangles.end());
+            }
+            else
+            {
+                geometry::Mesh* mesh = sceneObj->getObject3D()->getMesh();
+                if (!mesh)
+                    continue;
+                combined->triangles.insert(combined->triangles.end(), mesh->triangles.begin(), mesh->triangles.end());
+            }
+        }
+
+        if (combined->triangles.empty())
+            return nullptr;
+
+        return combined;
+    }
+
+    void Scene::updateSelectionVisuals()
+    {
+        for (int i = 0; i < (int) _objects.size(); ++i)
+        {
+            const bool selected = _selectedObjectIndices.count(i) > 0;
+            _objects[(size_t) i]->setColor(selected ? kSelectedColor : kDefaultColor);
+        }
+    }
+
+    void Scene::notifySelectionChanged() const
+    {
+        splinter3D::events::ObjectSelectedEvent evt{};
+        evt.index = _selectedObjectIndex;
+        evt.indices.assign(_selectedObjectIndices.begin(), _selectedObjectIndices.end());
+
+        splinter3D::events::EventBus::getInstance().publish(evt);
     }
 
 } // namespace scene
