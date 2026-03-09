@@ -2,8 +2,6 @@ name: CI macOS
 
 on:
   push:
-    branches:
-        - feat/create-macos-package
     tags:
       - "*"
   workflow_dispatch:
