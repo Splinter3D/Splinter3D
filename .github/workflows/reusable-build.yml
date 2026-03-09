@@ -35,14 +35,14 @@ on:
         required: true
         type: string
     secrets:
-      github_token:
+      token:
         required: true
 
 jobs:
   build:
     runs-on: ${{ inputs.runs_on }}
     env:
-      GITHUB_TOKEN: ${{ secrets.github_token }}
+      GITHUB_TOKEN: ${{ secrets.token }}
       WORKSPACE: ${{ github.workspace }}
     defaults:
       run:

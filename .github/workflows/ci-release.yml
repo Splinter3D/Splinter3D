@@ -124,7 +124,7 @@ jobs:
       sha_glob: ${{ matrix.sha_glob }}
       artifact_name: ${{ matrix.artifact_name }}
     secrets:
-      github_token: ${{ secrets.GITHUB_TOKEN }}
+      token: ${{ secrets.GITHUB_TOKEN }}
 
   release:
     needs: [prepare, build]
