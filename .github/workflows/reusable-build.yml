@@ -143,7 +143,13 @@ jobs:
             hdiutil detach "$MNT" -quiet || true
             exit 1
           fi
-          spctl --assess --type exec --verbose "$APP_PATH"
+          EXEC=$(find "$APP_PATH/Contents/MacOS" -type f -perm +111 -maxdepth 1 | head -1)
+          if [[ -z "$EXEC" ]]; then
+            echo "No executable found in $APP_PATH/Contents/MacOS" >&2
+            hdiutil detach "$MNT" -quiet || true
+            exit 1
+          fi
+          spctl --assess --type exec --verbose "$EXEC"
           hdiutil detach "$MNT" -quiet
 
       - name: Upload artifacts
