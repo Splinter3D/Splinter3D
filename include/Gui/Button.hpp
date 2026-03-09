@@ -145,18 +145,13 @@ namespace gui
             return pannelOpen_;
         }
 
-        float getPannelHeight() const
-        {
-            return hasPannel_ ? kPannelH : 0.0f;
-        }
-
         /**
          * Returns the latest measured pannel height to help other components
          * determine its bounds when opened.
          */
         float getPannelHeight() const
         {
-            return pannelHeight_;
+            return hasPannel_ ? pannelHeight_ : 0.0f;
         }
 
         /**

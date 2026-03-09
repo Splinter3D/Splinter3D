@@ -6,6 +6,8 @@
         { "action": "Import", "keys": ["Ctrl", "I"] },
         { "action": "OpenPannelRotation", "keys": ["Ctrl", "R"] },
         { "action": "OpenPannelTransform", "keys": ["Ctrl", "T"] },
-        { "action": "OpenPannelScale", "keys": ["Ctrl", "S"] }
+        { "action": "OpenPannelScale", "keys": ["Ctrl", "S"] },
+        { "action": "SelectObject", "keys": [], "mouse": "Left" },
+        { "action": "MultiSelection", "keys": ["Ctrl"], "mouse": "Left" }
     ]
 }

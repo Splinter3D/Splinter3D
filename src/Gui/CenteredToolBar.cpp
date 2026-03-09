@@ -1,5 +1,3 @@
-#include <algorithm>
-
 #include <Gui/CenteredToolbar.hpp>
 #include <Gui/Pannels/ExportPannel.hpp>
 #include <Gui/Pannels/RotationPannel.hpp>
@@ -14,6 +12,7 @@
 #include <Input/InputManager.hpp>
 #include <Renderer/IRenderer.hpp>
 #include <Scene/Scene.hpp>
+#include <algorithm>
 
 namespace gui
 {
@@ -93,8 +92,6 @@ namespace gui
                     px       = std::max(4.0f, std::min(px, (float) renderer.getScreenWidth() - Button::kPannelW - 4.0f));
                     float py = btn.y + btn.height + Button::kPannelGap;
 
-                    const float ph = btn.getPannelHeight();
-
                     if (mouse.x >= px && mouse.x <= px + Button::kPannelW &&
                         mouse.y >= py && mouse.y <= py + btn.getPannelHeight())
                         return false;
@@ -136,8 +133,8 @@ namespace gui
             if (!btn.isPannelOpen())
                 continue;
 
-            float px = btn.x + (btn.width - Button::kPannelW) * 0.5f;
-            px       = std::max(4.0f, std::min(px, (float) renderer.getScreenWidth() - Button::kPannelW - 4.0f));
+            float px       = btn.x + (btn.width - Button::kPannelW) * 0.5f;
+            px             = std::max(4.0f, std::min(px, (float) renderer.getScreenWidth() - Button::kPannelW - 4.0f));
             const float py = btn.y + btn.height + Button::kPannelGap;
             const float ph = btn.getPannelHeight();
 
