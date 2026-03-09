@@ -43,7 +43,6 @@ namespace geometry
          */
         bool toBinarySTL(const std::string& filename) const;
 
-
       private:
         /**
          * @brief Reads an ASCII STL file and constructs an Mesh.

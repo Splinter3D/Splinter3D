@@ -17,10 +17,10 @@ namespace gui
       public:
         using DrawIconFn   = std::function<void(void* canvas)>;
         using ActionFn     = std::function<void()>;
-        using PannelDrawFn = std::function<void(
+        using PannelDrawFn = std::function<float(
             const renderer::IRenderer&,
             float pannelX, float pannelY,
-            float pannelW, float pannelH)>;
+            float pannelW)>;
 
         /**
          * Builder class for constructing Button instances with a fluent interface
@@ -151,6 +151,15 @@ namespace gui
         }
 
         /**
+         * Returns the latest measured pannel height to help other components
+         * determine its bounds when opened.
+         */
+        float getPannelHeight() const
+        {
+            return pannelHeight_;
+        }
+
+        /**
          * Closes the pannel if it was open.
          */
         void closePannel()
@@ -184,7 +193,8 @@ namespace gui
         bool                hasPannel_;
         PannelDrawFn        pannelDrawFn_;
 
-        mutable bool pannelOpen_{false};
+        mutable bool  pannelOpen_{false};
+        mutable float pannelHeight_{kPannelH};
 
         static constexpr float kTooltipDelay = 0.2f; // seconds before tooltip shows
         mutable float          hoverTimer_{0.0f};

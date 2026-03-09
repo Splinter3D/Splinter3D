@@ -93,6 +93,8 @@ namespace gui
                     px       = std::max(4.0f, std::min(px, (float) renderer.getScreenWidth() - Button::kPannelW - 4.0f));
                     float py = btn.y + btn.height + Button::kPannelGap;
 
+                    const float ph = btn.getPannelHeight();
+
                     if (mouse.x >= px && mouse.x <= px + Button::kPannelW &&
                         mouse.y >= py && mouse.y <= py + btn.getPannelHeight())
                         return false;

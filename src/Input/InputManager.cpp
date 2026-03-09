@@ -30,8 +30,8 @@ namespace input
                                 std::optional<renderer::MouseButton> mouseButton)
     {
         Binding binding;
-        binding.keys        = std::move(keys);
-        binding.mouseButton = mouseButton;
+        binding.keys         = std::move(keys);
+        binding.mouseButton  = mouseButton;
         _keyBindings[action] = std::move(binding);
     }
 
@@ -39,8 +39,12 @@ namespace input
     {
         for (auto& [action, binding] : _keyBindings)
         {
-            if (isBindingTriggered(binding, renderer) && _actions.count(action))
-                _actions[action]->execute();
+            auto it = _actions.find(action);
+            if (it == _actions.end())
+                continue;
+
+            if (isBindingTriggered(binding, renderer))
+                it->second->execute();
         }
     }
 
@@ -55,7 +59,17 @@ namespace input
         auto it = _keyBindings.find(action);
         if (it == _keyBindings.end())
             return false;
-        return isBindingTriggered(it->second, renderer);
+
+        const Binding& binding = it->second;
+
+        for (auto key : binding.keys)
+            if (!renderer.isKeyDown(key))
+                return false;
+
+        if (binding.mouseButton.has_value())
+            return renderer.isMouseButtonDown(static_cast<int>(*binding.mouseButton));
+
+        return !binding.keys.empty();
     }
 
     std::string InputManager::getActionKeyBindings(const Action& action) const
