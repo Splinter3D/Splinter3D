@@ -8,7 +8,7 @@ namespace input::actions
     {
         void execute() override
         {
-            scene::Scene::getInstance().duplicateSelected();
+            scene::Scene::getInstance().splitSelected(0, 0.5f, 0);
         }
     };
 } // namespace input::actions
