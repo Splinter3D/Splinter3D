@@ -134,7 +134,17 @@ jobs:
         run: |
           DMG=$(ls ${{ inputs.package_glob }} | head -1)
           xcrun stapler staple "$DMG"
-          spctl --assess --type open --verbose "$DMG"
+
+          MNT=$(mktemp -d)
+          hdiutil attach "$DMG" -mountpoint "$MNT" -nobrowse -quiet
+          APP_PATH=$(find "$MNT" -maxdepth 2 -name "*.app" -print -quit)
+          if [[ -z "$APP_PATH" ]]; then
+            echo "No .app found inside DMG for assessment" >&2
+            hdiutil detach "$MNT" -quiet || true
+            exit 1
+          fi
+          spctl --assess --type exec --verbose "$APP_PATH"
+          hdiutil detach "$MNT" -quiet
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
