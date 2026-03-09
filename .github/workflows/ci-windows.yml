@@ -83,8 +83,8 @@ jobs:
             output/splinter3D-*-windows-*.zip
             output/splinter3D-*-windows-*.zip.sha256
           tag_name: ${{ steps.release_tag.outputs.tag }}
-          name: windows-${{ steps.release_tag.outputs.tag }}
+          name: ${{ steps.release_tag.outputs.tag }}
           body: |
-            Automated Windows build for tag ${{ steps.release_tag.outputs.tag }}
+            Automated build for tag ${{ steps.release_tag.outputs.tag }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

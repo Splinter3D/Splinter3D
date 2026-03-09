@@ -77,8 +77,8 @@ jobs:
             output/splinter3D-*-linux-x64.tar.xz
             output/splinter3D-*-linux-x64.tar.xz.sha256
           tag_name: ${{ steps.release_tag.outputs.tag }}
-          name: linux-${{ steps.release_tag.outputs.tag }}
+          name: ${{ steps.release_tag.outputs.tag }}
           body: |
-            Automated Linux build for tag ${{ steps.release_tag.outputs.tag }}
+            Automated build for tag ${{ steps.release_tag.outputs.tag }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
