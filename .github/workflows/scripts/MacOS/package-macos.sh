@@ -10,7 +10,7 @@ BUILD_DIR="${PROJECT_ROOT}/build"
 STAGING_DIR="${PROJECT_ROOT}/staging"
 OUTPUT_DIR="${PROJECT_ROOT}/output"
 TRIPLET="${VCPKG_TARGET_TRIPLET:-}"
-APP_NAME="splinter3D"
+APP_NAME="Splinter3D"
 
 # ============================================================================
 # Helpers
@@ -98,8 +98,8 @@ msg "Preparing staging directory..."
 mkdir -p "$STAGING_DIR/Contents/MacOS" "$STAGING_DIR/Contents/Resources"
 
 # Bundle binary
-cp "$SPLINTER_EXE" "$STAGING_DIR/Contents/MacOS/${APP_NAME}"
-chmod +x "$STAGING_DIR/Contents/MacOS/${APP_NAME}"
+cp "$SPLINTER_EXE" "$STAGING_DIR/Contents/MacOS/splinter3D"
+chmod +x "$STAGING_DIR/Contents/MacOS/splinter3D"
 
 # Bundle resources
 if [[ -d "${PROJECT_ROOT}/assets" ]]; then
@@ -138,8 +138,8 @@ cat > "$INFO_PLIST" <<EOF
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleName</key><string>splinter3D</string>
-    <key>CFBundleDisplayName</key><string>splinter3D</string>
+    <key>CFBundleName</key><string>Splinter3D</string>
+    <key>CFBundleDisplayName</key><string>Splinter3D</string>
     <key>CFBundleIdentifier</key><string>com.splinter3d.splinter3d</string>
     <key>CFBundleVersion</key><string>${VERSION}</string>
     <key>CFBundleShortVersionString</key><string>${VERSION}</string>
@@ -176,9 +176,12 @@ fi
 # Place docs alongside the app in the image
 [[ -d "$DOCS_DIR" ]] && cp -R "$DOCS_DIR"/* "$PACKAGE_DIR_PATH/" || true
 
+# Add Applications symlink for drag-and-drop install
+ln -s /Applications "$PACKAGE_DIR_PATH/Applications" || true
+
 msg "Creating DMG archive..."
 cd "$PROJECT_ROOT"
-hdiutil create -volname "splinter3D" -srcfolder "$(basename "$PACKAGE_DIR_PATH")" -ov -format UDZO "$PACKAGE_PATH"
+hdiutil create -volname "Splinter3D" -srcfolder "$(basename "$PACKAGE_DIR_PATH")" -ov -format UDZO "$PACKAGE_PATH"
 
 [[ -f "$PACKAGE_PATH" ]] || die "Failed to create package: $PACKAGE_PATH"
 msg "Package created: $PACKAGE_PATH"
