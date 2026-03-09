@@ -183,6 +183,13 @@ hdiutil create -volname "splinter3D" -srcfolder "$(basename "$PACKAGE_DIR_PATH")
 [[ -f "$PACKAGE_PATH" ]] || die "Failed to create package: $PACKAGE_PATH"
 msg "Package created: $PACKAGE_PATH"
 
+# Codesign DMG if identity is provided (recommended for notarization)
+if [[ -n "${CODESIGN_IDENTITY:-}" ]]; then
+    msg "Codesigning DMG with identity: ${CODESIGN_IDENTITY}"
+    codesign --force --timestamp --sign "$CODESIGN_IDENTITY" "$PACKAGE_PATH"
+    codesign --verify --strict --verbose=2 "$PACKAGE_PATH"
+fi
+
 msg "Computing SHA256..."
 shasum -a 256 "$PACKAGE_PATH" > "$SHA256_FILE"
 msg "SHA256: $(cat "$SHA256_FILE")"
