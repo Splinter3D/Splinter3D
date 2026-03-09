@@ -3,9 +3,9 @@
 namespace gui::pannels
 {
 
-    void TransformPannel::operator()(const renderer::IRenderer& r,
-                                     float px, float py,
-                                     float /*pw*/, float /*ph*/) const
+    float TransformPannel::operator()(const renderer::IRenderer& r,
+                                      float px, float py,
+                                      float /*pw*/) const
     {
         auto& state = gui::states::TransformPannelState::getInstance();
 
@@ -21,10 +21,9 @@ namespace gui::pannels
 
         r.drawText(px + kPad, py + kPad, "Transform", 16, renderer::Layer::Overlay);
 
-        float fy = py + kPad + 24.0f;
+        const float yRow = py + kPad + 24.0f;
 
         const float xRow = px + kPad;
-        const float yRow = fy;
 
         // X
         r.drawRectangle(xRow, yRow + 8.0f, kMarkerSize, kMarkerSize, kAxisX, renderer::Layer::Overlay);
@@ -60,7 +59,8 @@ namespace gui::pannels
             state.posZ = state.posZi;
             state.applyToTarget();
         }
-        fy += 34.0f;
+        const float contentBottom = yRow + kFieldH;
+        return (contentBottom - py) + kPad;
     }
 
 } // namespace gui::pannels
