@@ -2,8 +2,13 @@ name: CI macOS
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - "*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to package (defaults to latest)"
+        required: false
 
 permissions:
   contents: write
@@ -17,7 +22,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           submodules: recursive
+
+      - name: Determine release tag
+        id: release_tag
+        shell: bash
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          tag=""
+          if [[ "${GITHUB_EVENT_NAME}" == "push" && "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
+            tag="${GITHUB_REF_NAME}"
+          elif [[ -n "${INPUT_TAG}" ]]; then
+            tag="${INPUT_TAG}"
+          else
+            git fetch --tags --force
+            tag=$(git describe --tags "$(git rev-list --tags --max-count=1)" 2>/dev/null || true)
+          fi
+
+          if [[ -z "${tag}" ]]; then
+            echo "No tag found to package" >&2
+            exit 1
+          fi
+
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "Using tag: ${tag}"
 
       - name: Install dependencies
         shell: bash
@@ -46,9 +76,9 @@ jobs:
           files: |
             output/splinter3D-*-macos-*.zip
             output/splinter3D-*-macos-*.zip.sha256
-          tag_name: macos-package-${{ github.run_number }}
-          name: macos-package-${{ github.run_number }}
+          tag_name: ${{ steps.release_tag.outputs.tag }}
+          name: macos-${{ steps.release_tag.outputs.tag }}
           body: |
-            Automated macOS build: macos-package-${{ github.run_number }}
+            Automated macOS build for tag ${{ steps.release_tag.outputs.tag }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
