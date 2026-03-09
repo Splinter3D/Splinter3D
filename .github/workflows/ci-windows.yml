@@ -1,0 +1,55 @@
+name: CI Windows
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # vcpkg, system tools
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/Windows/install.ps1 ${{ github.workspace }}
+
+      # creates staging/output for .zip
+      - name: Build and package
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/Windows/build.ps1 ${{ github.workspace }}
+
+      - name: Verify package exists
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem -Path ${{ github.workspace }}/output -Filter 'splinter3D-*-windows-*.zip' -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($zip) {
+            Write-Host "Found package: $($zip.FullName)"
+            Write-Host "Package size: $($zip.Length) bytes"
+          } else {
+            Write-Error 'No splinter3D-*-windows-*.zip package found'
+            exit 1
+          }
+
+      - name: Create Release and upload assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            output/splinter3D-*-windows-*.zip
+            output/splinter3D-*-windows-*.zip.sha256
+          tag_name: windows-package-${{ github.run_number }}
+          name: windows-package-${{ github.run_number }}
+          body: |
+            Automated build: windows-package-${{ github.run_number }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
