@@ -32,9 +32,9 @@ namespace gui::states
             posX         = t.position.x;
             posY         = t.position.y;
             posZ         = t.position.z;
-            posXi        = (int) posX;
-            posYi        = (int) posY;
-            posZi        = (int) posZ;
+            posXi        = posX;
+            posYi        = posY;
+            posZi        = posZ;
         }
     }
 
