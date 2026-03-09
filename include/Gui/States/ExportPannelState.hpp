@@ -34,7 +34,7 @@ namespace gui::states
 
         void selectTarget(TargetMode mode)
         {
-            target                = mode;
+            target = mode;
         }
 
         void setFormat(Format fmt)

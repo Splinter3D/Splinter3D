@@ -1,29 +1,44 @@
 #include <Gui/Button.hpp>
 #include <Renderer/Palette.hpp>
+#include <Splinter3D/Events/EventBus.hpp>
+#include <Splinter3D/Events/OpenPannelEvent.hpp>
 
 namespace gui
 {
 
-    Button::Button(std::string                id,
-                   ActionFn                   action,
-                   DrawIconFn                 drawIcon,
-                   renderer::IRenderer&       renderer,
-                   bool                       hasShortcut,
-                   std::string                tooltip,
-                   std::vector<renderer::Key> shortcutKey,
-                   bool                       hasPannel,
-                   PannelDrawFn               pannelDrawFn)
+    Button::Button(std::string          id,
+                   ActionFn             action,
+                   DrawIconFn           drawIcon,
+                   renderer::IRenderer& renderer,
+                   std::string          tooltip,
+                   bool                 hasPannel,
+                   PannelDrawFn         pannelDrawFn)
         : id_(std::move(id))
         , action_(std::move(action))
-        , hasShortcut_(hasShortcut)
         , tooltip_(std::move(tooltip))
-        , shortcutKeys_(shortcutKey)
         , hasPannel_(hasPannel)
         , pannelDrawFn_(std::move(pannelDrawFn))
     {
         // Bake the icon once into a GPU texture
         if (drawIcon)
             iconTexture_ = renderer.createIcon(64, 64, [drawIcon](void* canvas) { drawIcon(canvas); });
+    }
+
+    void Button::subscribeToPannelEvents()
+    {
+        if (hasPannel_)
+        {
+            splinter3D::events::EventBus::getInstance().subscribe<splinter3D::events::OpenPannelEvent>(
+                [this](const splinter3D::events::OpenPannelEvent& e) { reactToOpenPannelEvent(e); });
+        }
+    }
+
+    void Button::reactToOpenPannelEvent(const splinter3D::events::OpenPannelEvent& e)
+    {
+        if (e.buttonId == id_ && hasPannel_)
+            pannelOpen_ = true;
+        else
+            pannelOpen_ = false;
     }
 
     void Button::update(renderer::IRenderer& renderer)
@@ -41,44 +56,6 @@ namespace gui
             {
                 pannelOpen_ = false;
                 if (action_)
-                    action_();
-            }
-        }
-
-        if (hasShortcut_)
-        {
-            bool modifiersHeld      = true;
-            bool hasNonModifierKey  = false;
-            bool nonModifierPressed = false;
-
-            for (const auto& key : shortcutKeys_)
-            {
-                const bool isModifier = (key == renderer::Key::Ctrl ||
-                                         key == renderer::Key::Shift ||
-                                         key == renderer::Key::Alt);
-
-                if (isModifier)
-                {
-                    if (!renderer.isKeyDown(key))
-                    {
-                        modifiersHeld = false;
-                        break;
-                    }
-                }
-                else
-                {
-                    hasNonModifierKey = true;
-                    if (renderer.isKeyPressed(key))
-                        nonModifierPressed = true;
-                }
-            }
-
-            const bool shortcutTriggered = modifiersHeld && hasNonModifierKey && nonModifierPressed;
-            if (shortcutTriggered)
-            {
-                if (hasPannel_)
-                    pannelOpen_ = !pannelOpen_;
-                else if (action_)
                     action_();
             }
         }

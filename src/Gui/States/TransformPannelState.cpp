@@ -15,7 +15,7 @@ namespace gui::states
         target->setTransform(t);
     }
 
-    void TransformPannelState::resetOnSelectionChange(const scene::events::ObjectSelectedEvent& e)
+    void TransformPannelState::resetOnSelectionChange(const splinter3D::events::ObjectSelectedEvent& e)
     {
         int index = e.index;
         if (index < 0)

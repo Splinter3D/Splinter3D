@@ -1,8 +1,14 @@
 #pragma once
 
 #include <Splinter3D/Utils/Singleton.hpp>
+#include <fstream>
 #include <iostream>
 #include <mutex>
+#include <optional>
+#include <ostream>
+#include <sstream>
+#include <string>
+#include <thread>
 #include <utility>
 
 namespace splinter3D::utils
@@ -25,8 +31,7 @@ namespace splinter3D::utils
         template <typename... Args>
         void cout(Args&&... args)
         {
-            std::lock_guard<std::mutex> lock(_mtx);
-            (std::cout << ... << args) << std::endl;
+            _printHelper(std::cout, std::forward<Args>(args)...);
         }
 
         /**
@@ -37,8 +42,12 @@ namespace splinter3D::utils
         void clog([[maybe_unused]] Args&&... args)
         {
 #if defined(SPLINTER3D_DEBUG)
-            std::lock_guard<std::mutex> lock(_mtx);
-            (std::clog << ... << args) << std::endl;
+            _printHelper(std::clog, std::forward<Args>(args)...);
+#else
+            if (_debug)
+            {
+                _printHelper(std::clog, std::forward<Args>(args)...);
+            }
 #endif
         }
 
@@ -49,8 +58,22 @@ namespace splinter3D::utils
         template <typename... Args>
         void cerr(Args&&... args)
         {
-            std::lock_guard<std::mutex> lock(_mtx);
-            (std::cerr << ... << args) << std::endl;
+            _printHelper(std::cerr, std::forward<Args>(args)...);
+        }
+
+        void setOutFile(const std::string& filename)
+        {
+            _outFile = std::ofstream(filename);
+        }
+
+        void setOutFile()
+        {
+            _outFile.reset();
+        }
+
+        void setDebug(bool debug)
+        {
+            _debug = debug;
         }
 
       protected:
@@ -58,7 +81,24 @@ namespace splinter3D::utils
         ~Logger() noexcept                   = default;
 
       private:
-        std::mutex _mtx;
+        bool                         _debug = false;
+        std::mutex                   _fileMtx;
+        std::mutex                   _consoleMtx;
+        std::optional<std::ofstream> _outFile;
+
+        template <typename... Args>
+        void _printHelper(std::ostream& os, Args&&... args)
+        {
+            std::ostringstream buffer;
+            (buffer << ... << std::forward<Args>(args));
+            const std::string msg = buffer.str();
+
+            _maybeStartThreads(os, msg);
+        }
+
+        void _maybeStartThreads(std::ostream& os, const std::string& msg);
+        void _printToFile(const std::string& msg);
+        void _printToConsole(std::ostream& os, const std::string& msg);
 
         friend class Singleton<Logger>;
     };
@@ -79,5 +119,25 @@ namespace splinter3D::utils
     __S3D_LOGGER_FUNCS_FACTORY(clog)
 
 #undef __S3D_LOGGER_FUNCS_FACTORY
+
+    namespace logger
+    {
+
+        static inline void setOutFile(const std::string& filename)
+        {
+            Logger::getInstance().setOutFile(filename);
+        }
+
+        static inline void setOutFile()
+        {
+            Logger::getInstance().setOutFile();
+        }
+
+        static inline void setDebug(bool debug)
+        {
+            Logger::getInstance().setDebug(debug);
+        }
+
+    } // namespace logger
 
 } // namespace splinter3D::utils
