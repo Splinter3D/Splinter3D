@@ -10,8 +10,8 @@ namespace input
             return Action::DuplicateSelectedObject;
         if (str == "Import")
             return Action::Import;
-        if (str == "Export")
-            return Action::Export;
+        if (str == "OpenExportPannel")
+            return Action::OpenExportPannel;
         if (str == "OpenPannelRotation")
             return Action::OpenPannelRotation;
         if (str == "OpenPannelTransform")

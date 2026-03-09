@@ -1,5 +1,7 @@
 #include <Geometry/Mesh.hpp>
+#include <cmath>
 #include <fstream>
+#include <iomanip>
 #include <sstream>
 #include <stdexcept>
 
@@ -108,5 +110,88 @@ namespace geometry
             throw std::runtime_error("Error reading binary STL: unexpected end of file");
         }
         return mesh;
+    }
+
+    bool Mesh::toAsciiSTL(const std::string& filename) const
+    {
+        std::ofstream out(filename, std::ios::out | std::ios::trunc);
+        if (!out.is_open())
+            return false;
+
+        out << "solid splinter3d\n";
+        out << std::fixed << std::setprecision(6);
+
+        for (const auto& tri : triangles)
+        {
+            geometry::Vec3 normal = geometry::Vec3::cross(tri.vertices[1] - tri.vertices[0], tri.vertices[2] - tri.vertices[0]);
+            float          len    = std::sqrt(geometry::Vec3::dotProduct(normal, normal));
+            if (len > 0.0f)
+            {
+                normal.x /= len;
+                normal.y /= len;
+                normal.z /= len;
+            }
+            else
+            {
+                normal = geometry::Vec3(0.0f, 0.0f, 0.0f);
+            }
+
+            out << "  facet normal " << normal.x << ' ' << normal.y << ' ' << normal.z << "\n";
+            out << "    outer loop\n";
+            for (const auto& vertex : tri.vertices)
+                out << "      vertex " << vertex.x << ' ' << vertex.y << ' ' << vertex.z << "\n";
+            out << "    endloop\n";
+            out << "  endfacet\n";
+        }
+
+        out << "endsolid splinter3d\n";
+        return true;
+    }
+
+    bool Mesh::toBinarySTL(const std::string& filename) const
+    {
+        std::ofstream out(filename, std::ios::binary | std::ios::out | std::ios::trunc);
+        if (!out.is_open())
+            return false;
+
+        char              header[80] = {0};
+        const std::string headerText = "splinter3d";
+        for (size_t i = 0; i < headerText.size() && i < sizeof(header); ++i)
+            header[i] = headerText[i];
+
+        out.write(header, sizeof(header));
+
+        const uint32_t triCount = static_cast<uint32_t>(triangles.size());
+        out.write(reinterpret_cast<const char*>(&triCount), sizeof(uint32_t));
+
+        for (const auto& tri : triangles)
+        {
+            geometry::Vec3 normal = geometry::Vec3::cross(tri.vertices[1] - tri.vertices[0], tri.vertices[2] - tri.vertices[0]);
+            float          len    = std::sqrt(geometry::Vec3::dotProduct(normal, normal));
+            if (len > 0.0f)
+            {
+                normal.x /= len;
+                normal.y /= len;
+                normal.z /= len;
+            }
+            else
+            {
+                normal = geometry::Vec3(0.0f, 0.0f, 0.0f);
+            }
+
+            const float normalData[3] = {normal.x, normal.y, normal.z};
+            out.write(reinterpret_cast<const char*>(normalData), sizeof(normalData));
+
+            for (const auto& vertex : tri.vertices)
+            {
+                const float vertexData[3] = {vertex.x, vertex.y, vertex.z};
+                out.write(reinterpret_cast<const char*>(vertexData), sizeof(vertexData));
+            }
+
+            const char attributeByteCount[2] = {0, 0};
+            out.write(attributeByteCount, sizeof(attributeByteCount));
+        }
+
+        return out.good();
     }
 } // namespace geometry

@@ -1,7 +1,9 @@
 #include <Gui/CenteredToolbar.hpp>
+#include <Gui/Pannels/ExportPannel.hpp>
 #include <Gui/Pannels/RotationPannel.hpp>
 #include <Gui/Pannels/ScalePannel.hpp>
 #include <Gui/Pannels/TransformPannel.hpp>
+#include <Gui/States/ExportPannelState.hpp>
 #include <Gui/States/RotationPannelState.hpp>
 #include <Gui/States/ScalePannelState.hpp>
 #include <Gui/States/TransformPannelState.hpp>
@@ -21,7 +23,7 @@ namespace gui
     void CenteredToolbar::initialize(renderer::IRenderer& renderer)
     {
         buttons_.clear();
-        buttons_.reserve(5);
+        buttons_.reserve(6);
 
         // Import
         buttons_.emplace_back(Button::Builder("import")
@@ -30,10 +32,10 @@ namespace gui
                                   .tooltip("Import (Ctrl+I)")
                                   .build(renderer));
 
-        // Export
         buttons_.emplace_back(Button::Builder("export")
                                   .icon([&renderer](void* c) { renderer.drawExportIcon(c); })
-                                  .action([]() { input::InputManager::getInstance().trigger(input::Action::Export); })
+                                  .pannel(panels::ExportPannel())
+                                  .action([]() { input::InputManager::getInstance().trigger(input::Action::OpenExportPannel); })
                                   .tooltip("Export (Ctrl+E)")
                                   .build(renderer));
 

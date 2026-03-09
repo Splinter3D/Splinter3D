@@ -9,7 +9,7 @@ namespace input
         DeleteSelectedObject,
         DuplicateSelectedObject,
         Import,
-        Export,
+        OpenExportPannel,
         OpenPannelRotation,
         OpenPannelTransform,
         OpenPannelScale,

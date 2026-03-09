@@ -32,6 +32,7 @@ namespace scene
         bool isHit(const geometry::Ray& ray);
         void setColor(const renderer::Color& c);
 
+        objects3D::Object3D* getObject3D();
         objects3D::Transform getTransform() const;
         geometry::Mesh*      getTransformedMesh() const;
         void                 setTransform(const objects3D::Transform& transform);

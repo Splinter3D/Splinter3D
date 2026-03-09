@@ -2,6 +2,7 @@
     "bindings": [
         { "action": "DeleteSelectedObject", "keys": ["Suppr"] },
         { "action": "DuplicateSelectedObject", "keys": ["Ctrl", "D"] },
+        { "action": "OpenExportPannel", "keys": ["Ctrl", "E"] },
         { "action": "Import", "keys": ["Ctrl", "I"] },
         { "action": "OpenPannelRotation", "keys": ["Ctrl", "R"] },
         { "action": "OpenPannelTransform", "keys": ["Ctrl", "T"] },

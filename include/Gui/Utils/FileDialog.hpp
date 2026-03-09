@@ -7,4 +7,5 @@
 namespace gui::utils
 {
     std::optional<std::string> pickSTLFile();
+    std::optional<std::string> saveSTLFile();
 } // namespace gui::utils

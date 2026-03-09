@@ -34,6 +34,26 @@ namespace scene
         void removeSelected();
         void duplicateSelected();
 
+        std::unique_ptr<geometry::Mesh> getSelectedMesh(bool applyTransform = true)
+        {
+            SceneObject* selected = getSelected();
+            if (!selected)
+                return nullptr;
+            if (applyTransform)
+                return std::make_unique<geometry::Mesh>(*selected->getTransformedMesh());
+            return std::make_unique<geometry::Mesh>(*selected->getObject3D()->getMesh());
+        }
+
+        std::vector<objects3D::Object3D> getAllObjects3D() const
+        {
+            std::vector<objects3D::Object3D> result;
+            for (const auto& obj : _objects)
+            {
+                result.push_back(*obj->getObject3D());
+            }
+            return result;
+        }
+
       protected:
         Scene()           = default;
         ~Scene() noexcept = default;
