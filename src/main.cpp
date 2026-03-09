@@ -91,9 +91,10 @@ int main(int argc, char** argv)
     splinter3D::utils::oscompat::disableCtrlCEcho();
 
     // Example UI strings (ensure gettext is wired)
-    std::cout << _("Play") << std::endl;
-    std::cout << _("Settings") << std::endl;
-    std::cout << _("Quit") << std::endl;
+    // std::cout << _("Play") << std::endl;
+    // std::cout << _("Settings") << std::endl;
+    // std::cout << _("Quit") << std::endl;
+
     renderer::Config         cfg{1270, 720, "Prototype 3D Slicer", 60};
     renderer::RaylibRenderer renderer(cfg);
     gui::CenteredToolbar     toolbar(18.0f, 52.0f, 14.0f);
