@@ -7,8 +7,33 @@
 
 #pragma once
 
+#include <Splinter3D/Utils/OSCompatibility.hpp>
+#include <algorithm>
+#include <cstdlib>
+#include <cstring>
+#include <fstream>
+#include <iostream>
 #include <libintl.h>
 #include <string>
+
+// Safe getenv wrapper that avoids MSVC deprecation warnings
+static inline std::string getenv_string(const char* name)
+{
+#if defined(SPLINTER3D_WINDOWS)
+    char*  buf = nullptr;
+    size_t len = 0;
+    if (_dupenv_s(&buf, &len, name) == 0 && buf != nullptr)
+    {
+        std::string s(buf);
+        free(buf);
+        return s;
+    }
+    return std::string();
+#else
+    const char* v = std::getenv(name);
+    return v ? std::string(v) : std::string();
+#endif
+}
 
 namespace splinter3D::utils
 {

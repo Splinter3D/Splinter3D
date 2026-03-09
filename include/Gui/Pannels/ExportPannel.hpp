@@ -3,6 +3,7 @@
 #include <Gui/States/ExportPannelState.hpp>
 #include <Renderer/IRenderer.hpp>
 #include <Renderer/Palette.hpp>
+#include <algorithm>
 #include <array>
 #include <string>
 
@@ -10,13 +11,15 @@ namespace gui::panels
 {
     struct ExportPannel
     {
-        void operator()(const renderer::IRenderer& r,
-                        float px, float py,
-                        float pw, float /*ph*/) const
+        float operator()(const renderer::IRenderer& r,
+                         float px, float py,
+                         float pw) const
         {
             auto& state = gui::states::ExportPannelState::getInstance();
 
-            constexpr float kPad = 10.0f;
+            constexpr float kPad            = 10.0f;
+            constexpr float kDropdownHeight = 26.0f;
+            constexpr float kButtonHeight   = 30.0f;
 
             const float mouseX = r.getMouseX();
             const float mouseY = r.getMouseY();
@@ -40,33 +43,54 @@ namespace gui::panels
             r.drawText(px + kPad, y, "Format", 14, renderer::Layer::Overlay);
             y += 18.0f;
 
-            const float dropdownWidth  = pw - kPad * 2.0f;
-            const float dropdownHeight = 26.0f;
-            const float dropdownX      = px + kPad;
-            const float dropdownY      = y;
+            const float dropdownWidth = pw - kPad * 2.0f;
+            const float dropdownX     = px + kPad;
+            const float dropdownY     = y;
 
-            drawDropdown(r, dropdownX, dropdownY, dropdownWidth, dropdownHeight,
+            drawDropdown(r, dropdownX, dropdownY, dropdownWidth, kDropdownHeight,
                          mouseX, mouseY, click, clickConsumed, state);
 
-            const float buttonHeight = 30.0f;
-            const float buttonY      = dropdownY + dropdownHeight + 32.0f;
+            const float buttonY = dropdownY + kDropdownHeight + 32.0f;
 
-            drawPrimaryButton(r, dropdownX, buttonY, dropdownWidth, buttonHeight,
+            drawPrimaryButton(r, dropdownX, buttonY, dropdownWidth, kButtonHeight,
                               "Export", mouseX, mouseY, click, clickConsumed,
                               [&state]() { state.exportCurrentSelection(); });
+
+            float contentBottom = buttonY + kButtonHeight;
+            if (state.dropdownOpen)
+            {
+                const float optionsBottom = dropdownY + kDropdownHeight +
+                                            kDropdownOptionHeight * (float) kFormatOptions.size();
+                contentBottom             = std::max(contentBottom, optionsBottom);
+            }
+
+            contentBottom += kPad;
+            return contentBottom - py;
         }
 
       private:
-        static void drawTargetOption(const renderer::IRenderer&            r,
-                                     float                                 x,
-                                     float                                 y,
-                                     const char*                           label,
-                                     gui::states::ExportPannelState&       state,
+        struct FormatOption
+        {
+            gui::states::ExportPannelState::Format format;
+            const char*                            label;
+        };
+
+        static constexpr float                       kDropdownOptionHeight = 24.0f;
+        static constexpr std::array<FormatOption, 2> kFormatOptions{{
+            {gui::states::ExportPannelState::Format::BinarySTL, "Binary STL (.stl)"},
+            {gui::states::ExportPannelState::Format::AsciiSTL, "ASCII STL (.stl)"},
+        }};
+
+        static void drawTargetOption(const renderer::IRenderer&                 r,
+                                     float                                      x,
+                                     float                                      y,
+                                     const char*                                label,
+                                     gui::states::ExportPannelState&            state,
                                      gui::states::ExportPannelState::TargetMode mode,
-                                     float                                 mouseX,
-                                     float                                 mouseY,
-                                     bool                                  click,
-                                     bool&                                 clickConsumed)
+                                     float                                      mouseX,
+                                     float                                      mouseY,
+                                     bool                                       click,
+                                     bool&                                      clickConsumed)
         {
             constexpr float boxSize   = 16.0f;
             constexpr float padding   = 8.0f;
@@ -134,20 +158,9 @@ namespace gui::panels
             if (!state.dropdownOpen)
                 return;
 
-            struct FormatOption
-            {
-                gui::states::ExportPannelState::Format format;
-                const char*                            label;
-            };
-
-            constexpr std::array<FormatOption, 2> options{{
-                {gui::states::ExportPannelState::Format::BinarySTL, "Binary STL (.stl)"},
-                {gui::states::ExportPannelState::Format::AsciiSTL, "ASCII STL (.stl)"},
-            }};
-
             const float optionsY      = y + h;
-            const float optionHeight  = 24.0f;
-            const float optionsHeight = optionHeight * (float) options.size();
+            const float optionHeight  = kDropdownOptionHeight;
+            const float optionsHeight = optionHeight * (float) kFormatOptions.size();
 
             r.drawRectangle(x, optionsY, w, optionsHeight,
                             renderer::Color(246, 247, 253, 255), renderer::Layer::Debug);
@@ -156,7 +169,7 @@ namespace gui::panels
 
             const bool optionsHovered = pointInRect(x, optionsY, w, optionsHeight, mouseX, mouseY);
 
-            for (size_t i = 0; i < options.size(); ++i)
+            for (size_t i = 0; i < kFormatOptions.size(); ++i)
             {
                 const float rowY       = optionsY + optionHeight * (float) i;
                 const bool  rowHovered = pointInRect(x, rowY, w, optionHeight, mouseX, mouseY);
@@ -165,11 +178,11 @@ namespace gui::panels
                     r.drawRectangle(x, rowY, w, optionHeight,
                                     renderer::Color(224, 227, 242, 255), renderer::Layer::Debug);
 
-                r.drawText(x + 8.0f, rowY + 5.0f, options[i].label, 14, renderer::Layer::Debug);
+                r.drawText(x + 8.0f, rowY + 5.0f, kFormatOptions[i].label, 14, renderer::Layer::Debug);
 
                 if (rowHovered && click && !clickConsumed)
                 {
-                    state.setFormat(options[i].format);
+                    state.setFormat(kFormatOptions[i].format);
                     state.dropdownOpen = false;
                     clickConsumed      = true;
                 }

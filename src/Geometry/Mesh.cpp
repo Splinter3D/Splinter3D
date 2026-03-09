@@ -1,5 +1,6 @@
 #include <Geometry/Mesh.hpp>
 #include <cmath>
+#include <cstdint>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
