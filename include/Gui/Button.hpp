@@ -188,7 +188,7 @@ namespace gui
         bool                hasPannel_;
         PannelDrawFn        pannelDrawFn_;
 
-        mutable bool pannelOpen_{false};
+        mutable bool  pannelOpen_{false};
         mutable float pannelHeight_{kPannelH};
 
         static constexpr float kTooltipDelay = 0.2f; // seconds before tooltip shows

@@ -17,7 +17,7 @@ namespace gui::panels
         {
             auto& state = gui::states::ExportPannelState::getInstance();
 
-            constexpr float kPad           = 10.0f;
+            constexpr float kPad            = 10.0f;
             constexpr float kDropdownHeight = 26.0f;
             constexpr float kButtonHeight   = 30.0f;
 
@@ -61,7 +61,7 @@ namespace gui::panels
             {
                 const float optionsBottom = dropdownY + kDropdownHeight +
                                             kDropdownOptionHeight * (float) kFormatOptions.size();
-                contentBottom = std::max(contentBottom, optionsBottom);
+                contentBottom             = std::max(contentBottom, optionsBottom);
             }
 
             contentBottom += kPad;
@@ -75,22 +75,22 @@ namespace gui::panels
             const char*                            label;
         };
 
-        static constexpr float kDropdownOptionHeight = 24.0f;
+        static constexpr float                       kDropdownOptionHeight = 24.0f;
         static constexpr std::array<FormatOption, 2> kFormatOptions{{
             {gui::states::ExportPannelState::Format::BinarySTL, "Binary STL (.stl)"},
             {gui::states::ExportPannelState::Format::AsciiSTL, "ASCII STL (.stl)"},
         }};
 
-        static void drawTargetOption(const renderer::IRenderer&            r,
-                                     float                                 x,
-                                     float                                 y,
-                                     const char*                           label,
-                                     gui::states::ExportPannelState&       state,
+        static void drawTargetOption(const renderer::IRenderer&                 r,
+                                     float                                      x,
+                                     float                                      y,
+                                     const char*                                label,
+                                     gui::states::ExportPannelState&            state,
                                      gui::states::ExportPannelState::TargetMode mode,
-                                     float                                 mouseX,
-                                     float                                 mouseY,
-                                     bool                                  click,
-                                     bool&                                 clickConsumed)
+                                     float                                      mouseX,
+                                     float                                      mouseY,
+                                     bool                                       click,
+                                     bool&                                      clickConsumed)
         {
             constexpr float boxSize   = 16.0f;
             constexpr float padding   = 8.0f;

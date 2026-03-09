@@ -2,8 +2,13 @@ name: CI Windows
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - "*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to package (defaults to latest)"
+        required: false
 
 permissions:
   contents: write
@@ -16,6 +21,36 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine release tag
+        id: release_tag
+        shell: pwsh
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          $tag = ''
+
+          if ($env:GITHUB_EVENT_NAME -eq 'push' -and $env:GITHUB_REF_TYPE -eq 'tag') {
+            $tag = $env:GITHUB_REF_NAME
+          } elseif (-not [string]::IsNullOrEmpty($env:INPUT_TAG)) {
+            $tag = $env:INPUT_TAG
+          } else {
+            git fetch --tags --force | Out-Null
+            $latest = git rev-list --tags --max-count=1
+            if ($latest) {
+              $tag = git describe --tags $latest 2>$null
+            }
+          }
+
+          if (-not $tag) {
+            Write-Error 'No tag found to package'
+            exit 1
+          }
+
+          "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "Using tag: $tag"
 
       # vcpkg, system tools
       - name: Install dependencies
@@ -47,9 +82,9 @@ jobs:
           files: |
             output/splinter3D-*-windows-*.zip
             output/splinter3D-*-windows-*.zip.sha256
-          tag_name: windows-package-${{ github.run_number }}
-          name: windows-package-${{ github.run_number }}
+          tag_name: ${{ steps.release_tag.outputs.tag }}
+          name: windows-${{ steps.release_tag.outputs.tag }}
           body: |
-            Automated build: windows-package-${{ github.run_number }}
+            Automated Windows build for tag ${{ steps.release_tag.outputs.tag }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

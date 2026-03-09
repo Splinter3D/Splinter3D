@@ -1,4 +1,4 @@
-name: CI Linux
+name: CI macOS
 
 on:
   push:
@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   build-and-release:
-    runs-on: ubuntu-22.04
+    runs-on: macos-latest
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -52,33 +52,33 @@ jobs:
       - name: Install dependencies
         shell: bash
         run: |
-          ./.github/workflows/scripts/Linux/install.sh ${{ github.workspace }}
+          ./.github/workflows/scripts/MacOS/install.sh ${{ github.workspace }}
 
       - name: Build and package
         shell: bash
         run: |
-          ./.github/workflows/scripts/Linux/build.sh ${{ github.workspace }}
+          ./.github/workflows/scripts/MacOS/build.sh ${{ github.workspace }}
 
       - name: Verify package exists
         shell: bash
         run: |
-          package=$(ls output/splinter3D-*-linux-x64.tar.xz 2>/dev/null | head -1)
+          package=$(ls output/splinter3D-*-macos-*.zip 2>/dev/null | head -1)
           if [ -z "$package" ]; then
-            echo "ERROR: No Linux package found"
+            echo "ERROR: No macOS package found"
             exit 1
           fi
           echo "Found package: $package"
-          ls -lh "$package" "$(dirname "$package")"/$(basename "$package").sha256
+          ls -lh "$package" "$package.sha256"
 
       - name: Create Release and upload assets
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            output/splinter3D-*-linux-x64.tar.xz
-            output/splinter3D-*-linux-x64.tar.xz.sha256
+            output/splinter3D-*-macos-*.zip
+            output/splinter3D-*-macos-*.zip.sha256
           tag_name: ${{ steps.release_tag.outputs.tag }}
-          name: linux-${{ steps.release_tag.outputs.tag }}
+          name: macos-${{ steps.release_tag.outputs.tag }}
           body: |
-            Automated Linux build for tag ${{ steps.release_tag.outputs.tag }}
+            Automated macOS build for tag ${{ steps.release_tag.outputs.tag }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
