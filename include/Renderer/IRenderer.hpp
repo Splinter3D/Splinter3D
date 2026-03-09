@@ -58,6 +58,7 @@ namespace renderer
         Enter     = 257,
         Tab       = 258,
         Backspace = 259,
+        Suppr     = 261,
         Shift     = 340,
         Ctrl      = 341,
         Alt       = 342,
@@ -78,6 +79,67 @@ namespace renderer
         Debug   = 3  // debug overlays
     };
 
+    inline std::string stringFromKey(Key key)
+    {
+        for (int i = (int) Key::A; i <= (int) Key::Z; ++i)
+        {
+            if ((int) key == i)
+                return std::string(1, static_cast<char>(i));
+        }
+        switch (key)
+        {
+            case Key::Space:
+                return "Space";
+            case Key::Escape:
+                return "Escape";
+            case Key::Enter:
+                return "Enter";
+            case Key::Tab:
+                return "Tab";
+            case Key::Backspace:
+                return "Backspace";
+            case Key::Suppr:
+                return "Suppr";
+            case Key::Shift:
+                return "Shift";
+            case Key::Ctrl:
+                return "Ctrl";
+            case Key::Alt:
+                return "Alt";
+            default:
+                return "Unknown";
+        }
+    }
+
+    inline Key keyFromString(const std::string& str)
+    {
+        if (str.size() == 1)
+        {
+            char c = str[0];
+            if (c >= 'A' && c <= 'Z')
+                return static_cast<Key>(c);
+        }
+        else if (str == "Space")
+            return Key::Space;
+        else if (str == "Escape")
+            return Key::Escape;
+        else if (str == "Enter")
+            return Key::Enter;
+        else if (str == "Tab")
+            return Key::Tab;
+        else if (str == "Backspace")
+            return Key::Backspace;
+        else if (str == "Suppr")
+            return Key::Suppr;
+        else if (str == "Shift")
+            return Key::Shift;
+        else if (str == "Ctrl")
+            return Key::Ctrl;
+        else if (str == "Alt")
+            return Key::Alt;
+        return Key::Unknown;
+    }
+
     /**
      * Interface for a 3D renderer suitable for slicers
      */
@@ -93,26 +155,31 @@ namespace renderer
         virtual void end3D()   = 0;
 
         // GUI drawing
-        virtual void      drawGuiComponent(const gui::IGuiComponent& component) const                                                                                               = 0;
-        virtual ITexture* createIcon(int width, int height, const std::function<void(void* canvas)>& painter)                                                                       = 0;
-        virtual void      drawRectangleLines(float x, float y, float width, float height, Color color, Layer layer = Layer::UI) const                                               = 0;
-        virtual void      drawRectangle(float x, float y, float width, float height, Color color, Layer layer = Layer::UI) const                                                    = 0;
-        virtual void      drawValueBox(float x, float y, float width, float height, const char* label, int& value, int min, int max, bool& editMode, Layer layer = Layer::UI) const = 0;
-        virtual void      drawCheckbox(float x, float y, float size, const char* label, bool& checked, Layer layer = Layer::UI) const                                               = 0;
-        virtual void      drawTexture(float x, float y, float width, float height, const ITexture* texture, Layer layer = Layer::UI) const                                          = 0;
-        virtual void      drawButton(float x, float y, float width, float height, const ITexture* icon, const std::function<void()>& onClick, Layer layer = Layer::UI) const        = 0;
-        virtual void      drawPanel(float x, float y, float width, float height, Layer layer = Layer::Overlay) const                                                                = 0;
-        virtual void      drawText(float x, float y, const char* text, int fontSize, Layer layer = Layer::UI) const                                                                 = 0;
-        virtual float     measureTextWidth(const char* text, int fontSize) const                                                                                                    = 0;
+        virtual void      drawGuiComponent(const gui::IGuiComponent& component) const                                                                                                          = 0;
+        virtual ITexture* createIcon(int width, int height, const std::function<void(void* canvas)>& painter)                                                                                  = 0;
+        virtual void      drawRectangleLines(float x, float y, float width, float height, Color color, Layer layer = Layer::UI) const                                                          = 0;
+        virtual void      drawRectangle(float x, float y, float width, float height, Color color, Layer layer = Layer::UI) const                                                               = 0;
+        virtual void      drawValueBox(float x, float y, float width, float height, const char* label, int& value, int min, int max, bool& editMode, Layer layer = Layer::UI) const            = 0;
+        virtual void      drawFloatValueBox(float x, float y, float width, float height, const char* label, float& value, float min, float max, bool& editMode, Layer layer = Layer::UI) const = 0;
+        virtual void      drawCheckbox(float x, float y, float size, const char* label, bool& checked, Layer layer = Layer::UI) const                                                          = 0;
+        virtual void      drawTexture(float x, float y, float width, float height, const ITexture* texture, Layer layer = Layer::UI) const                                                     = 0;
+        virtual void      drawButton(float x, float y, float width, float height, const ITexture* icon, const std::function<void()>& onClick, Layer layer = Layer::UI) const                   = 0;
+        virtual void      drawPanel(float x, float y, float width, float height, Layer layer = Layer::Overlay) const                                                                           = 0;
+        virtual void      drawText(float x, float y, const char* text, int fontSize, Layer layer = Layer::UI) const                                                                            = 0;
+
+        // Gui utilities
+        virtual float measureTextWidth(const char* text, int fontSize) const = 0;
 
         virtual void* getCanvas() const = 0; // For icon drawing
 
         // Specific icon painters
-        virtual void drawImportIcon(void* canvas)  = 0;
-        virtual void drawExportIcon(void* canvas)  = 0;
-        virtual void drawSliceIcon(void* canvas)   = 0;
-        virtual void drawScaleIcon(void* canvas)   = 0;
-        virtual void drawPreviewIcon(void* canvas) = 0;
+        virtual void drawImportIcon(void* canvas)    = 0;
+        virtual void drawExportIcon(void* canvas)    = 0;
+        virtual void drawSliceIcon(void* canvas)     = 0;
+        virtual void drawScaleIcon(void* canvas)     = 0;
+        virtual void drawTransformIcon(void* canvas) = 0;
+        virtual void drawPreviewIcon(void* canvas)   = 0;
+        virtual void drawRotationIcon(void* canvas)  = 0;
 
         // 3D Drawing
         virtual void drawTriangle(const geometry::Triangle& tri, Color color, Layer layer = Layer::World) = 0;

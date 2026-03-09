@@ -13,7 +13,9 @@
 
 #include <Geometry/Utils/MeshUtils.hpp>
 #include <Gui/CenteredToolbar.hpp>
-#include <Gui/States/ScalePanelState.hpp>
+#include <Gui/States/ScalePannelState.hpp>
+#include <Input/InputBindings.hpp>
+#include <Input/InputManager.hpp>
 #include <Objects3D/Object3D.hpp>
 #include <Renderer/RaylibRenderer.hpp>
 #include <Renderer/RenderObject.hpp>
@@ -100,22 +102,12 @@ int main(int argc, char** argv)
     gui::CenteredToolbar     toolbar(18.0f, 52.0f, 14.0f);
     toolbar.initialize(renderer);
 
-    // {
-    //     auto&                      scaleState = gui::states::ScalePanelState::instance();
-    //     const objects3D::Transform t          = obj.getTransform();
-
-    //     scaleState.target  = &obj;
-    //     scaleState.scaleX  = t.scale.x * 100.0f;
-    //     scaleState.scaleY  = t.scale.y * 100.0f;
-    //     scaleState.scaleZ  = t.scale.z * 100.0f;
-    //     scaleState.scaleXi = (int) scaleState.scaleX;
-    //     scaleState.scaleYi = (int) scaleState.scaleY;
-    //     scaleState.scaleZi = (int) scaleState.scaleZ;
-    // }
-
-    while (!renderer.shouldClose() && !splinter3D::utils::oscompat::SignalReceived())
+    input::registerBindings();
+    while (!renderer.shouldClose())
     {
         float dt = renderer.beginFrame();
+
+        input::InputManager::getInstance().update(renderer);
         renderer.updateCamera(dt);
         toolbar.update(renderer);
 

@@ -1,6 +1,8 @@
 #pragma once
 #include <Gui/AGuiComponent.hpp>
 #include <Renderer/IRenderer.hpp>
+#include <Splinter3D/Events/EventBus.hpp>
+#include <Splinter3D/Events/OpenPannelEvent.hpp>
 #include <functional>
 #include <string>
 
@@ -13,12 +15,12 @@ namespace gui
 #pragma region Builder
 
       public:
-        using DrawIconFn  = std::function<void(void* canvas)>;
-        using ActionFn    = std::function<void()>;
-        using PanelDrawFn = std::function<void(
+        using DrawIconFn   = std::function<void(void* canvas)>;
+        using ActionFn     = std::function<void()>;
+        using PannelDrawFn = std::function<void(
             const renderer::IRenderer&,
-            float panelX, float panelY,
-            float panelW, float panelH)>;
+            float pannelX, float pannelY,
+            float pannelW, float pannelH)>;
 
         /**
          * Builder class for constructing Button instances with a fluent interface
@@ -48,23 +50,21 @@ namespace gui
             }
 
             /**
-             * Defines a keyboard shortcut for the button.
+             * Sets a tooltip to show when the button is hovered.
              */
-            Builder& shortcut(std::vector<renderer::Key> keys, std::string tooltip = "")
+            Builder& tooltip(std::string text)
             {
-                shortcutKeys_ = std::move(keys);
-                hasShortcut_  = true;
-                tooltip_      = std::move(tooltip);
+                tooltip_ = std::move(text);
                 return *this;
             }
 
             /**
-             * Defines a panel to open when the button is clicked, with a custom draw function.
+             * Defines a pannel to open when the button is clicked, with a custom draw function.
              */
-            Builder& panel(PanelDrawFn fn)
+            Builder& pannel(PannelDrawFn fn)
             {
-                hasPanel_    = true;
-                panelDrawFn_ = std::move(fn);
+                hasPannel_    = true;
+                pannelDrawFn_ = std::move(fn);
                 return *this;
             }
 
@@ -74,18 +74,16 @@ namespace gui
             Button build(renderer::IRenderer& renderer)
             {
                 return Button(std::move(id_), std::move(action_), std::move(drawIcon_), renderer,
-                              hasShortcut_, std::move(tooltip_), shortcutKeys_, hasPanel_, std::move(panelDrawFn_));
+                              std::move(tooltip_), hasPannel_, std::move(pannelDrawFn_));
             }
 
           private:
-            std::string                id_;
-            ActionFn                   action_;
-            DrawIconFn                 drawIcon_;
-            bool                       hasShortcut_{false};
-            std::string                tooltip_;
-            std::vector<renderer::Key> shortcutKeys_ = {};
-            bool                       hasPanel_{false};
-            PanelDrawFn                panelDrawFn_;
+            std::string  id_;
+            ActionFn     action_;
+            DrawIconFn   drawIcon_;
+            std::string  tooltip_;
+            bool         hasPannel_{false};
+            PannelDrawFn pannelDrawFn_;
         };
 
 #pragma endregion
@@ -97,21 +95,29 @@ namespace gui
         float width{48};
         float height{48};
 
-        static constexpr float kPanelW   = 220.0f;
-        static constexpr float kPanelH   = 100.0f;
-        static constexpr float kPanelGap = 6.0f; // gap below button
+        static constexpr float kPannelW   = 220.0f;
+        static constexpr float kPannelH   = 200.0f;
+        static constexpr float kPannelGap = 6.0f; // gap below button
 
-        Button(std::string                id,
-               ActionFn                   action,
-               DrawIconFn                 drawIcon,
-               renderer::IRenderer&       renderer,
-               bool                       hasShortcut  = false,
-               std::string                tooltip      = "",
-               std::vector<renderer::Key> shortcutKeys = {},
-               bool                       hasPanel     = false,
-               PanelDrawFn                panelDrawFn  = nullptr);
+        Button(std::string          id,
+               ActionFn             action,
+               DrawIconFn           drawIcon,
+               renderer::IRenderer& renderer,
+               std::string          tooltip      = "",
+               bool                 hasPannel    = false,
+               PannelDrawFn         pannelDrawFn = nullptr);
 
         virtual ~Button() = default;
+
+        /**
+         * Manually subscribe to pannel open events.
+         */
+        void subscribeToPannelEvents();
+
+        /**
+         * Open its own pannel when the venet match the button id
+         */
+        void reactToOpenPannelEvent(const splinter3D::events::OpenPannelEvent& e);
 
         /**
          * Updates the button state, handling clicks and shortcuts. Should be called every frame before draw().
@@ -132,19 +138,19 @@ namespace gui
         }
 
         /**
-         * Returns whether the button's panel is currently open.
+         * Returns whether the button's pannel is currently open.
          */
-        bool isPanelOpen() const
+        bool isPannelOpen() const
         {
-            return panelOpen_;
+            return pannelOpen_;
         }
 
         /**
-         * Closes the panel if it was open.
+         * Closes the pannel if it was open.
          */
-        void closePanel()
+        void closePannel()
         {
-            panelOpen_ = false;
+            pannelOpen_ = false;
         }
 
 #pragma endregion
@@ -162,20 +168,18 @@ namespace gui
         void drawTooltip(const renderer::IRenderer& renderer) const;
 
         /**
-         * Draws the panel if there is one assigned to this button and the panel is currently open.
+         * Draws the pannel if there is one assigned to this button and the pannel is currently open.
          */
-        void drawPanel(const renderer::IRenderer& renderer) const;
+        void drawPannel(const renderer::IRenderer& renderer) const;
 
-        std::string                id_;
-        ActionFn                   action_;
-        renderer::ITexture*        iconTexture_ = nullptr;
-        bool                       hasShortcut_;
-        std::string                tooltip_;
-        std::vector<renderer::Key> shortcutKeys_;
-        bool                       hasPanel_;
-        PanelDrawFn                panelDrawFn_;
+        std::string         id_;
+        ActionFn            action_;
+        renderer::ITexture* iconTexture_ = nullptr;
+        std::string         tooltip_;
+        bool                hasPannel_;
+        PannelDrawFn        pannelDrawFn_;
 
-        mutable bool panelOpen_{false};
+        mutable bool pannelOpen_{false};
 
         static constexpr float kTooltipDelay = 0.2f; // seconds before tooltip shows
         mutable float          hoverTimer_{0.0f};

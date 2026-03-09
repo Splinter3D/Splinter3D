@@ -62,4 +62,9 @@ namespace scene
     {
         return obj.getTransformedMesh();
     }
+
+    objects3D::Object3D* SceneObject::getObject3D()
+    {
+        return &obj;
+    }
 } // namespace scene

@@ -6,6 +6,7 @@
     "raylib",
     "glfw3",
     "gettext",
-    "nativefiledialog-extended"
+    "nativefiledialog-extended",
+    "nlohmann-json"
   ]
 }

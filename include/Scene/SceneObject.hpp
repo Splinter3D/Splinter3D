@@ -19,10 +19,20 @@ namespace scene
             rObj.setColor(color);
         }
 
+        SceneObject(const SceneObject& other)
+            : obj(other.obj)
+        {
+            rObj.bind(obj);
+            rObj.setColor(other.rObj.getColor());
+        }
+
+        ~SceneObject() = default;
+
         void draw(renderer::IRenderer& renderer) const;
         bool isHit(const geometry::Ray& ray);
         void setColor(const renderer::Color& c);
 
+        objects3D::Object3D* getObject3D();
         objects3D::Transform getTransform() const;
         geometry::Mesh*      getTransformedMesh() const;
         void                 setTransform(const objects3D::Transform& transform);

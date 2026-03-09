@@ -16,9 +16,15 @@ namespace renderer
 
         RenderObject(Color color = Color{255, 255, 255, 255});
 
-        void bind(objects3D::Object3D& obj);
-        void draw(renderer::IRenderer& renderer) const;
-        void setColor(const Color& c);
+        /**
+         * Detach the RenderObject from any Object3D it is currently bound to.
+         */
+        ~RenderObject();
+
+        void  bind(objects3D::Object3D& obj);
+        void  draw(renderer::IRenderer& renderer) const;
+        void  setColor(const Color& c);
+        Color getColor() const;
 
         void            onTransformChanged() override;
         geometry::Mesh* getTransformedMesh() const;

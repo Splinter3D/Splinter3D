@@ -1,9 +1,9 @@
 #pragma once
 
-namespace scene::events
+namespace splinter3D::events
 {
     struct ObjectSelectedEvent
     {
         int index; // -1 = deselected
     };
-} // namespace scene::events
+} // namespace splinter3D::events

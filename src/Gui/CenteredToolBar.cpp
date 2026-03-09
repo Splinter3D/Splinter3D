@@ -1,10 +1,17 @@
 #include <Gui/CenteredToolbar.hpp>
-#include <Gui/Panels/ScalePanel.hpp>
-#include <Gui/States/ScalePanelState.hpp>
+#include <Gui/Pannels/ExportPannel.hpp>
+#include <Gui/Pannels/RotationPannel.hpp>
+#include <Gui/Pannels/ScalePannel.hpp>
+#include <Gui/Pannels/TransformPannel.hpp>
+#include <Gui/States/ExportPannelState.hpp>
+#include <Gui/States/RotationPannelState.hpp>
+#include <Gui/States/ScalePannelState.hpp>
+#include <Gui/States/TransformPannelState.hpp>
 #include <Gui/Utils/FileDialog.hpp>
+#include <Input/Action.hpp>
+#include <Input/InputManager.hpp>
 #include <Renderer/IRenderer.hpp>
 #include <Scene/Scene.hpp>
-#include <iostream>
 
 namespace gui
 {
@@ -16,46 +23,48 @@ namespace gui
     void CenteredToolbar::initialize(renderer::IRenderer& renderer)
     {
         buttons_.clear();
-        buttons_.reserve(5);
+        buttons_.reserve(6);
 
         // Import
         buttons_.emplace_back(Button::Builder("import")
                                   .icon([&renderer](void* c) { renderer.drawImportIcon(c); })
-                                  .action([]() {
-                                      auto path = gui::utils::pickSTLFile();
-                                      if (path.has_value())
-                                          scene::Scene::getInstance().addObject(*path);
-                                  })
-                                  .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::I}, "Import (I)")
+                                  .action([]() { input::InputManager::getInstance().trigger(input::Action::Import); })
+                                  .tooltip("Import (Ctrl+I)")
                                   .build(renderer));
 
-        // Export
         buttons_.emplace_back(Button::Builder("export")
                                   .icon([&renderer](void* c) { renderer.drawExportIcon(c); })
-                                  .action([]() { std::cout << "[Toolbar] Export\n"; })
-                                  .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::E}, "Export (E)")
+                                  .pannel(panels::ExportPannel())
+                                  .action([]() { input::InputManager::getInstance().trigger(input::Action::OpenExportPannel); })
+                                  .tooltip("Export (Ctrl+E)")
                                   .build(renderer));
 
-        // Preview
-        buttons_.emplace_back(Button::Builder("preview")
-                                  .icon([&renderer](void* c) { renderer.drawPreviewIcon(c); })
-                                  .action([]() { std::cout << "[Toolbar] Preview\n"; })
-                                  .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::P}, "Preview (P)")
+        // Rotation (has pannel)
+        buttons_.emplace_back(Button::Builder("rotation")
+                                  .icon([&renderer](void* c) { renderer.drawRotationIcon(c); })
+                                  .action([]() { input::InputManager::getInstance().trigger(input::Action::OpenPannelRotation); })
+                                  .tooltip("Rotation (Ctrl+R)")
+                                  .pannel(pannels::RotationPannel())
                                   .build(renderer));
 
-        // Slice
-        buttons_.emplace_back(Button::Builder("slice")
-                                  .icon([&renderer](void* c) { renderer.drawSliceIcon(c); })
-                                  .action([]() { std::cout << "[Toolbar] Slice\n"; })
-                                  .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::L}, "Slice (L)")
+        // Transform (has pannel)
+        buttons_.emplace_back(Button::Builder("transform")
+                                  .icon([&renderer](void* c) { renderer.drawTransformIcon(c); })
+                                  .action([]() { input::InputManager::getInstance().trigger(input::Action::OpenPannelTransform); })
+                                  .tooltip("Transform (Ctrl+T)")
+                                  .pannel(pannels::TransformPannel())
                                   .build(renderer));
 
-        // Scale (has panel)
+        // Scale (has pannel)
         buttons_.emplace_back(Button::Builder("scale")
                                   .icon([&renderer](void* c) { renderer.drawScaleIcon(c); })
-                                  .shortcut(std::vector<renderer::Key>{renderer::Key::Ctrl, renderer::Key::S}, "Scale (S)")
-                                  .panel(panels::ScalePanel())
+                                  .action([]() { input::InputManager::getInstance().trigger(input::Action::OpenPannelScale); })
+                                  .tooltip("Scale (Ctrl+S)")
+                                  .pannel(pannels::ScalePannel())
                                   .build(renderer));
+
+        for (auto& btn : buttons_)
+            btn.subscribeToPannelEvents();
 
         repositionButtons(renderer);
         _lastScreenWidth  = renderer.getScreenWidth();
@@ -75,15 +84,15 @@ namespace gui
                     mouse.y >= btn.y && mouse.y <= btn.y + btn.height)
                     return false;
 
-                // Inside panel bounds (if open)
-                if (btn.isPanelOpen())
+                // Inside pannel bounds (if open)
+                if (btn.isPannelOpen())
                 {
-                    float px = btn.x + (btn.width - Button::kPanelW) * 0.5f;
-                    px       = std::max(4.0f, std::min(px, (float) renderer.getScreenWidth() - Button::kPanelW - 4.0f));
-                    float py = btn.y + btn.height + Button::kPanelGap;
+                    float px = btn.x + (btn.width - Button::kPannelW) * 0.5f;
+                    px       = std::max(4.0f, std::min(px, (float) renderer.getScreenWidth() - Button::kPannelW - 4.0f));
+                    float py = btn.y + btn.height + Button::kPannelGap;
 
-                    if (mouse.x >= px && mouse.x <= px + Button::kPanelW &&
-                        mouse.y >= py && mouse.y <= py + Button::kPanelH)
+                    if (mouse.x >= px && mouse.x <= px + Button::kPannelW &&
+                        mouse.y >= py && mouse.y <= py + Button::kPannelH)
                         return false;
                 }
             }
@@ -93,15 +102,15 @@ namespace gui
         {
             buttons_[i].update(renderer);
 
-            if (buttons_[i].isPanelOpen())
+            if (buttons_[i].isPannelOpen())
             {
                 for (size_t j = 0; j < buttons_.size(); ++j)
                     if (j != i)
-                        buttons_[j].closePanel();
+                        buttons_[j].closePannel();
             }
 
             if (outsideClick)
-                buttons_[i].closePanel();
+                buttons_[i].closePannel();
         }
     }
 

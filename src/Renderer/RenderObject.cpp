@@ -6,6 +6,12 @@ namespace renderer
     RenderObject::RenderObject(Color color) : _color(color)
     { }
 
+    RenderObject::~RenderObject()
+    {
+        if (object)
+            const_cast<objects3D::Object3D*>(object)->detach(this);
+    }
+
     void RenderObject::bind(objects3D::Object3D& obj)
     {
         object = &obj;
@@ -22,6 +28,11 @@ namespace renderer
     void RenderObject::setColor(const Color& c)
     {
         _color = c;
+    }
+
+    renderer::Color RenderObject::getColor() const
+    {
+        return _color;
     }
 
     void RenderObject::onTransformChanged()

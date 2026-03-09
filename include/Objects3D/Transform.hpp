@@ -14,11 +14,6 @@ namespace objects3D
         geometry::Vec3 rotation{0, 0, 0};
         geometry::Vec3 scale{1, 1, 1};
 
-        inline Matrix toMatrix() const
-        {
-            return MatrixScale(scale.x, scale.y, scale.z) *
-                   MatrixRotateXYZ(rotation.toRaylib()) *
-                   MatrixTranslate(position.x, position.y, position.z);
-        }
+        Matrix toMatrix() const;
     };
 } // namespace objects3D
