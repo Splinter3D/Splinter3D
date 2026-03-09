@@ -13,6 +13,8 @@ namespace input
         OpenPannelRotation,
         OpenPannelTransform,
         OpenPannelScale,
+        SelectObject,
+        MultiSelection,
         Unknown
     };
 

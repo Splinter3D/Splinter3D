@@ -47,7 +47,7 @@ int main()
     gui::CenteredToolbar toolbar(18.0f, 52.0f, 14.0f);
     toolbar.initialize(renderer);
 
-    input::registerBindings();
+    input::registerBindings(renderer, toolbar);
     while (!renderer.shouldClose())
     {
         float dt = renderer.beginFrame();
@@ -57,12 +57,6 @@ int main()
         toolbar.update(renderer);
 
         renderer.begin3D();
-        if (renderer.isMouseButtonPressed((int) renderer::MouseButton::Left) && !toolbar.isMouseOver(renderer))
-        {
-            auto       ray      = renderer.getMouseRay();
-            const bool additive = renderer.isKeyDown(renderer::Key::Ctrl);
-            scene::Scene::getInstance().handleClick(ray, additive);
-        }
         renderer.drawGrid(10, 1.0f);
         renderer.drawAxis(2.0f);
         scene::Scene::getInstance().draw(renderer);

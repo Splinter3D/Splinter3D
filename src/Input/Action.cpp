@@ -18,6 +18,10 @@ namespace input
             return Action::OpenPannelTransform;
         if (str == "OpenPannelScale")
             return Action::OpenPannelScale;
+        if (str == "SelectObject")
+            return Action::SelectObject;
+        if (str == "MultiSelection")
+            return Action::MultiSelection;
         return Action::Unknown;
     }
 } // namespace input
