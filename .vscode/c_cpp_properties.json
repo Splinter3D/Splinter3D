@@ -9,10 +9,13 @@
                 "${workspaceFolder}/build/vcpkg_installed/arm64-osx/include",
                 "/usr/include",
                 "/usr/include/c++/11",
-                "/usr/include/x86_64-linux-gnu/c++/11"
+                "/usr/include/x86_64-linux-gnu/c++/11",
+                "/usr/lib/x86_64-linux-gnu/wx/include/gtk3-unicode-3.0",
+                "/usr/include/wx-3.0"
             ],
             "defines": [
-                "SPLINTER3D_DEBUG=0"
+                "SPLINTER3D_DEBUG=0",
+                "__WXGTK__"
             ],
             "compilerPath": "/usr/bin/g++",
             "cppStandard": "c++23",
