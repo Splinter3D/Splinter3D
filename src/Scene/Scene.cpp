@@ -5,7 +5,7 @@
 ** Scene
 */
 
-#include <Geometry/Utils/Slicer/MeshSlicer.hpp>
+#include <Geometry/Utils/Splitter/MeshSplitter.hpp>
 #include <Scene/Scene.hpp>
 #include <iostream>
 
@@ -96,7 +96,7 @@ namespace scene
         std::unique_ptr<SceneObject>& selectedObj = _objects[(size_t) _selectedObjectIndex];
         geometry::Mesh*               mesh        = selectedObj->getObject3D()->getTransformedMesh();
 
-        std::pair<geometry::Mesh, geometry::Mesh> slabs = geometry::utils::slicer::splitByPlane(
+        std::pair<geometry::Mesh, geometry::Mesh> slabs = geometry::utils::splitter::splitByPlane(
             *mesh,
             geometry::Vec3{0, 0.5, 0}, // point on plane
             geometry::Vec3{0, 1, 0}    // normal pointing up

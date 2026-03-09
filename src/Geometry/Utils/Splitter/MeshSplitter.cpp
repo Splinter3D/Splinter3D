@@ -1,9 +1,8 @@
-// Geometry/Utils/MeshSlicer.cpp
-#include <Geometry/Utils/Slicer/MeshSlicer.hpp>
+#include <Geometry/Utils/Splitter/MeshSplitter.hpp>
 #include <Splinter3D/Utils/Logger.hpp>
 #include <cmath>
 
-namespace geometry::utils::slicer
+namespace geometry::utils::splitter
 {
 #pragma region Private helper functions
 
@@ -224,7 +223,7 @@ namespace geometry::utils::slicer
         Mesh                               above, below; // output meshes for the two halves
         std::vector<std::pair<Vec3, Vec3>> cutEdges;     // edges along the cut plane, used to build the cap
 
-        splinter3D::utils::Logger::getInstance().clog("[MeshSlicer] Splitting ", mesh.triangles.size(), " triangles\n");
+        splinter3D::utils::Logger::getInstance().clog("[MeshSplitter] Splitting ", mesh.triangles.size(), " triangles\n");
 
         for (const auto& tri : mesh.triangles)
         {
@@ -352,10 +351,10 @@ namespace geometry::utils::slicer
         addCap(above, below, cutEdges, normal);
 
         splinter3D::utils::Logger::getInstance().clog(
-            "[MeshSlicer] Done — above: ", above.triangles.size(),
+            "[MeshSplitter] Done — above: ", above.triangles.size(),
             " below: ", below.triangles.size(), " triangles\n");
 
         return {above, below};
     }
 
-} // namespace geometry::utils::slicer
+} // namespace geometry::utils::splitter

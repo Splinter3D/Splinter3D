@@ -1,9 +1,8 @@
-// Geometry/Utils/MeshSlicer.hpp
 #pragma once
 #include <Geometry/Mesh.hpp>
 #include <utility>
 
-namespace geometry::utils::slicer
+namespace geometry::utils::splitter
 {
     /**
      * @brief Splits a mesh into two watertight halves along an arbitrary plane.
@@ -33,4 +32,4 @@ namespace geometry::utils::slicer
     std::pair<Mesh, Mesh> splitByPlane(const Mesh&           mesh,
                                        const geometry::Vec3& point,
                                        const geometry::Vec3& normal);
-} // namespace geometry::utils::slicer
+} // namespace geometry::utils::splitter
