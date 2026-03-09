@@ -1,0 +1,74 @@
+name: Build package (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+      runs_on:
+        required: true
+        type: string
+      shell:
+        required: true
+        type: string
+      submodules:
+        required: false
+        type: boolean
+        default: false
+      install_command:
+        required: true
+        type: string
+      build_command:
+        required: true
+        type: string
+      verify_command:
+        required: true
+        type: string
+      package_glob:
+        required: true
+        type: string
+      sha_glob:
+        required: true
+        type: string
+      artifact_name:
+        required: true
+        type: string
+    secrets:
+      github_token:
+        required: true
+
+jobs:
+  build:
+    runs-on: ${{ inputs.runs_on }}
+    env:
+      GITHUB_TOKEN: ${{ secrets.github_token }}
+      WORKSPACE: ${{ github.workspace }}
+    defaults:
+      run:
+        shell: ${{ inputs.shell }}
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: ${{ inputs.submodules }}
+          ref: ${{ inputs.tag }}
+
+      - name: Install dependencies
+        run: ${{ inputs.install_command }}
+
+      - name: Build and package
+        run: ${{ inputs.build_command }}
+
+      - name: Verify package exists
+        run: ${{ inputs.verify_command }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: |
+            ${{ inputs.package_glob }}
+            ${{ inputs.sha_glob }}
+          if-no-files-found: error

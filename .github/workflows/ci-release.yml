@@ -1,0 +1,150 @@
+name: CI Release (matrix)
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to package (defaults to latest)"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-22.04
+    outputs:
+      tag: ${{ steps.release_tag.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine release tag
+        id: release_tag
+        shell: bash
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          tag=""
+          if [[ "${GITHUB_EVENT_NAME}" == "push" && "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
+            tag="${GITHUB_REF_NAME}"
+          elif [[ -n "${INPUT_TAG}" ]]; then
+            tag="${INPUT_TAG}"
+          else
+            git fetch --tags --force
+            tag=$(git describe --tags "$(git rev-list --tags --max-count=1)" 2>/dev/null || true)
+          fi
+
+          if [[ -z "${tag}" ]]; then
+            echo "No tag found to package" >&2
+            exit 1
+          fi
+
+          if [[ ! "${tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Tag '${tag}' does not match required SemVer format v<MAJOR>.<MINOR>.<PATCH>[ -prerelease ][ +build ]" >&2
+            exit 1
+          fi
+
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "Using tag: ${tag}"
+
+  build:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os_name: linux
+            runs_on: ubuntu-22.04
+            shell: bash
+            submodules: true
+            install_command: ./.github/workflows/scripts/Linux/install.sh "$WORKSPACE"
+            build_command: ./.github/workflows/scripts/Linux/build.sh "$WORKSPACE"
+            verify_command: |
+              package=$(ls output/splinter3D-*-linux-x64.tar.xz 2>/dev/null | head -1)
+              if [ -z "$package" ]; then
+                echo "ERROR: No Linux package found"
+                exit 1
+              fi
+              echo "Found package: $package"
+              ls -lh "$package" "$package".sha256
+            package_glob: output/splinter3D-*-linux-x64.tar.xz
+            sha_glob: output/splinter3D-*-linux-x64.tar.xz.sha256
+            artifact_name: splinter3d-linux
+          - os_name: macos
+            runs_on: macos-latest
+            shell: bash
+            submodules: true
+            install_command: ./.github/workflows/scripts/MacOS/install.sh "$WORKSPACE"
+            build_command: ./.github/workflows/scripts/MacOS/build.sh "$WORKSPACE"
+            verify_command: |
+              package=$(ls output/splinter3D-*-macos-*.zip 2>/dev/null | head -1)
+              if [ -z "$package" ]; then
+                echo "ERROR: No macOS package found"
+                exit 1
+              fi
+              echo "Found package: $package"
+              ls -lh "$package" "$package".sha256
+            package_glob: output/splinter3D-*-macos-*.zip
+            sha_glob: output/splinter3D-*-macos-*.zip.sha256
+            artifact_name: splinter3d-macos
+          - os_name: windows
+            runs_on: windows-latest
+            shell: pwsh
+            submodules: false
+            install_command: pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/Windows/install.ps1 $env:WORKSPACE
+            build_command: pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/Windows/build.ps1 $env:WORKSPACE
+            verify_command: |
+              $zip = Get-ChildItem -Path "$env:WORKSPACE/output" -Filter 'splinter3D-*-windows-*.zip' -ErrorAction SilentlyContinue | Select-Object -First 1
+              if ($zip) {
+                Write-Host "Found package: $($zip.FullName)"
+                Write-Host "Package size: $($zip.Length) bytes"
+              } else {
+                Write-Error 'No splinter3D-*-windows-*.zip package found'
+                exit 1
+              }
+            package_glob: output/splinter3D-*-windows-*.zip
+            sha_glob: output/splinter3D-*-windows-*.zip.sha256
+            artifact_name: splinter3d-windows
+    uses: ./.github/workflows/reusable-build.yml
+    with:
+      tag: ${{ needs.prepare.outputs.tag }}
+      runs_on: ${{ matrix.runs_on }}
+      shell: ${{ matrix.shell }}
+      submodules: ${{ matrix.submodules }}
+      install_command: ${{ matrix.install_command }}
+      build_command: ${{ matrix.build_command }}
+      verify_command: ${{ matrix.verify_command }}
+      package_glob: ${{ matrix.package_glob }}
+      sha_glob: ${{ matrix.sha_glob }}
+      artifact_name: ${{ matrix.artifact_name }}
+    secrets:
+      github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  release:
+    needs: [prepare, build]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: output
+
+      - name: List artifacts
+        run: ls -R output
+
+      - name: Create Release and upload assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: output/**/*
+          tag_name: ${{ needs.prepare.outputs.tag }}
+          name: ${{ needs.prepare.outputs.tag }}
+          body: |
+            Automated build for tag ${{ needs.prepare.outputs.tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
