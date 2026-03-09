@@ -1,0 +1,54 @@
+name: CI macOS
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: macos-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          ./.github/workflows/scripts/MacOS/install.sh ${{ github.workspace }}
+
+      - name: Build and package
+        shell: bash
+        run: |
+          ./.github/workflows/scripts/MacOS/build.sh ${{ github.workspace }}
+
+      - name: Verify package exists
+        shell: bash
+        run: |
+          package=$(ls output/splinter3D-*-macos-*.zip 2>/dev/null | head -1)
+          if [ -z "$package" ]; then
+            echo "ERROR: No macOS package found"
+            exit 1
+          fi
+          echo "Found package: $package"
+          ls -lh "$package" "$package.sha256"
+
+      - name: Create Release and upload assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            output/splinter3D-*-macos-*.zip
+            output/splinter3D-*-macos-*.zip.sha256
+          tag_name: macos-package-${{ github.run_number }}
+          name: macos-package-${{ github.run_number }}
+          body: |
+            Automated macOS build: macos-package-${{ github.run_number }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

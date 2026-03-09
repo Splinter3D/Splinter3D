@@ -57,16 +57,16 @@ namespace gui::panels
         }
 
       private:
-        static void drawTargetOption(const renderer::IRenderer&            r,
-                                     float                                 x,
-                                     float                                 y,
-                                     const char*                           label,
-                                     gui::states::ExportPannelState&       state,
+        static void drawTargetOption(const renderer::IRenderer&                 r,
+                                     float                                      x,
+                                     float                                      y,
+                                     const char*                                label,
+                                     gui::states::ExportPannelState&            state,
                                      gui::states::ExportPannelState::TargetMode mode,
-                                     float                                 mouseX,
-                                     float                                 mouseY,
-                                     bool                                  click,
-                                     bool&                                 clickConsumed)
+                                     float                                      mouseX,
+                                     float                                      mouseY,
+                                     bool                                       click,
+                                     bool&                                      clickConsumed)
         {
             constexpr float boxSize   = 16.0f;
             constexpr float padding   = 8.0f;
