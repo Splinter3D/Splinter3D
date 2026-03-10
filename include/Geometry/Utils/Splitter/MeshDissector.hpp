@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #include <Geometry/Mesh.hpp>
 #include <Geometry/Vec3.hpp>
 #include <cstdint>
