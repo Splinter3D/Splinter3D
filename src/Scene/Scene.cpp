@@ -98,15 +98,14 @@ namespace scene
 
         std::vector<geometry::Mesh> slabMeshes = geometry::utils::splitter::splitByGrid(*mesh, geometry::Vec3{x, y, z});
         std::vector<SceneObject>    newObjects = SceneObject::batchBuildFromMeshes(slabMeshes, selectedObj->getColor());
-        std::cout << "Split into " << newObjects.size() << " slabs." << std::endl;
+
         for (int i = 0; i < (int) newObjects.size(); ++i)
         {
-            // Position them side by side along the X axis with a gap of 5 units
-            newObjects[(size_t) i].setTransform(objects3D::Transform{
-                .position = geometry::Vec3{x + (float) i * 1.0f, 0, 0},
-                .rotation = geometry::Vec3{0, 0, 0},
-                .scale    = geometry::Vec3{1, 1, 1},
-            });
+            newObjects[(size_t) i].setColor(renderer::Color{
+                static_cast<unsigned char>(rand() % 256),
+                static_cast<unsigned char>(rand() % 256),
+                static_cast<unsigned char>(rand() % 256),
+                255}); // Assign a random color to each new object for better visibility
         }
         _objects.erase(_objects.begin() + _selectedObjectIndex);
         for (auto& obj : newObjects)
