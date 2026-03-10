@@ -26,7 +26,7 @@ namespace input::actions
         }
 
       private:
-        renderer::IRenderer& renderer_;
+        renderer::IRenderer&  renderer_;
         gui::CenteredToolbar& toolbar_;
     };
 } // namespace input::actions

@@ -105,4 +105,26 @@ namespace objects3D
 
         std::vector<ObjectObserver*> observers;
     };
+
+    // #pragma region BatchBuilder
+
+    //     static std::vector<Object3D> batchBuildFromStl(const std::vector<std::string>& stlFiles)
+    //     {
+    //         std::vector<Object3D> objects;
+    //         objects.reserve(stlFiles.size());
+    //         for (const auto& file : stlFiles)
+    //             objects.emplace_back(Object3D::fromSTL(file));
+    //         return objects;
+    //     }
+
+    //     static std::vector<Object3D> batchBuildFromMeshes(const std::vector<geometry::Mesh>& meshes)
+    //     {
+    //         std::vector<Object3D> objects;
+    //         objects.reserve(meshes.size());
+    //         for (const auto& mesh : meshes)
+    //             objects.emplace_back(Object3D(new geometry::Mesh(mesh)));
+    //         return objects;
+    //     }
+
+    // #pragma endregion
 } // namespace objects3D

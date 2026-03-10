@@ -1,21 +1,23 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 namespace input
 {
-    enum class Action
+    enum class Action : std::uint8_t
     {
-        DeleteSelectedObject,
-        DuplicateSelectedObject,
-        Import,
-        OpenExportPannel,
-        OpenPannelRotation,
-        OpenPannelTransform,
-        OpenPannelScale,
-        SelectObject,
-        MultiSelection,
-        Unknown
+        DeleteSelectedObject    = 0,
+        DuplicateSelectedObject = 1,
+        Import                  = 2,
+        OpenPannelExport        = 3,
+        OpenPannelRotation      = 4,
+        OpenPannelTransform     = 5,
+        OpenPannelScale         = 6,
+        OpenPannelCut           = 7,
+        SelectObject            = 8,
+        MultiSelection          = 9,
+        Unknown                 = 255
     };
 
     Action actionFromString(const std::string& str);

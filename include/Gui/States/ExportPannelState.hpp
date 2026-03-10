@@ -15,16 +15,16 @@ namespace gui::states
     class ExportPannelState : public splinter3D::utils::Singleton<ExportPannelState>
     {
       public:
-        enum class TargetMode
+        enum class TargetMode : uint8_t
         {
-            SelectedObject,
-            AllAsOne
+            SelectedObject = 0,
+            AllAsOne       = 1
         };
 
-        enum class Format
+        enum class Format : uint8_t
         {
-            BinarySTL,
-            AsciiSTL
+            BinarySTL = 0,
+            AsciiSTL  = 1
         };
 
         bool dropdownOpen{false};

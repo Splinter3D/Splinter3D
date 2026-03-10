@@ -5,10 +5,11 @@
 ** Scene
 */
 
-#include <algorithm>
-#include <vector>
-
+#include <Geometry/Utils/Splitter/MeshSplitter.hpp>
 #include <Scene/Scene.hpp>
+#include <algorithm>
+#include <iostream>
+#include <vector>
 
 namespace
 {
@@ -189,6 +190,38 @@ namespace scene
         evt.indices.assign(_selectedObjectIndices.begin(), _selectedObjectIndices.end());
 
         splinter3D::events::EventBus::getInstance().publish(evt);
+    }
+
+    void Scene::splitSelected(float x, float y, float z)
+    {
+        for (int idx : _selectedObjectIndices)
+        {
+            std::cout << "Splitting object at index " << idx << " with grid size (" << x << ", " << y << ", " << z << ")\n";
+            if (idx < 0 || idx >= (int) _objects.size())
+            {
+                std::cout << "Invalid index in splitSelected: " << idx << std::endl;
+                continue;
+            }
+            std::unique_ptr<SceneObject>& selectedObj = _objects[(size_t) idx];
+            geometry::Mesh*               mesh        = selectedObj->getObject3D()->getTransformedMesh();
+
+            std::vector<geometry::Mesh> slabMeshes = geometry::utils::splitter::splitByGrid(*mesh, geometry::Vec3{x, y, z});
+            std::vector<SceneObject>    newObjects = SceneObject::batchBuildFromMeshes(slabMeshes, selectedObj->getColor());
+
+            for (int i = 0; i < (int) newObjects.size(); ++i)
+            {
+                newObjects[(size_t) i].setColor(renderer::Color{
+                    static_cast<unsigned char>(rand() % 256),
+                    static_cast<unsigned char>(rand() % 256),
+                    static_cast<unsigned char>(rand() % 256),
+                    255}); // Assign a random color to each new object for better visibility
+            }
+            _objects.erase(_objects.begin() + idx);
+            for (auto& obj : newObjects)
+            {
+                _objects.push_back(std::make_unique<SceneObject>(obj)); // Add new objects to the scene
+            }
+        }
     }
 
 } // namespace scene

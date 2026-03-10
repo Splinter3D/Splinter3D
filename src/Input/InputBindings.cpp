@@ -12,8 +12,8 @@
 #include <Splinter3D/Events/EventBus.hpp>
 #include <Splinter3D/Events/OpenPannelEvent.hpp>
 #include <fstream>
-#include <optional>
 #include <nlohmann/json.hpp>
+#include <optional>
 
 namespace
 {
@@ -39,11 +39,12 @@ namespace input
         mgr.registerAction(Action::DeleteSelectedObject, std::make_unique<actions::DeleteSelectedAction>());
         mgr.registerAction(Action::DuplicateSelectedObject, std::make_unique<actions::DuplicateSelectedAction>());
         mgr.registerAction(Action::Import, std::make_unique<actions::ImportAction>());
-        mgr.registerAction(Action::OpenExportPannel, std::make_unique<actions::OpenPannelAction>("export"));
+        mgr.registerAction(Action::OpenPannelExport, std::make_unique<actions::OpenPannelAction>("export"));
         mgr.registerAction(Action::OpenPannelRotation, std::make_unique<actions::OpenPannelAction>("rotation"));
         mgr.registerAction(Action::OpenPannelTransform, std::make_unique<actions::OpenPannelAction>("transform"));
         mgr.registerAction(Action::OpenPannelScale, std::make_unique<actions::OpenPannelAction>("scale"));
         mgr.registerAction(Action::SelectObject, std::make_unique<actions::SelectObjectAction>(renderer, toolbar));
+        mgr.registerAction(Action::OpenPannelCut, std::make_unique<actions::OpenPannelAction>("cut"));
 
         // Load key bindings from JSON
         std::ifstream file("assets/keybindings.json");
@@ -54,7 +55,7 @@ namespace input
         nlohmann::json json = nlohmann::json::parse(file);
         for (const auto& binding : json["bindings"])
         {
-            const input::Action        action = actionFromString(binding["action"]);
+            const input::Action action = actionFromString(binding["action"]);
             if (action == Action::Unknown)
                 continue;
             std::vector<renderer::Key> keys;

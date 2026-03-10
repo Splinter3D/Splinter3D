@@ -18,6 +18,7 @@
 
 // POSIX headers
 #if defined(SPLINTER3D_POSIX)
+#include <cstdlib>
 #include <signal.h>
 #include <termios.h>
 #include <unistd.h>

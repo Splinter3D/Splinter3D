@@ -10,8 +10,8 @@ namespace input
             return Action::DuplicateSelectedObject;
         if (str == "Import")
             return Action::Import;
-        if (str == "OpenExportPannel")
-            return Action::OpenExportPannel;
+        if (str == "OpenPannelExport")
+            return Action::OpenPannelExport;
         if (str == "OpenPannelRotation")
             return Action::OpenPannelRotation;
         if (str == "OpenPannelTransform")
@@ -22,6 +22,8 @@ namespace input
             return Action::SelectObject;
         if (str == "MultiSelection")
             return Action::MultiSelection;
+        if (str == "OpenPannelCut")
+            return Action::OpenPannelCut;
         return Action::Unknown;
     }
 } // namespace input

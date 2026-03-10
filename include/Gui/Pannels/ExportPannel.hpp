@@ -61,7 +61,7 @@ namespace gui::panels
             {
                 const float optionsBottom = dropdownY + kDropdownHeight +
                                             kDropdownOptionHeight * (float) kFormatOptions.size();
-                contentBottom             = std::max(contentBottom, optionsBottom);
+                contentBottom = std::max(contentBottom, optionsBottom);
             }
 
             contentBottom += kPad;

@@ -13,11 +13,11 @@ namespace gui::states
         {
             if (!target)
                 continue;
-            const auto offset     = getOffsetFor(target);
-            objects3D::Transform t = target->getTransform();
-            t.rotation.x           = rotX + offset.x;
-            t.rotation.y           = rotY + offset.y;
-            t.rotation.z           = rotZ + offset.z;
+            const auto           offset = getOffsetFor(target);
+            objects3D::Transform t      = target->getTransform();
+            t.rotation.x                = rotX + offset.x;
+            t.rotation.y                = rotY + offset.y;
+            t.rotation.z                = rotZ + offset.z;
             target->setTransform(t);
         }
         captureSelectionOffsets();
@@ -60,7 +60,7 @@ namespace gui::states
         {
             if (!obj)
                 continue;
-            const auto t = obj->getTransform();
+            const auto t          = obj->getTransform();
             rotationOffsets_[obj] = geometry::Vec3(
                 t.rotation.x - refTransform.rotation.x,
                 t.rotation.y - refTransform.rotation.y,

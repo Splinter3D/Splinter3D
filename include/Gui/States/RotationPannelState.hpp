@@ -52,7 +52,7 @@ namespace gui::states
          */
         void resetOnSelectionChange(const splinter3D::events::ObjectSelectedEvent& e);
 
-        void captureSelectionOffsets();
+        void           captureSelectionOffsets();
         geometry::Vec3 getOffsetFor(const scene::SceneObject* obj) const;
 
         std::unordered_map<const scene::SceneObject*, geometry::Vec3> rotationOffsets_;

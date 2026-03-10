@@ -31,11 +31,12 @@ namespace scene
 
         int getSelectedIndex() const;
 
-        SceneObject*                   getSelected();
-        std::vector<SceneObject*>      getSelectedObjects();
+        SceneObject*                    getSelected();
+        std::vector<SceneObject*>       getSelectedObjects();
         std::vector<const SceneObject*> getSelectedObjects() const;
 
         void removeSelected();
+        void splitSelected(float x, float y, float z);
         void duplicateSelected();
 
         std::unique_ptr<geometry::Mesh> getSelectedMesh(bool applyTransform = true);
@@ -59,7 +60,7 @@ namespace scene
         void notifySelectionChanged() const;
 
         std::vector<std::unique_ptr<SceneObject>> _objects;
-        std::set<int>                              _selectedObjectIndices;
+        std::set<int>                             _selectedObjectIndices;
         int                                       _selectedObjectIndex{-1};
 
         friend class Singleton<Scene>;

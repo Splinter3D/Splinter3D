@@ -35,8 +35,8 @@ namespace input
       private:
         struct Binding
         {
-            std::vector<renderer::Key>            keys;
-            std::optional<renderer::MouseButton>  mouseButton;
+            std::vector<renderer::Key>           keys;
+            std::optional<renderer::MouseButton> mouseButton;
         };
 
         bool isBindingTriggered(const Binding& binding, const renderer::IRenderer& renderer) const;
