@@ -4,6 +4,7 @@
 #include "Panels/ListsPanel.hpp"
 #include "Panels/SlidersPanel.hpp"
 #include "Panels/TextPanel.hpp"
+#include "Panels/ViewerPanel.hpp"
 #include "Wx/Ids.hpp"
 #include "Wx/Wx.hpp"
 
@@ -71,6 +72,7 @@ class MainFrame : public wxFrame
         m_notebook->AddPage(new CheckRadioPanel(m_notebook), _("Check / Radio"));
         m_notebook->AddPage(new ListsPanel(m_notebook), _("Lists & Combo"));
         m_notebook->AddPage(new DialogsPanel(m_notebook), _("Dialogs"));
+        m_notebook->AddPage(new ViewerPanel(m_notebook), _("Viewer"));
     }
 
     void BuildMenuBar()
