@@ -1,8 +1,10 @@
 #include <Gui/CenteredToolbar.hpp>
+#include <Gui/Pannels/CutPannel.hpp>
 #include <Gui/Pannels/ExportPannel.hpp>
 #include <Gui/Pannels/RotationPannel.hpp>
 #include <Gui/Pannels/ScalePannel.hpp>
 #include <Gui/Pannels/TransformPannel.hpp>
+#include <Gui/States/CutPannelState.hpp>
 #include <Gui/States/ExportPannelState.hpp>
 #include <Gui/States/RotationPannelState.hpp>
 #include <Gui/States/ScalePannelState.hpp>
@@ -35,7 +37,7 @@ namespace gui
         buttons_.emplace_back(Button::Builder("export")
                                   .icon([&renderer](void* c) { renderer.drawExportIcon(c); })
                                   .pannel(panels::ExportPannel())
-                                  .action([]() { input::InputManager::getInstance().trigger(input::Action::OpenExportPannel); })
+                                  .action([]() { input::InputManager::getInstance().trigger(input::Action::OpenPannelExport); })
                                   .tooltip("Export (Ctrl+E)")
                                   .build(renderer));
 
@@ -61,6 +63,14 @@ namespace gui
                                   .action([]() { input::InputManager::getInstance().trigger(input::Action::OpenPannelScale); })
                                   .tooltip("Scale (Ctrl+S)")
                                   .pannel(pannels::ScalePannel())
+                                  .build(renderer));
+
+        // Cut (has pannel)
+        buttons_.emplace_back(Button::Builder("cut")
+                                  .icon([&renderer](void* c) { renderer.drawSliceIcon(c); })
+                                  .action([]() { input::InputManager::getInstance().trigger(input::Action::OpenPannelCut); })
+                                  .tooltip("Cut (Ctrl+X)")
+                                  .pannel(pannels::CutPannel())
                                   .build(renderer));
 
         for (auto& btn : buttons_)

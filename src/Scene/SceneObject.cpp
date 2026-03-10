@@ -58,6 +58,11 @@ namespace scene
         rObj.setColor(c);
     }
 
+    renderer::Color SceneObject::getColor() const
+    {
+        return rObj.getColor();
+    }
+
     geometry::Mesh* SceneObject::getTransformedMesh() const
     {
         return obj.getTransformedMesh();

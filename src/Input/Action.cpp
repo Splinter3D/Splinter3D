@@ -10,14 +10,16 @@ namespace input
             return Action::DuplicateSelectedObject;
         if (str == "Import")
             return Action::Import;
-        if (str == "OpenExportPannel")
-            return Action::OpenExportPannel;
+        if (str == "OpenPannelExport")
+            return Action::OpenPannelExport;
         if (str == "OpenPannelRotation")
             return Action::OpenPannelRotation;
         if (str == "OpenPannelTransform")
             return Action::OpenPannelTransform;
         if (str == "OpenPannelScale")
             return Action::OpenPannelScale;
+        if (str == "OpenPannelCut")
+            return Action::OpenPannelCut;
         return Action::Unknown;
     }
 } // namespace input

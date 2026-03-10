@@ -32,6 +32,7 @@ namespace scene
         SceneObject* getSelected();
 
         void removeSelected();
+        void splitSelected(float x, float y, float z);
         void duplicateSelected();
 
         std::unique_ptr<geometry::Mesh> getSelectedMesh(bool applyTransform = true)
