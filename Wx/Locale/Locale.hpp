@@ -15,13 +15,13 @@ namespace wx::locale
     class Locale
     {
       public:
-        // Init (or re-init) the locale for the given language code.
+        // Init (or re-init) the Locale for the given language code.
         // Destroys the previous wxLocale instance first so gettext resets cleanly.
         // catalogName  : the .mo file base name  (e.g. "splinter3D")
-        // catalogPath  : folder that contains the locale/ tree (default: "./locale")
+        // catalogPath  : folder that contains the Locale/ tree (default: "./Locale")
         static void init(const std::string& code,
                          const std::string& catalogName = "",
-                         const std::string& catalogPath = "./locale")
+                         const std::string& catalogPath = "./Locale")
         {
             auto& self = get();
             delete self.m_locale;
