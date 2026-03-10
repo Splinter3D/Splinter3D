@@ -7,4 +7,4 @@ namespace splinter3D::events
     {
         std::string buttonId; // "rotation", "transform", "scale"
     };
-}
+} // namespace splinter3D::events

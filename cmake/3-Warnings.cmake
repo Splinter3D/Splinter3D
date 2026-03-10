@@ -12,6 +12,15 @@ function(apply_compiler_warnings target)
                 /wd4251
                 /wd4201
         )
+        # Additional Windows-specific warning suppressions
+        if(WIN32)
+            target_compile_options(${target} PRIVATE
+                    /wd4702
+                    /wd4100
+                    /wd4996
+                    /wd4456
+            )
+        endif()
     elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang")
         target_compile_options(${target} PRIVATE
                 -Wall -Wextra -Werror -Wpedantic

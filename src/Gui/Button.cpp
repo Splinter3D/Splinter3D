@@ -131,14 +131,16 @@ namespace gui
         px             = std::max(4.0f, std::min(px, (float) renderer.getScreenWidth() - kPannelW - 4.0f));
         const float py = y + height + kPannelGap;
 
+        const float measuredHeight = pannelDrawFn_(renderer, px, py, kPannelW);
+        const float pannelHeight   = measuredHeight > 0.0f ? measuredHeight : kPannelH;
+        pannelHeight_              = pannelHeight;
+
         // Shadow
-        renderer.drawRectangle(px + 4.0f, py + 4.0f, kPannelW, kPannelH, renderer::Palette::Muted, renderer::Layer::UI);
+        renderer.drawRectangle(px + 4.0f, py + 4.0f, kPannelW, pannelHeight, renderer::Palette::Muted, renderer::Layer::UI);
 
         // Background + border
-        renderer.drawRectangle(px, py, kPannelW, kPannelH, renderer::Palette::Background, renderer::Layer::UI);
-        renderer.drawRectangleLines(px, py, kPannelW, kPannelH, renderer::Palette::Secondary, renderer::Layer::UI);
-
-        pannelDrawFn_(renderer, px, py, kPannelW, kPannelH);
+        renderer.drawRectangle(px, py, kPannelW, pannelHeight, renderer::Palette::Background, renderer::Layer::UI);
+        renderer.drawRectangleLines(px, py, kPannelW, pannelHeight, renderer::Palette::Secondary, renderer::Layer::UI);
     }
 
 } // namespace gui

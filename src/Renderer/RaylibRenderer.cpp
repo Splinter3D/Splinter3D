@@ -2,6 +2,7 @@
 #include <Renderer/RayGUI.hpp>
 #include <Renderer/RaylibRenderer.hpp>
 #include <Splinter3D/Utils/Logger.hpp>
+#include <Splinter3D/Utils/OSCompatibility.hpp>
 #include <cstdarg>
 #include <cstdio>
 #include <memory>

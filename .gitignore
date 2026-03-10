@@ -47,6 +47,8 @@
 
 # build folder
 /build/
+/staging/
+/output/
 
 # ide folders
 /.idea/
@@ -54,8 +56,12 @@
 # MacOS
 DS_Store
 
+#logs
+.install_logs/*
+
 # Dependencies
 vcpkg/
+vcpkg_installed/
 
 # Locale lang
 ACTIVE_LANG

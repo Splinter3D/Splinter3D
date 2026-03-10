@@ -1,0 +1,164 @@
+name: Build package (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+      runs_on:
+        required: true
+        type: string
+      shell:
+        required: true
+        type: string
+      submodules:
+        required: false
+        type: boolean
+        default: false
+      install_command:
+        required: true
+        type: string
+      build_command:
+        required: true
+        type: string
+      verify_command:
+        required: true
+        type: string
+      package_glob:
+        required: true
+        type: string
+      sha_glob:
+        required: true
+        type: string
+      artifact_name:
+        required: true
+        type: string
+    secrets:
+      token:
+        required: true
+      apple_dev_id_cert_b64:
+        required: false
+      apple_dev_id_cert_pwd:
+        required: false
+      apple_team_id:
+        required: false
+      apple_dev_id_identity:
+        required: false
+      notary_key_b64:
+        required: false
+      notary_key_id:
+        required: false
+      notary_issuer_id:
+        required: false
+
+jobs:
+  build:
+    runs-on: ${{ inputs.runs_on }}
+    env:
+      GITHUB_TOKEN: ${{ secrets.token }}
+      WORKSPACE: ${{ github.workspace }}
+      APPLE_TEAM_ID: ${{ secrets.apple_team_id }}
+      APPLE_DEV_ID_CERT_B64: ${{ secrets.apple_dev_id_cert_b64 }}
+      APPLE_DEV_ID_CERT_PWD: ${{ secrets.apple_dev_id_cert_pwd }}
+      APPLE_DEV_ID_IDENTITY: ${{ secrets.apple_dev_id_identity }}
+      NOTARY_KEY_B64: ${{ secrets.notary_key_b64 }}
+      NOTARY_KEY_ID: ${{ secrets.notary_key_id }}
+      NOTARY_ISSUER_ID: ${{ secrets.notary_issuer_id }}
+    defaults:
+      run:
+        shell: ${{ inputs.shell }}
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: ${{ inputs.submodules }}
+          ref: ${{ inputs.tag }}
+
+      - name: Import signing certificate (macOS)
+        if: runner.os == 'macOS' && env.APPLE_DEV_ID_CERT_B64 != ''
+        run: |
+          echo "$APPLE_DEV_ID_CERT_B64" | base64 --decode > /tmp/dev_id_app.p12
+          security create-keychain -p temp /tmp/build.keychain
+          security import /tmp/dev_id_app.p12 -k /tmp/build.keychain -P "$APPLE_DEV_ID_CERT_PWD" -T /usr/bin/codesign -T /usr/bin/security
+          security set-keychain-settings -lut 21600 /tmp/build.keychain
+          security default-keychain -s /tmp/build.keychain
+          security unlock-keychain -p temp /tmp/build.keychain
+          security set-key-partition-list -S apple-tool:,apple: -s -k temp /tmp/build.keychain
+
+          if [[ -n "${APPLE_DEV_ID_IDENTITY:-}" ]]; then
+            IDENTITY="$APPLE_DEV_ID_IDENTITY"
+          else
+            IDENTITY=$(security find-identity -v -p codesigning /tmp/build.keychain | awk '/Developer ID Application/ {print substr($0, index($0,$3)); exit}')
+          fi
+
+          if [[ -z "$IDENTITY" ]]; then
+            echo "No Developer ID Application identity found" >&2
+            exit 1
+          fi
+
+          echo "CODESIGN_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        run: ${{ inputs.install_command }}
+
+      - name: Build and package
+        run: ${{ inputs.build_command }}
+        env:
+          CODESIGN_IDENTITY: ${{ env.CODESIGN_IDENTITY }}
+
+      - name: Verify package exists
+        run: ${{ inputs.verify_command }}
+
+      - name: Prepare notary key (macOS)
+        if: runner.os == 'macOS' && env.NOTARY_KEY_B64 != ''
+        run: echo "$NOTARY_KEY_B64" | base64 --decode > /tmp/AuthKey.p8
+
+      - name: Notarize DMG (macOS)
+        if: runner.os == 'macOS' && env.NOTARY_KEY_B64 != ''
+        run: |
+          DMG=$(ls ${{ inputs.package_glob }} | head -1)
+          if [[ -z "$DMG" ]]; then
+            echo "No DMG found for notarization" >&2
+            exit 1
+          fi
+          xcrun notarytool submit "$DMG" \
+            --key /tmp/AuthKey.p8 \
+            --key-id "$NOTARY_KEY_ID" \
+            --issuer "$NOTARY_ISSUER_ID" \
+            --wait
+
+      - name: Staple and verify (macOS)
+        if: runner.os == 'macOS' && env.NOTARY_KEY_B64 != ''
+        run: |
+          DMG=$(ls ${{ inputs.package_glob }} | head -1)
+          xcrun stapler staple "$DMG"
+
+          MNT=$(mktemp -d)
+          hdiutil attach "$DMG" -mountpoint "$MNT" -nobrowse -quiet
+          APP_PATH=$(find "$MNT" -maxdepth 2 -name "*.app" -print -quit)
+          if [[ -z "$APP_PATH" ]]; then
+            echo "No .app found inside DMG for assessment" >&2
+            hdiutil detach "$MNT" -quiet || true
+            exit 1
+          fi
+          EXEC=$(find "$APP_PATH/Contents/MacOS" -type f -perm +111 -maxdepth 1 | head -1)
+          if [[ -z "$EXEC" ]]; then
+            echo "No executable found in $APP_PATH/Contents/MacOS" >&2
+            hdiutil detach "$MNT" -quiet || true
+            exit 1
+          fi
+          # Optional checks: stapler validate and best-effort spctl on the DMG. Do not fail if spctl rejects CLI apps.
+          xcrun stapler validate "$DMG"
+          spctl --assess --type open --verbose "$DMG" || echo "spctl DMG assess reported non-fatal error (expected for some CLI bundles)"
+          hdiutil detach "$MNT" -quiet
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: |
+            ${{ inputs.package_glob }}
+            ${{ inputs.sha_glob }}
+          if-no-files-found: error
