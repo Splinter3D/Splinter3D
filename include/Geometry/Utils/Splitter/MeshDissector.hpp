@@ -2,6 +2,7 @@
 
 #include <Geometry/Mesh.hpp>
 #include <Geometry/Vec3.hpp>
+#include <cstdint>
 
 namespace geometry::utils::splitter
 {
@@ -13,10 +14,10 @@ namespace geometry::utils::splitter
         int   priority; // order of execution
     };
 
-    enum class Strategy
+    enum class Strategy : std::uint8_t
     {
-        BIGGER_PIECES,  // fewer, larger pieces (fill the maxPieceSize box as much as possible before cutting)
-        SMALLER_PIECES, // more, smaller pieces (cut as soon as any dimension exceeds maxPieceSize)
+        BIGGER_PIECES  = 0, // fewer, larger pieces (fill the maxPieceSize box as much as possible before cutting)
+        SMALLER_PIECES = 1, // more, smaller pieces (cut as soon as any dimension exceeds maxPieceSize)
     };
 
     struct DissectorConfig

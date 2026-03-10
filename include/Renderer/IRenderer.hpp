@@ -23,7 +23,7 @@ namespace renderer
         int         target_fps{60};
     };
 
-    enum class Key
+    enum class Key : int
     {
         Unknown = -1,
         // Letters — values match Raylib
@@ -64,7 +64,7 @@ namespace renderer
         Alt       = 342,
     };
 
-    enum class MouseButton
+    enum class MouseButton : uint8_t
     {
         Left   = 0,
         Right  = 1,
