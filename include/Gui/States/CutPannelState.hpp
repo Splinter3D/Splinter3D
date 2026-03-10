@@ -25,9 +25,9 @@ namespace gui::states
         bool editZ{false};
 
         /**
-         * Applies the current BedSize values to the selected object in the scene.
+         * Applies the current cut settings to the selected target object in the scene.
          */
-        void applyToTarget();
+        void executeCut();
 
       protected:
         ~CutPannelState() noexcept = default;

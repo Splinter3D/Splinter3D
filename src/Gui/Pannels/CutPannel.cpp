@@ -33,7 +33,6 @@ namespace gui::pannels
         if (state.bedSizeXInput != state.bedSizeX)
         {
             state.bedSizeX = state.bedSizeXInput;
-            state.applyToTarget();
         }
 
         // Y
@@ -45,10 +44,9 @@ namespace gui::pannels
         if (state.bedSizeYInput != state.bedSizeY)
         {
             state.bedSizeY = state.bedSizeYInput;
-            state.applyToTarget();
         }
 
-        // Z
+        // Z Input
         const float xRowZ = xRow + kAxisStepW * 2.0f;
         r.drawRectangle(xRowZ, yRow + 8.0f, kMarkerSize, kMarkerSize, kAxisZ, renderer::Layer::Overlay);
         r.drawText(xRowZ + 12.0f, yRow + 4.0f, "Z", 14, renderer::Layer::Overlay);
@@ -57,8 +55,17 @@ namespace gui::pannels
         if (state.bedSizeZInput != state.bedSizeZ)
         {
             state.bedSizeZ = state.bedSizeZInput;
-            state.applyToTarget();
         }
         fy += 34.0f;
+
+        // ── Cut button ────────────────────────────────────────────────
+        constexpr float kBtnW = 80.0f;
+        constexpr float kBtnH = 24.0f;
+        const float     btnX  = px + kPad;
+        const float     btnY  = fy + kPad;
+
+        r.drawButton(btnX, btnY, kBtnW, kBtnH, "Cut", nullptr, [&state]() { state.executeCut(); }, renderer::Layer::Overlay);
+
+        fy += kBtnH + kPad;
     }
 } // namespace gui::pannels

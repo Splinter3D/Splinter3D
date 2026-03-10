@@ -395,12 +395,13 @@ namespace renderer
     }
 
     void RaylibRenderer::drawButton(float x, float y, float width, float height,
+                                    const std::string&           label,
                                     const renderer::ITexture*    icon,
                                     const std::function<void()>& onClick, Layer layer) const
     {
         Rectangle rect{x, y, width, height};
 
-        if (GuiButton(rect, "")) // Using raygui button detection
+        if (GuiButton(rect, label.c_str())) // Using raygui button detection
         {
             if (onClick)
                 onClick();
@@ -482,10 +483,30 @@ namespace renderer
     void RaylibRenderer::drawSliceIcon(void* canvas)
     {
         Image*        img = static_cast<Image*>(canvas);
-        const ::Color accent{243, 156, 18, 255};
-        ImageDrawRectangle(img, 16, 14, 32, 6, accent);
-        ImageDrawRectangle(img, 16, 26, 32, 6, accent);
-        ImageDrawRectangle(img, 16, 38, 32, 6, accent);
+        const ::Color mesh{180, 180, 180, 255};
+        const ::Color cut{243, 156, 18, 255};
+        const ::Color cutGlow{243, 156, 18, 80};
+
+        // Draw a simple mesh cube outline (left piece)
+        ImageDrawRectangleLines(img, {8, 12, 22, 26}, 2, mesh);
+
+        // Draw right piece slightly offset (split effect)
+        ImageDrawRectangleLines(img, {34, 14, 22, 26}, 2, mesh);
+
+        // Diagonal cut line — thick with glow
+        // Glow layer (wider, transparent)
+        for (int i = -2; i <= 2; i++)
+            ImageDrawLine(img, 28 + i, 8, 36 + i, 52, cutGlow);
+
+        // Core cut line (sharp orange)
+        ImageDrawLine(img, 30, 8, 38, 52, cut);
+        ImageDrawLine(img, 31, 8, 39, 52, cut);
+
+        // Small arrow tips on the cut line to suggest direction
+        ImageDrawLine(img, 30, 8, 26, 14, cut);
+        ImageDrawLine(img, 30, 8, 36, 12, cut);
+        ImageDrawLine(img, 38, 52, 34, 48, cut);
+        ImageDrawLine(img, 38, 52, 44, 46, cut);
     }
 
     void RaylibRenderer::drawPreviewIcon(void* canvas)

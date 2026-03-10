@@ -130,7 +130,7 @@ namespace renderer
         void      drawFloatValueBox(float x, float y, float width, float height, const char* label, float& value, float min, float max, bool& editMode, Layer layer = Layer::UI) const override;
         void      drawCheckbox(float x, float y, float size, const char* label, bool& checked, Layer layer = Layer::UI) const override;
         void      drawTexture(float x, float y, float width, float height, const ITexture* texture, Layer layer = Layer::UI) const override;
-        void      drawButton(float x, float y, float width, float height, const ITexture* icon, const std::function<void()>& onClick, Layer layer = Layer::UI) const override;
+        void      drawButton(float x, float y, float width, float height, const std::string& label, const ITexture* icon, const std::function<void()>& onClick, Layer layer = Layer::UI) const override;
         void      drawPanel(float x, float y, float width, float height, Layer layer = Layer::Overlay) const override;
         void      drawText(float x, float y, const char* text, int fontSize, Layer layer = Layer::UI) const override;
         void*     getCanvas() const override;

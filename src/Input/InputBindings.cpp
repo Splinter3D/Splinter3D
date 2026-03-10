@@ -22,10 +22,11 @@ namespace input
         mgr.registerAction(Action::DeleteSelectedObject, std::make_unique<actions::DeleteSelectedAction>());
         mgr.registerAction(Action::DuplicateSelectedObject, std::make_unique<actions::DuplicateSelectedAction>());
         mgr.registerAction(Action::Import, std::make_unique<actions::ImportAction>());
-        mgr.registerAction(Action::OpenExportPannel, std::make_unique<actions::OpenPannelAction>("export"));
+        mgr.registerAction(Action::OpenPannelExport, std::make_unique<actions::OpenPannelAction>("export"));
         mgr.registerAction(Action::OpenPannelRotation, std::make_unique<actions::OpenPannelAction>("rotation"));
         mgr.registerAction(Action::OpenPannelTransform, std::make_unique<actions::OpenPannelAction>("transform"));
         mgr.registerAction(Action::OpenPannelScale, std::make_unique<actions::OpenPannelAction>("scale"));
+        mgr.registerAction(Action::OpenPannelCut, std::make_unique<actions::OpenPannelAction>("cut"));
 
         // Load key bindings from JSON
         std::ifstream file("assets/keybindings.json");
