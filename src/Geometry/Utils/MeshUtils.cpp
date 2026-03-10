@@ -32,6 +32,10 @@ namespace geometry::utils
                 }
             }
         }
+        bounds.size = Vec3{
+            bounds.max.x - bounds.min.x,
+            bounds.max.y - bounds.min.y,
+            bounds.max.z - bounds.min.z};
         return bounds;
     }
 

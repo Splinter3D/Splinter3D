@@ -23,6 +23,8 @@ namespace gui::states
         bool editX{false};
         bool editY{false};
         bool editZ{false};
+        // Last id of the selected object (used to detect selection changes and reset the bed size values accordingly)
+        int lastSelectedId{-1};
 
         /**
          * Applies the current cut settings to the selected target object in the scene.
@@ -30,9 +32,26 @@ namespace gui::states
         void executeCut();
 
       protected:
+        /**
+         * Constructor that subscribes to ObjectSelectedEvent to reset the base size to match the model size values when the selection changes.
+         */
+        CutPannelState() noexcept
+        {
+            splinter3D::events::EventBus::getInstance()
+                .subscribe<splinter3D::events::ObjectSelectedEvent>(
+                    [this](const splinter3D::events::ObjectSelectedEvent& e) { resetOnSelectionChange(e); });
+        }
+
         ~CutPannelState() noexcept = default;
 
       private:
+        /**
+         * Event handler for ObjectSelectedEvent. Resets the object size values based on the selected object.
+         * If an object is selected (index >= 0), it retrieves the object's current size and updates the bed size values accordingly.
+         * If no object is selected (index -1), it resets the bed size values to 0 for all axes.
+         */
+        void resetOnSelectionChange(const splinter3D::events::ObjectSelectedEvent& e);
+
         friend class Singleton<CutPannelState>;
     };
 } // namespace gui::states

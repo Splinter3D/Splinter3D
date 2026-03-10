@@ -11,6 +11,7 @@ namespace geometry::utils
     {
         geometry::Vec3 min{};
         geometry::Vec3 max{};
+        geometry::Vec3 size{};
         bool           valid{false};
     };
 
