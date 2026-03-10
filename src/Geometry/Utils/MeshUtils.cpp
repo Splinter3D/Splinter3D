@@ -1,7 +1,7 @@
 #include <Geometry/Utils/MeshUtils.hpp>
 #include <raymath.h> // for Vector3 operations
 
-namespace geometry::meshutils
+namespace geometry::utils
 {
     // -----------------------------
     // Mesh bounds computations
@@ -69,4 +69,4 @@ namespace geometry::meshutils
         renderer.setOrbitDistance(distance);
         renderer.setOrbitAngles(0.8f, 0.6f);
     }
-} // namespace geometry::meshutils
+} // namespace geometry::utils

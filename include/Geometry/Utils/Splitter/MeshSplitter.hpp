@@ -32,4 +32,11 @@ namespace geometry::utils::splitter
     std::pair<Mesh, Mesh> splitByPlane(const Mesh&           mesh,
                                        const geometry::Vec3& point,
                                        const geometry::Vec3& normal);
+
+    /**
+     * @brief Splits a mesh into a grid of smaller meshes along axis-aligned planes.
+     * @details This is a wrapper around splitByPlane() that performs multiple splits along
+     * @return A vector of meshes resulting from splitting the input mesh by a 3D grid of planes.
+     */
+    std::vector<Mesh> splitByGrid(const Mesh& mesh, const geometry::Vec3& cellSize);
 } // namespace geometry::utils::splitter

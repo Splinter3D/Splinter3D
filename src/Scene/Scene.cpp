@@ -96,19 +96,14 @@ namespace scene
         std::unique_ptr<SceneObject>& selectedObj = _objects[(size_t) _selectedObjectIndex];
         geometry::Mesh*               mesh        = selectedObj->getObject3D()->getTransformedMesh();
 
-        std::pair<geometry::Mesh, geometry::Mesh> slabs = geometry::utils::splitter::splitByPlane(
-            *mesh,
-            geometry::Vec3{0, 0.5, 0}, // point on plane
-            geometry::Vec3{0, 1, 0}    // normal pointing up
-        );
-        std::vector<geometry::Mesh> slabMeshes{slabs.first, slabs.second};
+        std::vector<geometry::Mesh> slabMeshes = geometry::utils::splitter::splitByGrid(*mesh, geometry::Vec3{x, y, z});
         std::vector<SceneObject>    newObjects = SceneObject::batchBuildFromMeshes(slabMeshes, selectedObj->getColor());
         std::cout << "Split into " << newObjects.size() << " slabs." << std::endl;
         for (int i = 0; i < (int) newObjects.size(); ++i)
         {
             // Position them side by side along the X axis with a gap of 5 units
             newObjects[(size_t) i].setTransform(objects3D::Transform{
-                .position = geometry::Vec3{x + (float) i * 1.0f, y, z},
+                .position = geometry::Vec3{x + (float) i * 1.0f, 0, 0},
                 .rotation = geometry::Vec3{0, 0, 0},
                 .scale    = geometry::Vec3{1, 1, 1},
             });

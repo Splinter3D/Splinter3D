@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace geometry::meshutils
+namespace geometry::utils
 {
     struct MeshBounds
     {
@@ -25,4 +25,4 @@ namespace geometry::meshutils
 
     // Move the camera to frame the mesh
     void frameCameraOnMesh(renderer::IRenderer& renderer, const MeshBounds& bounds);
-} // namespace geometry::meshutils
+} // namespace geometry::utils

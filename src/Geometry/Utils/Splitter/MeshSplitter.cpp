@@ -1,3 +1,4 @@
+#include <Geometry/Utils/Splitter/MeshDissector.hpp>
 #include <Geometry/Utils/Splitter/MeshSplitter.hpp>
 #include <Splinter3D/Utils/Logger.hpp>
 #include <cmath>
@@ -223,7 +224,7 @@ namespace geometry::utils::splitter
         Mesh                               above, below; // output meshes for the two halves
         std::vector<std::pair<Vec3, Vec3>> cutEdges;     // edges along the cut plane, used to build the cap
 
-        splinter3D::utils::Logger::getInstance().clog("[MeshSplitter] Splitting ", mesh.triangles.size(), " triangles\n");
+        // splinter3D::utils::Logger::getInstance().clog("[MeshSplitter] Splitting ", mesh.triangles.size(), " triangles\n");
 
         for (const auto& tri : mesh.triangles)
         {
@@ -350,11 +351,43 @@ namespace geometry::utils::splitter
         // Seal both mesh halves by filling the cross-section polygon(s)
         addCap(above, below, cutEdges, normal);
 
-        splinter3D::utils::Logger::getInstance().clog(
-            "[MeshSplitter] Done — above: ", above.triangles.size(),
-            " below: ", below.triangles.size(), " triangles\n");
+        // splinter3D::utils::Logger::getInstance().clog(
+        //     "[MeshSplitter] Done — above: ", above.triangles.size(),
+        //     " below: ", below.triangles.size(), " triangles\n");
 
         return {above, below};
+    }
+
+    std::vector<Mesh> splitByGrid(const Mesh& mesh, const Vec3& cellSize)
+    {
+        const DissectorConfig config{cellSize, Strategy::BIGGER_PIECES};
+        auto                  cutOrders = MeshDissector::getCutOrder(const_cast<Mesh&>(mesh), config);
+
+        std::vector<Mesh> pieces{mesh};
+
+        for (const auto& cut : cutOrders)
+        {
+            std::vector<Mesh> newPieces;
+
+            for (const auto& piece : pieces)
+            {
+                auto [above, below] = splitByPlane(piece, cut.planePoint, cut.planeNormal);
+                if (!above.triangles.empty())
+                    newPieces.push_back(above);
+                if (!below.triangles.empty())
+                    newPieces.push_back(below);
+            }
+
+            pieces = std::move(newPieces);
+        }
+        for (const auto& cut : cutOrders)
+        {
+            splinter3D::utils::Logger::getInstance().clog(
+                "[MeshSplitter] Cut at plane (", cut.planePoint.x, ", ", cut.planePoint.y, ", ", cut.planePoint.z,
+                ") with normal (", cut.planeNormal.x, ", ", cut.planeNormal.y, ", ", cut.planeNormal.z,
+                ") → pieces: ", pieces.size(), "\n");
+        }
+        return pieces;
     }
 
 } // namespace geometry::utils::splitter
