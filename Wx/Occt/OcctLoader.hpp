@@ -1,20 +1,7 @@
 #pragma once
 
-// ─────────────────────────────────────────────
-//  wx::vtk::OcctLoader
-//
-//  Lit les fichiers CAD (STP/STEP/STL/IGES) et
-//  retourne soit un TopoDS_Shape (pour OCCT/AIS)
-//  soit un LoadResult avec vtkPolyData (si VTK actif).
-//
-//  Utilisé par OcctCanvas (option C, sans VTK).
-// ─────────────────────────────────────────────
-
-#include <BRepMesh_IncrementalMesh.hxx>
 #include <BRep_Builder.hxx>
-#include <BRep_Tool.hxx>
 #include <IGESControl_Reader.hxx>
-#include <Poly_Triangulation.hxx>
 #include <STEPControl_Reader.hxx>
 #include <StlAPI_Reader.hxx>
 #include <TopoDS_Shape.hxx>
@@ -22,30 +9,24 @@
 #include <stdexcept>
 #include <string>
 
-namespace wx::vtk
+namespace wx::occt
 {
 
     class OcctLoader
     {
       public:
-        double linearDeflection  = 0.1;
-        double angularDeflection = 0.5;
-
-        // Retourne la shape OCCT brute — pour OcctCanvas (AIS)
-        TopoDS_Shape loadShape(const std::string& path)
+        // Retourne la shape OCCT — supporte STL (bin+ascii) et STEP
+        TopoDS_Shape load(const std::string& path)
         {
             const std::string ext = toLower(
                 std::filesystem::path(path).extension().string());
 
             if (ext == ".stp" || ext == ".step")
                 return loadStep(path);
-            if (ext == ".igs" || ext == ".iges")
-                return loadIges(path);
             if (ext == ".stl")
                 return loadStl(path);
 
-            throw std::runtime_error(
-                "OcctLoader: extension non supportée: " + ext);
+            throw std::runtime_error("Format non supporté : " + ext);
         }
 
       private:
@@ -53,18 +34,7 @@ namespace wx::vtk
         {
             STEPControl_Reader reader;
             if (reader.ReadFile(path.c_str()) != IFSelect_RetDone)
-                throw std::runtime_error(
-                    "OcctLoader: échec lecture STEP: " + path);
-            reader.TransferRoots();
-            return reader.OneShape();
-        }
-
-        TopoDS_Shape loadIges(const std::string& path)
-        {
-            IGESControl_Reader reader;
-            if (reader.ReadFile(path.c_str()) != IFSelect_RetDone)
-                throw std::runtime_error(
-                    "OcctLoader: échec lecture IGES: " + path);
+                throw std::runtime_error("Échec lecture STEP : " + path);
             reader.TransferRoots();
             return reader.OneShape();
         }
@@ -74,18 +44,18 @@ namespace wx::vtk
             TopoDS_Shape  shape;
             BRep_Builder  builder;
             StlAPI_Reader reader;
+            // StlAPI_Reader gère automatiquement binaire et ASCII
             if (!reader.Read(shape, path.c_str()))
-                throw std::runtime_error(
-                    "OcctLoader: échec lecture STL: " + path);
+                throw std::runtime_error("Échec lecture STL : " + path);
             return shape;
         }
 
         static std::string toLower(std::string s)
         {
             for (auto& c : s)
-                c = static_cast<char>(std::tolower(c));
+                c = (char) std::tolower(c);
             return s;
         }
     };
 
-} // namespace wx::vtk
+} // namespace wx::occt
