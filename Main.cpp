@@ -113,8 +113,6 @@ class MainFrame : public wxFrame
         wx::events::BindEvents eventsBinder(this);
         eventsBinder.bindAll(g_switchLanguage);
     }
-
-    // Event binding is handled by Wx/Events/BindEvents (see BuildMenuBar)
 };
 
 // ─────────────────────────────────────────────

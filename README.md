@@ -35,7 +35,7 @@ g++ Main.cpp `wx-config --cxxflags --libs`
 │   │   └── TextInput.hpp
 │   ├── Events                  // Directory of custom event handling for the application (binding of Font/Lang changes etc.)
 │   └── Wx.hpp                  // Main header file for the WxWidgets wrapper
-└── locale                      // Directory for different translations (.mo -> compiled translations, .po -> source translations)
+└── Locale                      // Directory for translations (.mo -> compiled translations, .po -> source translations)
     ├── de
     │   └── LC_MESSAGES
     │       ├── splinter3D.mo
