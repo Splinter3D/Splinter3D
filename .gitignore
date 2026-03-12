@@ -5,6 +5,7 @@
 
 # Prerequisites
 *.d
+.cache/
 
 # Compiled Object files
 *.slo
@@ -54,7 +55,7 @@
 /.idea/
 
 # MacOS
-DS_Store
+.DS_Store
 
 #logs
 .install_logs/*
