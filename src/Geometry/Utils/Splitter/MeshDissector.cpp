@@ -7,7 +7,7 @@ namespace geometry::utils::splitter
     std::vector<CutOrder> MeshDissector::getCutOrder(Mesh& mesh, const DissectorConfig& config)
     {
         geometry::utils::MeshBounds bounds = geometry::utils::computeMeshBounds(mesh);
-        if (!bounds.valid)
+        if (!bounds.valid || config.maxPieceSize.x <= 0 || config.maxPieceSize.y <= 0 || config.maxPieceSize.z <= 0)
         {
             return {};
         }
