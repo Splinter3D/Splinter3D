@@ -65,13 +65,13 @@ jobs:
               }
     uses: ./.github/workflows/reusable-build.yml
     with:
-      tag: ${{ github.head_ref || github.ref_name }}
       runs_on: ${{ matrix.runs_on }}
       shell: ${{ matrix.shell }}
       submodules: ${{ matrix.submodules }}
       install_command: ${{ matrix.install_command }}
       build_command: ${{ matrix.build_command }}
       verify_command: ${{ matrix.verify_command }}
+      build_only: true
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
       apple_dev_id_cert_b64: ${{ secrets.APPLE_DEV_ID_CERT_B64 }}
