@@ -10,11 +10,11 @@ jobs:
   if: ${{ github.head_ref != 'dev' && !startsWith(github.head_ref, 'hotfix/') }}
     runs-on: ubuntu-22.04
     steps:
-      - name: Close PR if not from dev branch
+      - name: Close PR if not from dev or hotfix branch
         uses: peter-evans/close-pull-request@v3
         with:
           pull-request-number: ${{ github.event.pull_request.number }}
-          comment: "This PR is closed because it is not from the 'dev' branch. Please create a PR from the 'dev' branch to 'main'."
+          comment: "This PR is closed because it is not from the 'dev' or 'hotfix/' branches. Please create a PR from the 'dev' or 'hotfix/' branch to 'main'."
           delete-branch: false
  
   prepare:
