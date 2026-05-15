@@ -13,7 +13,7 @@ jobs:
       - name: Close PR if not from dev or hotfix branch
         run: |
           echo "This PR is not from the 'dev' or 'hotfix/' branches."
-          gh pr close ${{ github.event.pull_request.number }} --comment "This PR is closed because it is not from the 'dev' or 'hotfix/' branches. Please create a PR from the 'dev' or 'hotfix/' branch to 'main'." --delete-branch false
+          gh pr close ${{ github.event.pull_request.number }} --comment "This PR is closed because it is not from the 'dev' or 'hotfix/' branches. Please create a PR from the 'dev' or 'hotfix/' branch to 'main'."
  
   prepare:
     needs: close-invalid-pr
