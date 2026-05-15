@@ -2,6 +2,7 @@ param(
   [string]$ProjectRoot = (Get-Location).Path,
   [string]$BuildDirName = 'build',
   [string]$Triplet = 'x64-windows',
+  [string]$VSversion = '17 2022',
   [string]$Config = 'Release',
   [string]$OutDirName = 'output',
   [switch]$DevMode = $false
@@ -31,6 +32,7 @@ function Run-As-Administrator {
     if ($Config) { $args += '-Config'; $args += $Config }
     if ($OutDirName) { $args += '-OutDirName'; $args += $OutDirName }
     if ($DevMode) { $args += '-DevMode' }
+    if ($VSversion) { $args += '-VSversion'; $args += $VSversion }
     Start-Process -FilePath powershell -ArgumentList $args -Verb RunAs -Wait
     exit
   }
@@ -175,7 +177,7 @@ if (-not (Get-Command msgfmt -ErrorAction SilentlyContinue)) {
 }
 
 # Configure CMake
-$cmakeArgs = @('-S', $ProjectRoot, '-B', $buildDir, '-G', 'Visual Studio 17 2022', '-A', 'x64')
+$cmakeArgs = @('-S', $ProjectRoot, '-B', $buildDir, '-G', "Visual Studio $VSversion", '-A', 'x64')
 if (Test-Path $vcpkgToolchain) { $cmakeArgs += "-DCMAKE_TOOLCHAIN_FILE=$vcpkgToolchain" }
 if ($cmakeToolPaths) { $cmakeArgs += $cmakeToolPaths }
 
@@ -235,7 +237,7 @@ if (-not $ProjectRoot -or $ProjectRoot -match '^-') { Fail "Invalid ProjectRoot:
 # Call the packaging script using explicit named parameters to avoid
 # ambiguity when passing arguments through arrays or quoting layers.
 try {
-  & $packageScript -ProjectRoot $ProjectRoot -BuildDirName $BuildDirName -Triplet $Triplet -OutDirName $OutDirName
+  & $packageScript -ProjectRoot $ProjectRoot -BuildDirName $BuildDirName -Triplet $Triplet -OutDirName $OutDirName -DevMode:$DevMode 
   $packageExitCode = $LASTEXITCODE
   if ($packageExitCode -ne 0) {
     Write-Error "Packaging script exited with code: $packageExitCode"
