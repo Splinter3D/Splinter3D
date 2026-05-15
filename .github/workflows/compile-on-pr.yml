@@ -6,7 +6,19 @@ on:
       - main
 
 jobs:
+  close-invalid-pr:
+  if: ${{ github.head_ref != 'dev' && !startsWith(github.head_ref, 'hotfix/') }}
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Close PR if not from dev branch
+        uses: peter-evans/close-pull-request@v3
+        with:
+          pull-request-number: ${{ github.event.pull_request.number }}
+          comment: "This PR is closed because it is not from the 'dev' branch. Please create a PR from the 'dev' branch to 'main'."
+          delete-branch: false
+ 
   prepare:
+    needs: close-invalid-pr
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
