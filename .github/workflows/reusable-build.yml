@@ -26,14 +26,21 @@ on:
         required: true
         type: string
       package_glob:
-        required: true
+        required: false
         type: string
+        default: ''
       sha_glob:
-        required: true
+        required: false
         type: string
+        default: ''
       artifact_name:
-        required: true
+        required: false
         type: string
+        default: ''
+      build_only:
+        required: false
+        type: boolean
+        default: false
     secrets:
       token:
         required: true
@@ -112,11 +119,11 @@ jobs:
         run: ${{ inputs.verify_command }}
 
       - name: Prepare notary key (macOS)
-        if: runner.os == 'macOS' && env.NOTARY_KEY_B64 != ''
+        if: runner.os == 'macOS' && env.NOTARY_KEY_B64 != '' && !inputs.build_only
         run: echo "$NOTARY_KEY_B64" | base64 --decode > /tmp/AuthKey.p8
 
       - name: Notarize DMG (macOS)
-        if: runner.os == 'macOS' && env.NOTARY_KEY_B64 != ''
+        if: runner.os == 'macOS' && env.NOTARY_KEY_B64 != '' && !inputs.build_only
         run: |
           DMG=$(ls ${{ inputs.package_glob }} | head -1)
           if [[ -z "$DMG" ]]; then
@@ -130,7 +137,7 @@ jobs:
             --wait
 
       - name: Staple and verify (macOS)
-        if: runner.os == 'macOS' && env.NOTARY_KEY_B64 != ''
+        if: runner.os == 'macOS' && env.NOTARY_KEY_B64 != '' && !inputs.build_only
         run: |
           DMG=$(ls ${{ inputs.package_glob }} | head -1)
           xcrun stapler staple "$DMG"
@@ -155,6 +162,7 @@ jobs:
           hdiutil detach "$MNT" -quiet
 
       - name: Upload artifacts
+        if: inputs.package_glob != '' && inputs.sha_glob != '' && inputs.artifact_name != '' && !inputs.build_only
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.artifact_name }}
