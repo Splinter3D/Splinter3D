@@ -13,16 +13,23 @@ jobs:
     runs-on: ubuntu-22.04
     if: ${{ github.head_ref != 'dev' && !startsWith(github.head_ref, 'hotfix/') }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Close PR if not from dev or hotfix branch
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          token: ${{ secrets.PAT_REJECT_PROTOTYPE_PR }}
+
+      - name: Close PR using gh
         run: |
-          echo "This PR is not from the 'dev' or 'hotfix/' branches."
-          gh pr close ${{ github.event.pull_request.number }} --comment "This PR is closed because it is not from the 'dev' or 'hotfix/' branches. Please create a PR from the 'dev' or 'hotfix/' branch to 'main'."
+          echo "Closing invalid PR..."
+          gh pr close ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --comment "This PR must come from 'dev' or 'hotfix/*'."
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PAT_REJECT_PROTOTYPE_PR }}
 
   prepare:
-    needs: close-invalid-pr
+    if: ${{ github.head_ref == 'dev' || startsWith(github.head_ref, 'hotfix/') }}
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
@@ -31,6 +38,7 @@ jobs:
           fetch-depth: 0
 
   build:
+    if: ${{ github.head_ref == 'dev' || startsWith(github.head_ref, 'hotfix/') }}
     needs: prepare
     strategy:
       fail-fast: false
