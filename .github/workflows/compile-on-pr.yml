@@ -1,0 +1,83 @@
+name: Compile on PR onto main (matrix)
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  prepare:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+  build:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os_name: linux
+            runs_on: ubuntu-22.04
+            shell: bash
+            submodules: true
+            install_command: ./.github/workflows/scripts/Linux/install.sh "$WORKSPACE"
+            build_command: ./.github/workflows/scripts/Linux/build.sh "$WORKSPACE"
+            verify_command: |
+              package=$(ls output/splinter3D-*-linux-x64.tar.xz 2>/dev/null | head -1)
+              if [ -z "$package" ]; then
+                echo "ERROR: No Linux package found"
+                exit 1
+              fi
+              echo "Found package: $package"
+              ls -lh "$package" "$package".sha256
+          - os_name: macos
+            runs_on: macos-latest
+            shell: bash
+            submodules: true
+            install_command: ./.github/workflows/scripts/MacOS/install.sh "$WORKSPACE"
+            build_command: ./.github/workflows/scripts/MacOS/build.sh "$WORKSPACE"
+            verify_command: |
+              package=$(ls output/splinter3D-*-macos-*.dmg 2>/dev/null | head -1)
+              if [ -z "$package" ]; then
+                echo "ERROR: No macOS package found"
+                exit 1
+              fi
+              echo "Found package: $package"
+              ls -lh "$package" "$package".sha256
+          - os_name: windows
+            runs_on: windows-latest
+            shell: pwsh
+            submodules: false
+            install_command: pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/Windows/install.ps1 $env:WORKSPACE
+            build_command: pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/Windows/build.ps1 $env:WORKSPACE
+            verify_command: |
+              $zip = Get-ChildItem -Path "$env:WORKSPACE/output" -Filter 'splinter3D-*-windows-*.zip' -ErrorAction SilentlyContinue | Select-Object -First 1
+              if ($zip) {
+                Write-Host "Found package: $($zip.FullName)"
+                Write-Host "Package size: $($zip.Length) bytes"
+              } else {
+                Write-Error 'No splinter3D-*-windows-*.zip package found'
+                exit 1
+              }
+    uses: ./.github/workflows/reusable-build.yml
+    with:
+      tag: ${{ github.head_ref || github.ref_name }}
+      runs_on: ${{ matrix.runs_on }}
+      shell: ${{ matrix.shell }}
+      submodules: ${{ matrix.submodules }}
+      install_command: ${{ matrix.install_command }}
+      build_command: ${{ matrix.build_command }}
+      verify_command: ${{ matrix.verify_command }}
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
+      apple_dev_id_cert_b64: ${{ secrets.APPLE_DEV_ID_CERT_B64 }}
+      apple_dev_id_cert_pwd: ${{ secrets.APPLE_DEV_ID_CERT_PWD }}
+      apple_team_id: ${{ secrets.APPLE_TEAM_ID }}
+      apple_dev_id_identity: ${{ secrets.APPLE_DEV_ID_IDENTITY }}
+      notary_key_b64: ${{ secrets.NOTARY_KEY_B64 }}
+      notary_key_id: ${{ secrets.NOTARY_KEY_ID }}
+      notary_issuer_id: ${{ secrets.NOTARY_ISSUER_ID }}
