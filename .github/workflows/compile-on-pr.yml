@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-22.04
     if: ${{ github.head_ref != 'dev' && !startsWith(github.head_ref, 'hotfix/') }}
     steps:
+      - uses: actions/checkout@v4
       - name: Close PR if not from dev or hotfix branch
         run: |
           echo "This PR is not from the 'dev' or 'hotfix/' branches."
