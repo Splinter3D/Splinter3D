@@ -14,7 +14,9 @@ jobs:
         run: |
           echo "This PR is not from the 'dev' or 'hotfix/' branches."
           gh pr close ${{ github.event.pull_request.number }} --comment "This PR is closed because it is not from the 'dev' or 'hotfix/' branches. Please create a PR from the 'dev' or 'hotfix/' branch to 'main'."
- 
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   prepare:
     needs: close-invalid-pr
     runs-on: ubuntu-22.04
