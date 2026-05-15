@@ -65,6 +65,7 @@ jobs:
               }
     uses: ./.github/workflows/reusable-build.yml
     with:
+      tag: ${{ github.head_ref }}
       runs_on: ${{ matrix.runs_on }}
       shell: ${{ matrix.shell }}
       submodules: ${{ matrix.submodules }}
