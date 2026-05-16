@@ -27,22 +27,29 @@ namespace scene
 
     void Scene::handleClick(const geometry::Ray& ray)
     {
+        std::vector<std::pair<int, float>> hitObjects; // Pair of the index of the hit object and its distance from the ray origin
         for (auto& obj : _objects)
         {
             obj->setColor({255, 255, 255, 255}); // Reset color of all objects
         }
         for (int i = 0; i < (int) _objects.size(); ++i)
         {
-            if (_objects[(size_t) i]->isHit(ray))
+            auto hitDistance = _objects[(size_t) i]->getHitDistance(ray);
+            if (hitDistance.has_value())
             {
-                _selectedObjectIndex     = i;
-                _lastSelectedObjectIndex = i;
-                _objects[(size_t) _selectedObjectIndex]->setColor({255, 0, 0, 255}); // Highlight the selected object
-
-                splinter3D::events::EventBus::getInstance()
-                    .publish(splinter3D::events::ObjectSelectedEvent{i});
-                return;
+                hitObjects.emplace_back(i, hitDistance.value());
             }
+        }
+        if (!hitObjects.empty())
+        {
+            sort(hitObjects.begin(), hitObjects.end(), [](const auto& a, const auto& b) { return a.second < b.second; }); // Sort by distance
+            int closestIndex         = hitObjects.front().first;
+            _selectedObjectIndex     = closestIndex;
+            _lastSelectedObjectIndex = closestIndex;
+            _objects[(size_t) _selectedObjectIndex]->setColor({255, 0, 0, 255}); // Highlight the selected object
+            splinter3D::events::EventBus::getInstance()
+                .publish(splinter3D::events::ObjectSelectedEvent{_selectedObjectIndex});
+            return;
         }
         _selectedObjectIndex = _lastSelectedObjectIndex; // Keeping the last selected if no new object is hit
         if (_selectedObjectIndex >= 0 && _selectedObjectIndex < (int) _objects.size())
