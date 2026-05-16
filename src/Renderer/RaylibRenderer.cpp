@@ -321,6 +321,9 @@ namespace renderer
             Vector2 delta = GetMouseDelta();
             impl_->yaw -= delta.x * 0.01f;
             impl_->pitch -= delta.y * 0.01f;
+
+            constexpr float MAX_PITCH = 1.5533f; // ~89°, just under π/2
+            impl_->pitch              = std::clamp(impl_->pitch, -MAX_PITCH, MAX_PITCH);
         }
 
         impl_->distance -= GetMouseWheelMove();
