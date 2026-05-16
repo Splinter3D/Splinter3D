@@ -59,10 +59,10 @@ namespace scene
             return objects;
         }
 
-        void            draw(renderer::IRenderer& renderer) const;
-        bool            isHit(const geometry::Ray& ray);
-        void            setColor(const renderer::Color& c);
-        renderer::Color getColor() const;
+        void                 draw(renderer::IRenderer& renderer) const;
+        std::optional<float> getHitDistance(const geometry::Ray& ray);
+        void                 setColor(const renderer::Color& c);
+        renderer::Color      getColor() const;
 
         objects3D::Object3D* getObject3D();
         objects3D::Transform getTransform() const;
