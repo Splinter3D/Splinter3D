@@ -21,13 +21,14 @@ namespace gui::states
             auto* selected = scene::Scene::getInstance().getSelected();
             if (selected)
             {
-                geometry::utils::MeshBounds bounds = geometry::utils::computeMeshBounds(*selected->getTransformedMesh());
-                bedSizeX                           = bounds.size.x;
-                bedSizeY                           = bounds.size.y;
-                bedSizeZ                           = bounds.size.z;
-                bedSizeXInput                      = bounds.size.x;
-                bedSizeYInput                      = bounds.size.y;
-                bedSizeZInput                      = bounds.size.z;
+                geometry::BBox bounds = geometry::BBox(*selected->getTransformedMesh());
+                geometry::Vec3 size   = bounds.getSize();
+                bedSizeX              = size.x;
+                bedSizeY              = size.y;
+                bedSizeZ              = size.z;
+                bedSizeXInput         = size.x;
+                bedSizeYInput         = size.y;
+                bedSizeZInput         = size.z;
                 std::cout << "Selected object bounds: " << bedSizeX << " x " << bedSizeY << " x " << bedSizeZ << std::endl;
             }
         }
