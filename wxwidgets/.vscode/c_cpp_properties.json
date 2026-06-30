@@ -1,0 +1,45 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                // ── Compiler builtins ─────────────────────────────────
+                "/usr/include",
+                "/usr/include/c++/11",
+                "/usr/include/x86_64-linux-gnu/c++/11",
+
+                // ── wxWidgets 3.2 (3.0 entries removed) ──────────────
+                "/usr/include/wx-3.2",
+                "/usr/lib/x86_64-linux-gnu/wx/include/gtk3-unicode-3.2",
+
+                // ── GTK3 + dependencies ───────────────────────────────
+                "/usr/include/gtk-3.0",
+                "/usr/include/glib-2.0",
+                "/usr/lib/x86_64-linux-gnu/glib-2.0/include",
+                "/usr/include/pango-1.0",
+                "/usr/include/cairo",
+                "/usr/include/gdk-pixbuf-2.0",
+                "/usr/include/harfbuzz",
+                "/usr/include/atk-1.0",
+                "/usr/include/freetype2",
+                "/usr/include/fribidi",
+                "/usr/include/gio-unix-2.0",
+                "/usr/include/libpng16",
+                "/usr/include/pixman-1",
+                "/usr/lib/x86_64-linux-gnu/dbus-1.0/include",
+
+                // ── OpenCASCADE ───────────────────────────────────────
+                "/usr/include/opencascade"
+            ],
+            "defines": [
+                "SPLINTER3D_DEBUG=0",
+                "__WXGTK__",
+                "wxUSE_GUI=1",
+                "OCC_CONVERT_SIGNALS"
+            ],
+            "compilerPath": "/usr/bin/g++",
+            "cppStandard": "c++23"
+        }
+    ],
+    "version": 4
+}

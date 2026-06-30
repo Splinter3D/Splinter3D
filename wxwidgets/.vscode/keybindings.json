@@ -1,0 +1,8 @@
+[
+  {
+    "key": "ctrl+shift+alt+d",
+    "command": "workbench.action.tasks.runTask",
+    "args": "Build Project",
+    "when": "true"
+  }
+]
