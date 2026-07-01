@@ -2,6 +2,7 @@
 #include <Objects3D/Object3D.hpp>
 #include <Renderer/Color.hpp>
 #include <Renderer/RenderObject.hpp> // needs full definition as member
+#include <optional>
 
 namespace renderer
 {
