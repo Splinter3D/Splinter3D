@@ -4,8 +4,7 @@ find_package(glfw3 CONFIG REQUIRED)
 find_package(raylib CONFIG REQUIRED)
 find_package(nfd CONFIG REQUIRED)
 
-# fix: removes duplicate link libraries for raylib when using vcpkg
-if(TARGET raylib)
+if(WIN32 AND TARGET raylib)
     set_property(TARGET raylib PROPERTY INTERFACE_LINK_LIBRARIES "")
 endif()
 
