@@ -49,15 +49,16 @@ def choose_build_system() -> BuildSystem:
             logger.info("Using CMAKE_GENERATOR=Visual Studio")
             return BuildSystem.VISUAL_STUDIO
 
+    if get_platform() == Platform.WINDOWS:
+        logger.info("Defaulting to Visual Studio generator on Windows.")
+        return BuildSystem.VISUAL_STUDIO
+
     if shutil.which("ninja"):
         logger.info("Ninja build system found.")
         return BuildSystem.NINJA
     if shutil.which("make"):
         logger.info("Make build system found.")
         return BuildSystem.MAKE
-    if get_platform() == Platform.WINDOWS:
-        logger.info("Defaulting to Visual Studio generator on Windows.")
-        return BuildSystem.VISUAL_STUDIO
 
     logger.error("No suitable build system found. Please install Ninja or Make.")
     raise RuntimeError("No suitable build system found. Please install Ninja or Make.")
@@ -107,8 +108,20 @@ def run_build_tool(build_system: BuildSystem | None, target: str, build_type: st
         logger.info(f"DRY RUN: {' '.join(command)}")
         return
     try:
-        subprocess.run(command, check=True)
+        subprocess.run(
+            command,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
     except subprocess.CalledProcessError as e:
+        stdout = (e.stdout or "").strip()
+        stderr = (e.stderr or "").strip()
+        if stdout:
+            logger.error(f"Build stdout:\n{stdout}")
+        if stderr:
+            logger.error(f"Build stderr:\n{stderr}")
         logger.error(f"Build command failed: {e}")
         raise RuntimeError(f"Build command failed: {e}")
     logger.info(f"Succesfully built {target}.")

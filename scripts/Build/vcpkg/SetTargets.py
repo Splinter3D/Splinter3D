@@ -5,18 +5,18 @@ from Platform import get_platform, Platform, PLATFORM_TO_STRING, get_arch, Arch
 
 __all__ = ["set_vcpkg_targets"]
 
-__TRIPLET_ARCH_MAPPING = {
+_TRIPLET_ARCH_MAPPING = {
     Arch.X86: "x86",
     Arch.X64: "x64",
     Arch.aarch: "arm",
     Arch.aarch64: "arm64"
 }
 
-def __get_triplet() -> str:
+def _get_triplet() -> str:
     logger.info("Determining vcpkg triplet...")
     triplet = None
     platform = get_platform()
-    arch = __TRIPLET_ARCH_MAPPING.get(get_arch())
+    arch = _TRIPLET_ARCH_MAPPING.get(get_arch())
     if arch is None:
         raise RuntimeError(f"Unsupported architecture for vcpkg triplet: {get_arch()}")
     match platform:
@@ -35,7 +35,7 @@ def __get_triplet() -> str:
 def set_vcpkg_targets() -> list[str]:
     logger.info("Setting vcpkg targets...")
     vcpkg_root = install_vcpkg()
-    triplet = __get_triplet()
+    triplet = _get_triplet()
     cmake_toolchain_file = os.path.join(vcpkg_root, "scripts", "buildsystems", "vcpkg.cmake")
     if not os.path.isfile(cmake_toolchain_file):
         logger.info(f"vcpkg toolchain file not found at {cmake_toolchain_file}; vcpkg integration skipped.")

@@ -41,4 +41,7 @@ def main():
     logger.info("Build process completed successfully.")
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        exit(1)

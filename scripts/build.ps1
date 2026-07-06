@@ -10,15 +10,12 @@ if (-not (Get-Command python -ErrorAction SilentlyContinue) -and
     exit 1
 }
 
-if (-not (Get-Command poetry -ErrorAction SilentlyContinue)) {
-    Write-Host "Poetry is not installed. Please install Poetry to continue."
-    exit 1
-}
-
 $Python = if (Get-Command python3 -ErrorAction SilentlyContinue) {
     "python3"
 } else {
     "python"
 }
 
-poetry run -P "$ScriptDir/Build" -C "$ScriptDir/.." $Python scripts/Build/build.py @args
+cd $ScriptDir\..
+
+& $Python ./scripts/Build/build.py @args

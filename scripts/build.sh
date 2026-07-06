@@ -9,9 +9,6 @@ if ! command -v python3 &> /dev/null; then
     exit 1
 fi
 
-if ! command -v poetry &> /dev/null; then
-    echo "Poetry is not installed. Please install Poetry to continue."
-    exit 1
-fi
+cd "$SCRIPT_DIR/.." || exit 1
 
-poetry run -P "$SCRIPT_DIR/Build" -C "$SCRIPT_DIR/.." python3 scripts/Build/build.py "$@"
+python3 scripts/Build/build.py "$@"

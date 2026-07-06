@@ -41,6 +41,8 @@ class Logger:
 
     @classmethod
     def debug(cls, message: str):
+        if (cls.Config.debug is not True):
+            return
         filename, lineno = cls.get_frame_info()
         cls._emit(message, cls.Level.DEBUG, filename, lineno)
 

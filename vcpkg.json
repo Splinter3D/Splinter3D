@@ -1,7 +1,7 @@
 {
   "name": "prototype",
   "version": "1.0.0",
-  "builtin-baseline": "71564059eef734919d637badaed57258d62087a1",
+  "builtin-baseline": "fab1c6dc7a944372a90a1e19ab5e8e32cd658fc2",
   "dependencies": [
     "raylib",
     "glfw3",
