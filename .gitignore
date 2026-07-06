@@ -72,3 +72,7 @@ ACTIVE_LANG
 !/scripts/
 !/scripts/build.sh.d
 !/scripts/style.sh.d
+!/scripts/Build/vcpkg
+
+# Python cache
+__pycache__/
