@@ -16,7 +16,7 @@ def build_existing_target(target: str):
     cwd = os.getcwd()
     try:
         os.chdir(build_dir)
-        build_type = "Debug" if args.debug or target == "splinter3D_unit_tests" else "Release"
+        build_type = "Debug" if args.debug_build or args.debug or target == "splinter3D_unit_tests" else "Release"
         run_build_tool(None, target, build_type)
     finally:
         os.chdir(cwd)
