@@ -136,7 +136,6 @@ if ($SetupMSVC) {
 
 ## Install dependencies using manifest mode when a vcpkg.json manifest exists.
 $jsonPath = Join-Path $ProjectRoot 'vcpkg.json'
-## Ensure required external tools (cmake, msgfmt) are present or try to install via winget
 function Ensure-Command-With-Winget([string]$cmd, [string]$wingetId) {
   try {
     if (Get-Command $cmd -ErrorAction SilentlyContinue) { Log-Info "$cmd present"; return $true }
@@ -203,8 +202,6 @@ function Ensure-Command-With-Choco([string]$cmd, [string]$chocoPkg) {
   }
 }
 
-## Try to ensure cmake and msgfmt are present (winget-only)
-## Try to ensure cmake and msgfmt are present: prefer Chocolatey and use .choco-dependencies if provided,
 ## otherwise fall back to winget for missing tools.
 $chocoAvailable = Ensure-Chocolatey
 $chocoDepsFile = Join-Path $ProjectRoot '.choco-dependencies'
@@ -244,36 +241,9 @@ try {
   Log-Warn ("Failed to reload session PATH after choco installs: {0}" -f $_)
 }
 
-# Also try to locate msgfmt in common Chocolatey install locations and add to PATH if found
-try {
-  $chocoMsgfmtPaths = @(
-    "C:\Program Files\gettext-iconv\bin",
-    "C:\Program Files\gettext\bin",
-    "C:\ProgramData\chocolatey\lib\gettext*\tools\*",
-    "C:\ProgramData\chocolatey\lib\gettext-iconv*\tools\*"
-  )
-  foreach ($p in $chocoMsgfmtPaths) {
-    try {
-      $matches = Get-ChildItem -Path $p -Filter 'msgfmt.exe' -Recurse -ErrorAction SilentlyContinue | ForEach-Object { $_.DirectoryName }
-      if ($matches -and $matches.Count -gt 0) {
-        $first = $matches[0]
-        if ($env:PATH -notlike "*$first*") {
-          $env:PATH = "$first;$env:PATH"
-          Log-Milestone ("Prepended Chocolatey msgfmt path to PATH: {0}" -f $first)
-        }
-        break
-      }
-    } catch { }
-  }
-} catch {
-  Log-Warn ("Error while searching common Chocolatey locations for msgfmt: {0}" -f $_)
-}
-
 # Verify tools are available; if missing, attempt winget as fallback
 if (Get-Command cmake -ErrorAction SilentlyContinue) { $cmakeOk = $true } else { $cmakeOk = Ensure-Command-With-Winget 'cmake' 'Kitware.CMake' }
-if (Get-Command msgfmt -ErrorAction SilentlyContinue) { $msgfmtOk = $true } else { $msgfmtOk = Ensure-Command-With-Winget 'msgfmt' 'GnuWin32.Gettext' }
 if (-not $cmakeOk) { Log-Warn 'CMake not available; CMake configure may fail.' }
-if (-not $msgfmtOk) { Log-Warn 'msgfmt not available; gettext tools may be missing for configure.' }
 if (Test-Path $jsonPath) {
   Log-Action ("Found manifest at {0} - running manifest install (triplet: {1})" -f $jsonPath, $Triplet)
   try {
@@ -286,37 +256,6 @@ if (Test-Path $jsonPath) {
   }
 } else {
   Log-Warn ("vcpkg.json not found at {0}; no dependencies installed." -f $jsonPath)
-}
-
-# After vcpkg install, try to locate msgfmt in vcpkg-installed tool locations and add to PATH for this session
-try {
-  $msgfmtFound = $false
-  $msgfmtCandidates = @()
-  $installedCandidate = Join-Path $vcRoot "installed\$Triplet\tools\gettext\bin"
-  $msgfmtCandidates += $installedCandidate
-  # also check packages/<pkg>/tools/gettext/bin
-  $pkgDir = Join-Path $vcRoot 'packages'
-  if (Test-Path $pkgDir) {
-    $pkgMatches = Get-ChildItem -Path $pkgDir -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -like 'gettext_*' }
-    foreach ($m in $pkgMatches) {
-      $p = Join-Path $m.FullName 'tools\gettext\bin'
-      $msgfmtCandidates += $p
-    }
-  }
-  foreach ($cand in $msgfmtCandidates) {
-    if (-not $cand) { continue }
-    $exe = Join-Path $cand 'msgfmt.exe'
-    if (Test-Path $exe) {
-      # prepend to PATH for the current process so subsequent CMake runs find msgfmt
-      $env:PATH = "$cand;$env:PATH"
-      Log-Milestone ("Found msgfmt at {0}; prepended to PATH" -f $exe)
-      $msgfmtFound = $true
-      break
-    }
-  }
-  if (-not $msgfmtFound) { Log-Info 'msgfmt not found in vcpkg installed tool locations' }
-} catch {
-  Log-Warn ("Error while searching for msgfmt in vcpkg locations: {0}" -f $_)
 }
 
 if ($SetupMSVC) { Import-VcvarsEnvironment -Arch 'x64' }

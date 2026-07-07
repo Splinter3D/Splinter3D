@@ -13,7 +13,6 @@ sudo apt-get install -y \
     cmake \
     pkg-config \
     git \
-    gettext \
     xz-utils \
     libxinerama-dev \
     libxcursor-dev \
