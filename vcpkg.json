@@ -6,7 +6,6 @@
   "dependencies": [
     { "name": "raylib", "version>=": "5.5" },
     { "name": "glfw3", "version>=": "3.4" },
-    { "name": "gettext", "version>=": "0.22.5" },
     { "name": "nativefiledialog-extended", "version>=": "1.3.0" },
     { "name": "nlohmann-json", "version>=": "3.12.0" }
   ],
