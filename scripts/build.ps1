@@ -10,12 +10,12 @@ if (-not (Get-Command python -ErrorAction SilentlyContinue) -and
     exit 1
 }
 
-$Python = if (Get-Command python3 -ErrorAction SilentlyContinue) {
-    "python3"
-} else {
+$Python = if (Get-Command python -ErrorAction SilentlyContinue) {
     "python"
+} else {
+    "python3"
 }
 
 cd $ScriptDir\..
 
-& $Python ./scripts/Build/build.py @args
+& $Python .\scripts\Build\build.py @args
