@@ -3,11 +3,11 @@ FROM debian:trixie-slim
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential ca-certificates cmake curl git pkg-config \
-    python3 python3-pip ninja-build g++ \
+    python3 python3-pip python3-venv ninja-build g++ \
     libgl1-mesa-dev libglu1-mesa-dev \
     libgl1-mesa-dri libglx-mesa0 xterm \
     libx11-dev libxcursor-dev libxinerama-dev libxrandr-dev \
-    tar unzip xorg-dev zip gettext \
+    tar unzip xorg-dev zip gettext libltdl-dev \
     autoconf autoconf-archive automake libtool \
     xvfb x11vnc novnc websockify fluxbox x11-utils feh \
     && rm -rf /var/lib/apt/lists/*
