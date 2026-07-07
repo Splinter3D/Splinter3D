@@ -1,16 +1,34 @@
 {
   "name": "prototype",
-  "version-semver": "1.0.0",
+  "version-semver": "0.0.1-rc",
   "license": "MIT",
   "builtin-baseline": "fab1c6dc7a944372a90a1e19ab5e8e32cd658fc2",
   "dependencies": [
-    { "name": "raylib", "version>=": "5.5" },
-    { "name": "glfw3", "version>=": "3.4" },
-    { "name": "gettext", "version>=": "0.22.5" },
-    { "name": "nativefiledialog-extended", "version>=": "1.3.0" },
-    { "name": "nlohmann-json", "version>=": "3.12.0" }
+    {
+      "name": "raylib",
+      "version>=": "5.5"
+    },
+    {
+      "name": "glfw3",
+      "version>=": "3.4"
+    },
+    {
+      "name": "gettext",
+      "version>=": "0.22.5"
+    },
+    {
+      "name": "nativefiledialog-extended",
+      "version>=": "1.3.0"
+    },
+    {
+      "name": "nlohmann-json",
+      "version>=": "3.12.0"
+    }
   ],
   "overrides": [
-    { "name": "raylib", "version": "5.5#1" }
+    {
+      "name": "raylib",
+      "version": "5.5#1"
+    }
   ]
 }
