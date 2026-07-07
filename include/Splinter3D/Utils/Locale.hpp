@@ -13,8 +13,8 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
-#include <libintl.h>
 #include <string>
+#include <unordered_map>
 
 // Safe getenv wrapper that avoids MSVC deprecation warnings
 static inline std::string getenv_string(const char* name)
@@ -50,19 +50,17 @@ namespace splinter3D::utils
          * Supported languages: fr, en, es, de
          * Fallback: en (English)
          *
-         * @param domainName The gettext domain name (e.g., "splinter3D")
          * @param localePath Path to locale directory (e.g., "./locale")
          */
-        static void init(const char* domainName, const char* localePath);
+        static void init(const char* localePath);
 
         /**
          * @brief Initialize i18n with a specific language override
          *
-         * @param domainName The gettext domain name (e.g., "splinter3D")
          * @param localePath Path to locale directory (e.g., "./locale")
          * @param forceLang Language code to force (e.g., "fr", "en", "es", "de")
          */
-        static void init(const char* domainName, const char* localePath, const char* forceLang);
+        static void init(const char* localePath, const char* forceLang);
 
         /**
          * @brief Change the language dynamically
@@ -82,17 +80,32 @@ namespace splinter3D::utils
          */
         static void setLanguage(const char* langCode);
 
+        /**
+         * @brief Get the translated string for a given key
+         *
+         * @param key Translation key (e.g., "play", "settings.title")
+         * @param args Optional arguments for string formatting (e.g., {{"lang", "fr"}})
+         * @return Translated string or the key itself if not found
+         */
+        static std::string gettext(const std::string& key, std::unordered_map<std::string, std::string> args = {});
+
+        /**
+         * @brief Get the currently active language
+         * @return Active language code (e.g., "fr", "en", "es", "de")
+         */
+        static std::string getActiveLanguage();
+
       private:
-        static constexpr const char* SUPPORTED_LANGS[]   = {"fr", "en", "es", "de"};
-        static constexpr size_t      NUM_SUPPORTED_LANGS = 4;
-        static std::string           s_domain;
-        static std::string           s_localePath;
+        static constexpr const char*                        SUPPORTED_LANGS[]   = {"fr", "en", "es", "de"};
+        static constexpr size_t                             NUM_SUPPORTED_LANGS = 4;
+        static std::string                                  s_localePath;
+        static std::unordered_map<std::string, std::string> s_translations;
 
         /**
          * @brief Check if a translation exists for a language
          *
          * @param lang language code (e.g., "fr")
-         * @return true if directory locale/<lang>/LC_MESSAGES/ exists
+         * @return true if local/lang.json exists
          */
         static bool hasTranslation(const char* lang);
 
@@ -131,7 +144,14 @@ namespace splinter3D::utils
          * @return full locale string suitable for setlocale (or empty to use system default)
          */
         static std::string fullLocaleFor(const char* lang);
+
+        /**
+         * @brief Load translations from JSON file for the specified language
+         *
+         * @param lang Language code (e.g., "fr", "en", "es", "de")
+         */
+        static void loadTranslations(const char* lang);
     };
 } // namespace splinter3D::utils
 
-#define _(String) gettext(String)
+#define _(String, ...) splinter3D::utils::Locale::gettext(String, ##__VA_ARGS__)
