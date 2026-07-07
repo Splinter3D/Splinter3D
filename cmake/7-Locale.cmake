@@ -1,7 +1,35 @@
 #######################################
 
 # Compile .po -> .mo translations
-find_program(MSGFMT_EXECUTABLE msgfmt)
+set(_MSGFMT_HINTS)
+
+if(DEFINED VCPKG_INSTALLED_DIR AND DEFINED VCPKG_TARGET_TRIPLET)
+    list(APPEND _MSGFMT_HINTS
+        "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/tools/gettext/bin"
+        "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/tools"
+    )
+endif()
+
+if(EXISTS "${CMAKE_BINARY_DIR}/vcpkg_installed")
+    if(DEFINED VCPKG_TARGET_TRIPLET)
+        list(APPEND _MSGFMT_HINTS
+            "${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/tools/gettext/bin"
+            "${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/tools"
+        )
+    endif()
+    file(GLOB _VCPKG_MSGFMT_DIRS
+        "${CMAKE_BINARY_DIR}/vcpkg_installed/*/tools/gettext/bin"
+        "${CMAKE_BINARY_DIR}/vcpkg_installed/*/tools"
+    )
+    list(APPEND _MSGFMT_HINTS ${_VCPKG_MSGFMT_DIRS})
+endif()
+
+list(REMOVE_DUPLICATES _MSGFMT_HINTS)
+
+find_program(MSGFMT_EXECUTABLE
+    NAMES msgfmt msgfmt.exe
+    HINTS ${_MSGFMT_HINTS}
+)
 if(NOT MSGFMT_EXECUTABLE)
     message(FATAL_ERROR "msgfmt not found. Please install gettext (msgfmt).")
 endif()
