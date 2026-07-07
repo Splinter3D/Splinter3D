@@ -7,7 +7,7 @@ RUN apt-get update && \
     libgl1-mesa-dev libglu1-mesa-dev \
     libgl1-mesa-dri libglx-mesa0 xterm \
     libx11-dev libxcursor-dev libxinerama-dev libxrandr-dev \
-    tar unzip xorg-dev zip gettext libltdl-dev \
+    tar unzip xorg-dev zip libltdl-dev \
     autoconf autoconf-archive automake libtool \
     xvfb x11vnc novnc websockify fluxbox x11-utils feh \
     && rm -rf /var/lib/apt/lists/*
