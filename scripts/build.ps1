@@ -16,7 +16,7 @@ $Python = if (Get-Command python -ErrorAction SilentlyContinue) {
     "python3"
 }
 
-$Python -c "from sys import version_info; exit(version_info < (3, 10))"
+& $Python -c "from sys import version_info; exit(version_info < (3, 10))"
 if ($LASTEXITCODE) {
     Write-Host "Python 3.10 or higher is required. Please upgrade your Python installation."
     exit 1
