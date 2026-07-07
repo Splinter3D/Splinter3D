@@ -95,21 +95,14 @@ foreach ($f in @('README.md','LICENSE*')) {
 }
 
 # ============================================================================
-# Auto-detect Version from .cz.toml
+# Auto-detect Version from scm
 # ============================================================================
 
-$czFile = Join-Path $ProjectRoot '.cz.toml'
-$version = '0.0.0'  # fallback
-if (Test-Path $czFile) {
-  try {
-    $content = Get-Content $czFile -Raw
-    if ($content -match 'version\s*=\s*"v?([0-9.]+)"') {
-      $version = $matches[1]
-      Write-Host "Auto-detected version: $version"
-    }
-  } catch {
-    Write-Warning "Could not parse version from .cz.toml; using default: $version"
-  }
+$version = git describe --tags --abbrev=0 2>$null
+if (-not $version) {
+  Fail "Cannot auto-detect version: no git tags found. Please ensure that the repository has at least one tag."
+} else {
+  Write-Host "Auto-detected version: $version"
 }
 
 # Extract architecture from triplet (e.g., x64-windows -> x64)

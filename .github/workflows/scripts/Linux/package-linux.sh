@@ -27,19 +27,13 @@ msg() {
 }
 
 # ============================================================================
-# Auto-detect Version from .cz.toml
+# Auto-detect Version from scm
 # ============================================================================
 
-CZ_FILE="${PROJECT_ROOT}/.cz.toml"
-if [[ ! -f "$CZ_FILE" ]]; then
-    die "Cannot auto-detect version: .cz.toml not found at $CZ_FILE"
-fi
-
-# Extract version from: version = "v0.0.1" -> 0.0.1
-VERSION=$(grep '^\s*version\s*=' "$CZ_FILE" | sed -E 's/.*"v?([0-9.]+)".*/\1/' | head -1)
+VERSION=$(git describe --tags --abbrev=0 2>/dev/null || true)
 
 if [[ -z "$VERSION" ]]; then
-    die "Cannot parse version from .cz.toml"
+    die "Cannot parse version from git tags"
 fi
 
 # Extract architecture from triplet (e.g., x64-linux -> x64)
