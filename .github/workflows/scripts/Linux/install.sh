@@ -3,8 +3,6 @@
 
 set -euo pipefail
 
-PROJECT_ROOT="${1:-.}"
-
 echo "[install.sh] Installing system dependencies..."
 
 sudo apt-get update

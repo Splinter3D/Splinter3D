@@ -3,8 +3,6 @@
 
 set -euo pipefail
 
-PROJECT_ROOT="${1:-.}"
-
 echo "[install.sh] Installing system dependencies for macOS..."
 
 if ! command -v brew >/dev/null 2>&1; then
