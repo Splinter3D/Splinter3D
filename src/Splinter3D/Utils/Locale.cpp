@@ -10,14 +10,14 @@
 #include <algorithm>
 #include <clocale>
 #include <fstream>
-#include <libintl.h>
 #include <string>
+#include <nlohmann/json.hpp>
 
 namespace splinter3D::utils
 {
     // Static member definitions
-    std::string Locale::s_domain;
     std::string Locale::s_localePath;
+    std::unordered_map<std::string, std::string> Locale::s_translations;
 
     /**
      * @brief Initialize i18n with system locale detection
@@ -29,12 +29,10 @@ namespace splinter3D::utils
      * Supported languages: fr, en, es, de
      * Fallback: en (English)
      *
-     * @param domainName The gettext domain name (e.g., "splinter3D")
      * @param localePath Path to locale directory (e.g., "./locale")
      */
-    void Locale::init(const char* domainName, const char* localePath)
+    void Locale::init(const char* localePath)
     {
-        s_domain     = domainName;
         s_localePath = localePath;
 
         // Always detect language from system environment/API
@@ -76,26 +74,20 @@ namespace splinter3D::utils
             setenv("LANGUAGE", active.c_str(), 1);
         }
 
-        bindtextdomain(domainName, localePath);
-        bind_textdomain_codeset(domainName, "UTF-8");
-        textdomain(domainName);
+        loadTranslations(active.c_str());
 
-        clog("[Locale::init] Domain: ", domainName);
         clog("[Locale::init] Path: ", localePath);
         clog("[Locale::init] Detected language from system: ", active);
-        clog("[Locale::init] bindtextdomain result: ", bindtextdomain(domainName, nullptr));
     }
 
     /**
      * @brief Initialize i18n with a specific language override
      *
-     * @param domainName The gettext domain name (e.g., "splinter3D")
      * @param localePath Path to locale directory (e.g., "./locale")
      * @param forceLang Language code to force (e.g., "fr", "en", "es", "de")
      */
-    void Locale::init(const char* domainName, const char* localePath, const char* forceLang)
+    void Locale::init(const char* localePath, const char* forceLang)
     {
-        s_domain     = domainName;
         s_localePath = localePath;
 
         std::string active = validateLanguage(forceLang);
@@ -132,11 +124,8 @@ namespace splinter3D::utils
             setenv("LANGUAGE", active.c_str(), 1);
         }
 
-        bindtextdomain(domainName, localePath);
-        bind_textdomain_codeset(domainName, "UTF-8");
-        textdomain(domainName);
+        loadTranslations(active.c_str());
 
-        clog("[Locale::init(forced)] Domain: ", domainName);
         clog("[Locale::init(forced)] Path: ", localePath);
         clog("[Locale::init(forced)] Active language: ", active);
     }
@@ -190,24 +179,65 @@ namespace splinter3D::utils
         // Set LANGUAGE in process environment so gettext recognizes it
         setenv("LANGUAGE", validLang.c_str(), 1);
 
-        // Get current domain and rebind to reload translations
-        const char* currentDomain = textdomain(nullptr);
-        if (currentDomain != nullptr)
-        {
-            const char* currentPath = bindtextdomain(currentDomain, nullptr);
-            if (currentPath != nullptr)
-            {
-                // Re-bind to force reload with new LANGUAGE
-                bindtextdomain(currentDomain, currentPath);
-                bind_textdomain_codeset(currentDomain, "UTF-8");
-                textdomain(currentDomain);
-            }
-        }
+        // Reload translations
+        loadTranslations(validLang.c_str());
 
         clog("[Locale::setLanguage] Requested: ", langCode);
         clog("[Locale::setLanguage] Validated to: ", validLang);
         clog("[Locale::setLanguage] Saved to ACTIVE_LANG");
-        clog("[Locale::setLanguage] Current domain: ", (currentDomain ? currentDomain : "none"));
+    }
+
+    /**
+     * @brief Get the translated string for a given key
+     *
+     * @param key Translation key (e.g., "play", "settings.title")
+     * @param args Optional arguments for string formatting (e.g., {{"lang", "fr"}})
+     * @return Translated string or the key itself if not found
+     */
+    std::string Locale::gettext(const std::string& key, std::unordered_map<std::string, std::string> args)
+    {
+        auto it = s_translations.find(key);
+        if (it == s_translations.end())
+        {
+            // Key not found, return the key itself
+            return key;
+        }
+
+        std::string translated = it->second;
+
+        // Replace placeholders in the translated string with provided arguments
+        for (const auto& [argKey, argValue] : args)
+        {
+            std::string placeholder = "{" + argKey + "}";
+            size_t      pos         = 0;
+            while ((pos = translated.find(placeholder, pos)) != std::string::npos)
+            {
+                translated.replace(pos, placeholder.length(), argValue);
+                pos += argValue.length();
+            }
+        }
+
+        return translated;
+    }
+
+    /**
+     * @brief Get the currently active language
+     * @return Active language code (e.g., "fr", "en", "es", "de")
+     */
+    std::string Locale::getActiveLanguage()
+    {
+        std::string activeFile = "./locale/ACTIVE_LANG";
+        std::ifstream ifs(activeFile);
+        if (ifs.good())
+        {
+            std::string lang;
+            std::getline(ifs, lang);
+            ifs.close();
+            return validateLanguage(lang.c_str());
+        }
+
+        std::string detectedLang = detectSystemLanguage();
+        return validateLanguage(detectedLang.c_str());
     }
 
     /**
@@ -221,9 +251,8 @@ namespace splinter3D::utils
         if (lang == nullptr || lang[0] == '\0')
             return false;
 
-        std::string   dir = s_localePath + "/" + lang + "/LC_MESSAGES";
-        std::ifstream test(dir + "/" + s_domain + ".mo");
-        return test.good();
+        std::string   file = s_localePath + "/" + lang + ".json";
+        return std::filesystem::exists(file);
     }
 
     /**
@@ -404,5 +433,61 @@ namespace splinter3D::utils
             return "de_DE.UTF-8";
 
         return std::string();
+    }
+
+    /**
+     * @brief Load translations from JSON file for the specified language
+     *
+     * @param lang Language code (e.g., "fr", "en", "es", "de")
+     */
+    void Locale::loadTranslations(const char* lang)
+    {
+        std::ifstream file(s_localePath + "/" + lang + ".json");
+        std::unordered_map<std::string, std::string> translations;
+        if (!file.is_open())
+        {
+            clog("[Locale::loadTranslations] Failed to open translation file for language: ", lang);
+            return;
+        }
+
+        try
+        {
+            nlohmann::json jsonTranslations;
+            file >> jsonTranslations;
+
+            const auto flatten = [&translations](const auto& self, const nlohmann::json& node, std::string& keyPath) -> void
+            {
+                if (node.is_object())
+                {
+                    for (auto it = node.begin(); it != node.end(); ++it)
+                    {
+                        const std::size_t previousSize = keyPath.size();
+                        if (previousSize != 0)
+                            keyPath.push_back('.');
+                        keyPath.append(it.key());
+                        self(self, it.value(), keyPath);
+                        keyPath.resize(previousSize);
+                    }
+                    return;
+                }
+
+                if (keyPath.empty())
+                    return;
+
+                if (node.is_string())
+                    translations.emplace(keyPath, node.get_ref<const std::string&>());
+                else if (!node.is_null())
+                    translations.emplace(keyPath, node.dump());
+            };
+
+            std::string keyPath;
+            if (jsonTranslations.is_object())
+                translations.reserve(jsonTranslations.size());
+            flatten(flatten, jsonTranslations, keyPath);
+
+            s_translations = translations;
+        } catch (const std::exception& e) {
+            clog("[Locale::loadTranslations] Error parsing translation file: ", e.what());
+        }
     }
 } // namespace splinter3D::utils

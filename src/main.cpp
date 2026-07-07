@@ -68,7 +68,7 @@ int main(int argc, char** argv)
 
     // Initialize localization (point to the detected locale folder)
     splinter3D::utils::clog("[main] initializing locale from ", (dataRoot / "locale").string());
-    splinter3D::utils::Locale::init("splinter3D", (dataRoot / "locale").string().c_str());
+    splinter3D::utils::Locale::init((dataRoot / "locale").string().c_str());
 
     // Install cross-platform signal handlers and suppress ^C echo on POSIX
     splinter3D::utils::oscompat::InstallSignalHandlers();
@@ -76,9 +76,12 @@ int main(int argc, char** argv)
     splinter3D::utils::clog("[main] creating renderer");
 
     // Example UI strings (ensure gettext is wired)
-    // std::cout << _("Play") << std::endl;
-    // std::cout << _("Settings") << std::endl;
-    // std::cout << _("Quit") << std::endl;
+    // std::cout << splinter3D::utils::Locale::gettext("play") << std::endl;
+    // std::cout << splinter3D::utils::Locale::gettext("settings.title") << std::endl;
+    // std::cout << splinter3D::utils::Locale::gettext("settings.language", {{"lang", splinter3D::utils::Locale::getActiveLanguage()}}) << std::endl;
+    // std::cout << splinter3D::utils::Locale::gettext("settings.test", {{"test", "value"}}) << std::endl;
+    // std::cout << splinter3D::utils::Locale::gettext("settings.nested_flattening.test", {{"test", "nested_value"}}) << std::endl;
+    // std::cout << splinter3D::utils::Locale::gettext("quit") << std::endl;
 
     renderer::Config         cfg{1270, 720, "Prototype 3D Slicer", 60};
     renderer::RaylibRenderer renderer(cfg);
