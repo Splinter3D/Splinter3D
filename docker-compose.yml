@@ -1,0 +1,22 @@
+services:
+  splinter3d:
+    build: .
+    container_name: splinter3d
+    ports:
+      - "127.0.0.1:6080:6080"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /run
+      - /var/tmp
+    pids_limit: 512
+    mem_limit: 4g
+    networks:
+      - splinter3d_network
+
+networks:
+  splinter3d_network:
