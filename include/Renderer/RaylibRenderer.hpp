@@ -47,6 +47,10 @@ namespace renderer
         const ITexture* texture;
         Rectangle       src;
         Rectangle       dest;
+
+        TextureCmd(const ITexture* texture_, Rectangle src_, Rectangle dest_)
+            : texture(texture_), src(src_), dest(dest_)
+        { }
     };
 
     struct TextCmd

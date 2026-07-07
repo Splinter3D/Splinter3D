@@ -3,7 +3,8 @@ import argparse
 __all__ = ["args"]
 
 parser = argparse.ArgumentParser(description="Build script for Splinter3D")
-parser.add_argument("--debug", action="store_true", help="Enable debug mode")
+parser.add_argument("--debug", action="store_true", help="Enable debug mode for the build script logs and keep legacy debug-build behavior")
+parser.add_argument("-d", "--debug-build", action="store_true", help="Configure and build with debug symbols")
 parser.add_argument("--generator", type=str, help="Specify CMake generator (for example: Ninja, Unix Makefiles, Visual Studio 17 2022)")
 parser.add_argument("--vcpkg-path", type=str, help="Specify the path to vcpkg")
 parser.add_argument("-a", "--auto-mode", "-ci", "--ci", action="store_true", help="Enable auto mode")

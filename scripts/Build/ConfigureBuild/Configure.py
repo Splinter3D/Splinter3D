@@ -39,7 +39,8 @@ def configure_build(enable_tests: bool = False):
         os.chdir("build" if build_dir.exists() else cwd)
         build_system_runtime = choose_build_system()
         build_system_str = BUILD_SYSTEM_TO_STRING[build_system_runtime]
-        build_type = "Debug" if args.debug or enable_tests else "Release"
+        debug_build = args.debug_build or args.debug
+        build_type = "Debug" if debug_build or enable_tests else "Release"
         cmake_command = ["cmake", "..", "-G", build_system_str]
         if build_system_runtime == BuildSystem.NINJA:
             ninja_path = shutil.which("ninja")
@@ -56,7 +57,7 @@ def configure_build(enable_tests: bool = False):
             cmake_command.extend(["-A", visual_studio_arch])
         if build_system_runtime != BuildSystem.VISUAL_STUDIO:
             cmake_command.append(f"-DCMAKE_BUILD_TYPE={build_type}")
-        if args.debug and not enable_tests:
+        if debug_build and not enable_tests:
             cmake_command.append("-DENABLE_DEBUG=ON")
         if enable_tests:
             cmake_command.append("-DENABLE_TESTS=ON")
