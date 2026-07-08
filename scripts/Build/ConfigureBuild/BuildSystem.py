@@ -25,6 +25,20 @@ STRING_TO_BUILD_SYSTEM = {
     "unix makefiles": BuildSystem.MAKE,
 }
 
+def _detect_visual_studio() -> bool:
+    if get_platform() != Platform.WINDOWS:
+        return False
+    try:
+        result = subprocess.run(
+            ["vswhere", "-latest", "-products", "*", "-requires", "Microsoft.Component.MSBuild"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return bool(result.stdout.strip())
+    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.SubprocessError):
+        return False
+
 def choose_build_system() -> BuildSystem:
     logger.info("Choosing build system...")
     if args.generator:
@@ -50,8 +64,10 @@ def choose_build_system() -> BuildSystem:
             return BuildSystem.VISUAL_STUDIO
 
     if get_platform() == Platform.WINDOWS:
-        logger.info("Defaulting to Visual Studio generator on Windows.")
-        return BuildSystem.VISUAL_STUDIO
+        if _detect_visual_studio():
+            logger.info("Visual Studio detected.")
+            return BuildSystem.VISUAL_STUDIO
+        logger.warn("Visual Studio not detected. Trying to fall back to ninja or make.")
 
     if shutil.which("ninja"):
         logger.info("Ninja build system found.")

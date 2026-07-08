@@ -9,6 +9,11 @@ if ! command -v python3 &> /dev/null; then
     exit 1
 fi
 
+if ! python3 -c "import sys; exit(sys.version_info < (3, 10))"; then
+    echo "Python 3.10 or higher is required. Please upgrade your Python installation."
+    exit 1
+fi
+
 cd "$SCRIPT_DIR/.." || exit 1
 
 python3 scripts/Build/build.py "$@"

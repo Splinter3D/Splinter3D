@@ -1,8 +1,8 @@
-/.github/ @Splinter3D/Admins
-/scripts/ @Splinter3D/Admins
-/.clang-format @Splinter3D/Admins
-/.cz.toml @Splinter3D/Admins
-/.gitattributes @Splinter3D/Admins
-/.gitignore @Splinter3D/Admins
-/.pre-commit-config.yaml @Splinter3D/Admins
-/LICENSE @Splinter3D/Admins
+/.github/ @Splinter3D/Admins @Splinter3D/Maintainers
+/scripts/ @Splinter3D/Admins @Splinter3D/Maintainers
+/.clang-format @Splinter3D/Admins @Splinter3D/Maintainers
+/.cz.yaml @Splinter3D/Admins @Splinter3D/Maintainers
+/.gitattributes @Splinter3D/Admins @Splinter3D/Maintainers
+/.gitignore @Splinter3D/Admins @Splinter3D/Maintainers
+/.pre-commit-config.yaml @Splinter3D/Admins @Splinter3D/Maintainers
+/LICENSE @Splinter3D/Admins @Splinter3D/Maintainers

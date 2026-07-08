@@ -71,7 +71,9 @@ jobs:
             shell: bash
             submodules: true
             install_command: ./.github/workflows/scripts/Linux/install.sh "$WORKSPACE"
-            build_command: ./.github/workflows/scripts/Linux/build.sh "$WORKSPACE"
+            build_command: |
+              ./scripts/build.sh --ci
+              bash ./.github/workflows/scripts/Linux/package-linux.sh
             verify_command: |
               package=$(ls output/splinter3D-*-linux-x64.tar.xz 2>/dev/null | head -1)
               if [ -z "$package" ]; then
@@ -88,7 +90,9 @@ jobs:
             shell: bash
             submodules: true
             install_command: ./.github/workflows/scripts/MacOS/install.sh "$WORKSPACE"
-            build_command: ./.github/workflows/scripts/MacOS/build.sh "$WORKSPACE"
+            build_command: |
+              ./scripts/build.sh --ci
+              bash ./.github/workflows/scripts/MacOS/package-macos.sh
             verify_command: |
               package=$(ls output/splinter3D-*-macos-*.dmg 2>/dev/null | head -1)
               if [ -z "$package" ]; then
@@ -105,7 +109,9 @@ jobs:
             shell: pwsh
             submodules: false
             install_command: pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/Windows/install.ps1 $env:WORKSPACE
-            build_command: pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/Windows/build.ps1 $env:WORKSPACE
+            build_command: |
+              pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/build.ps1 --ci
+              pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/Windows/package-windows.ps1 -ProjectRoot $env:WORKSPACE
             verify_command: |
               $zip = Get-ChildItem -Path "$env:WORKSPACE/output" -Filter 'splinter3D-*-windows-*.zip' -ErrorAction SilentlyContinue | Select-Object -First 1
               if ($zip) {
