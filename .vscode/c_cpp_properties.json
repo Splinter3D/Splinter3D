@@ -39,6 +39,21 @@
             ],
             "compilerPath": "/usr/bin/g++",
             "cppStandard": "c++23"
+        },
+        {
+            "name": "Windows",
+            "includePath": [
+                "${workspaceFolder}/include",
+                "${workspaceFolder}/build/vcpkg_installed/x64-windows/include"
+            ],
+            "defines": [
+                "SPLINTER3D_DEBUG=0",
+                "__WXGTK__",
+                "wxUSE_GUI=1",
+                "OCC_CONVERT_SIGNALS"
+            ],
+            "compilerPath": "/usr/bin/g++",
+            "cppStandard": "c++23"
         }
     ],
     "version": 4
