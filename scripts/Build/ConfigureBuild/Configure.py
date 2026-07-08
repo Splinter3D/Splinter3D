@@ -50,12 +50,12 @@ def configure_build(enable_tests: bool = False):
             make_path = shutil.which("make")
             if make_path:
                 cmake_command.append(f"-DCMAKE_MAKE_PROGRAM={make_path}")
-        if build_system_runtime == BuildSystem.VISUAL_STUDIO and get_platform() == Platform.WINDOWS:
+        if (build_system_runtime == BuildSystem.VISUAL_STUDIO or build_system_runtime == BuildSystem.VISUAL_STUDIO_18) and get_platform() == Platform.WINDOWS:
             visual_studio_arch = _VISUAL_STUDIO_ARCH.get(get_arch())
             if visual_studio_arch is None:
                 raise RuntimeError(f"Unsupported Visual Studio architecture: {get_arch()}")
             cmake_command.extend(["-A", visual_studio_arch])
-        if build_system_runtime != BuildSystem.VISUAL_STUDIO:
+        if build_system_runtime != BuildSystem.VISUAL_STUDIO and build_system_runtime != BuildSystem.VISUAL_STUDIO_18:
             cmake_command.append(f"-DCMAKE_BUILD_TYPE={build_type}")
         if debug_build and not enable_tests:
             cmake_command.append("-DENABLE_DEBUG=ON")
