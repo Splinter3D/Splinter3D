@@ -13,11 +13,13 @@ class BuildSystem(Enum):
     NINJA = auto()
     MAKE = auto()
     VISUAL_STUDIO = auto()
+    VISUAL_STUDIO_18 = auto()
 
 BUILD_SYSTEM_TO_STRING = {
     BuildSystem.NINJA: "Ninja",
     BuildSystem.MAKE: "Unix Makefiles",
     BuildSystem.VISUAL_STUDIO: "Visual Studio 17 2022",
+    BuildSystem.VISUAL_STUDIO_18: "Visual Studio 18 2026",
 }
 
 STRING_TO_BUILD_SYSTEM = {
@@ -49,6 +51,8 @@ def choose_build_system() -> BuildSystem:
             return selected
         if "visual studio" in normalized_generator:
             logger.info("Using user-selected generator: Visual Studio")
+            if "2026" or "18" in normalized_generator:
+                return BuildSystem.VISUAL_STUDIO_18
             return BuildSystem.VISUAL_STUDIO
         logger.error(f"Unsupported generator: {args.generator}")
         raise RuntimeError(f"Unsupported generator: {args.generator}")
@@ -80,7 +84,7 @@ def choose_build_system() -> BuildSystem:
     raise RuntimeError("No suitable build system found. Please install Ninja or Make.")
 
 def _is_multi_config(build_system: BuildSystem) -> bool:
-    return build_system == BuildSystem.VISUAL_STUDIO
+    return build_system == BuildSystem.VISUAL_STUDIO or build_system == BuildSystem.VISUAL_STUDIO_18
 
 def _detect_build_system_from_cache(build_dir: pathlib.Path) -> BuildSystem:
     cache_file = build_dir / "CMakeCache.txt"
