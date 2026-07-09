@@ -41,6 +41,12 @@ def _detect_visual_studio() -> bool:
     except (subprocess.CalledProcessError, FileNotFoundError, subprocess.SubprocessError):
         return False
 
+def _parse_visual_studio_generator(generator: str) -> BuildSystem:
+    normalized_generator = generator.strip().lower()
+    if "2026" in normalized_generator or "18" in normalized_generator:
+        return BuildSystem.VISUAL_STUDIO_18
+    return BuildSystem.VISUAL_STUDIO
+
 def choose_build_system() -> BuildSystem:
     logger.info("Choosing build system...")
     if args.generator:
@@ -51,9 +57,7 @@ def choose_build_system() -> BuildSystem:
             return selected
         if "visual studio" in normalized_generator:
             logger.info("Using user-selected generator: Visual Studio")
-            if "2026" or "18" in normalized_generator:
-                return BuildSystem.VISUAL_STUDIO_18
-            return BuildSystem.VISUAL_STUDIO
+            return _parse_visual_studio_generator(args.generator)
         logger.error(f"Unsupported generator: {args.generator}")
         raise RuntimeError(f"Unsupported generator: {args.generator}")
 
@@ -65,9 +69,12 @@ def choose_build_system() -> BuildSystem:
             return selected
         if "visual studio" in env_generator:
             logger.info("Using CMAKE_GENERATOR=Visual Studio")
-            return BuildSystem.VISUAL_STUDIO
+            return _parse_visual_studio_generator(env_generator)
 
     if get_platform() == Platform.WINDOWS:
+        if shutil.which("ninja"):
+            logger.info("Ninja build system found on Windows; preferring it over Visual Studio generators.")
+            return BuildSystem.NINJA
         if _detect_visual_studio():
             logger.info("Visual Studio detected.")
             return BuildSystem.VISUAL_STUDIO
@@ -102,7 +109,7 @@ def _detect_build_system_from_cache(build_dir: pathlib.Path) -> BuildSystem:
     if normalized in STRING_TO_BUILD_SYSTEM:
         return STRING_TO_BUILD_SYSTEM[normalized]
     if "visual studio" in normalized:
-        return BuildSystem.VISUAL_STUDIO
+        return _parse_visual_studio_generator(generator_value)
 
     logger.error(f"Unsupported configured generator: {generator_value}")
     raise RuntimeError(f"Unsupported configured generator: {generator_value}")
