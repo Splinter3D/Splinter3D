@@ -17,6 +17,7 @@ sudo apt-get install -y \
     xorg-dev \
     libglu1-mesa-dev \
     autoconf \
+    autoconf-archive \
     automake \
     libtool \
     libltdl-dev
