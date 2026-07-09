@@ -1,12 +1,12 @@
 {
   "play": "Spielen",
-  "quit": "Beenden",
   "settings": {
+    "title": "Einstellungen",
     "language": "Sprache: {lang}",
+    "test": "Test {} {{test}}",
     "nested_flattening": {
       "test": "Verschachteltes Test {{test}}"
-    },
-    "test": "Test {} {{test}}",
-    "title": "Einstellungen"
-  }
+    }
+  },
+  "quit": "Beenden"
 }

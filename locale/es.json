@@ -1,12 +1,12 @@
 {
   "play": "Jugar",
-  "quit": "Salir",
   "settings": {
+    "title": "Configuraci\u00f3n",
     "language": "Idioma: {lang}",
+    "test": "Prueba {} {{test}}",
     "nested_flattening": {
       "test": "Prueba Anidada {{test}}"
-    },
-    "test": "Prueba {} {{test}}",
-    "title": "Configuraci\u00f3n"
-  }
+    }
+  },
+  "quit": "Salir"
 }

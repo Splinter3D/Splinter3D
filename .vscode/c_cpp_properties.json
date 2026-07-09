@@ -1,12 +1,7 @@
 {
   "configurations": [
     {
-      "compileCommands": "${workspaceFolder}/build/compile_commands.json",
-      "compilerPath": "/usr/bin/g++",
-      "cppStandard": "c++23",
-      "defines": [
-        "SPLINTER3D_DEBUG=0"
-      ],
+      "name": "Linux",
       "includePath": [
         "${workspaceFolder}/include",
         "${workspaceFolder}/include/**",
@@ -16,7 +11,12 @@
         "/usr/include/c++/11",
         "/usr/include/x86_64-linux-gnu/c++/11"
       ],
-      "name": "Linux"
+      "defines": [
+        "SPLINTER3D_DEBUG=0"
+      ],
+      "compilerPath": "/usr/bin/g++",
+      "cppStandard": "c++23",
+      "compileCommands": "${workspaceFolder}/build/compile_commands.json"
     }
   ],
   "version": 4

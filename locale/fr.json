@@ -1,12 +1,12 @@
 {
   "play": "Jouer",
-  "quit": "Quitter",
   "settings": {
+    "title": "Param\u00e8tres",
     "language": "Langue: {lang}",
+    "test": "Test {} {{test}}",
     "nested_flattening": {
       "test": "Test imbriqu\u00e9 {{test}}"
-    },
-    "test": "Test {} {{test}}",
-    "title": "Param\u00e8tres"
-  }
+    }
+  },
+  "quit": "Quitter"
 }

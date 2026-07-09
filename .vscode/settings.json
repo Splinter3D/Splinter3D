@@ -1,10 +1,10 @@
 {
+  "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
+  "C_Cpp.intelliSenseEngine": "default",
   "C_Cpp.codeAnalysis.exclude": {
     "${workspaceFolder}/build": true,
     "${workspaceFolder}/vcpkg": true
   },
-  "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
-  "C_Cpp.intelliSenseEngine": "default",
   "[cpp]": {
     "editor.defaultFormatter": null,
     "editor.formatOnSave": true
