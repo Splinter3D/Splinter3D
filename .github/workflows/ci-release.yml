@@ -220,8 +220,51 @@ jobs:
       notary_key_id: ${{ secrets.NOTARY_KEY_ID }}
       notary_issuer_id: ${{ secrets.NOTARY_ISSUER_ID }}
 
-  release:
+  docker-build:
     needs: [prepare, build]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runs_on: ubuntu-22.04
+            platform: linux/amd64
+            arch_suffix: amd64
+          - runs_on: ubuntu-24.04-arm
+            platform: linux/arm64
+            arch_suffix: arm64
+    runs-on: ${{ matrix.runs_on }}
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish native Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: true
+          provenance: false
+          tags: |
+            ${{ needs.prepare.outputs.image_name }}:${{ needs.prepare.outputs.docker_tag }}-${{ matrix.arch_suffix }}
+            ${{ needs.prepare.outputs.image_name }}:sha-${{ github.sha }}-${{ matrix.arch_suffix }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  release:
+    needs: [prepare, build, docker-build]
     runs-on: ubuntu-22.04
     steps:
       - name: Download build artifacts
@@ -244,14 +287,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Checkout tag
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.prepare.outputs.tag }}
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -262,24 +297,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate Docker metadata
-        id: docker_meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ needs.prepare.outputs.image_name }}
-          tags: |
-            type=raw,value=${{ needs.prepare.outputs.docker_tag }}
-            type=raw,value=latest,enable=${{ needs.prepare.outputs.is_prerelease != 'true' }}
+      - name: Create multi-arch Docker manifest
+        env:
+          IMAGE_NAME: ${{ needs.prepare.outputs.image_name }}
+          DOCKER_TAG: ${{ needs.prepare.outputs.docker_tag }}
+          IS_PRERELEASE: ${{ needs.prepare.outputs.is_prerelease }}
+        run: |
+          docker buildx imagetools create \
+            --tag "${IMAGE_NAME}:${DOCKER_TAG}" \
+            "${IMAGE_NAME}:${DOCKER_TAG}-amd64" \
+            "${IMAGE_NAME}:${DOCKER_TAG}-arm64"
 
-      - name: Build and publish Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          provenance: false
-          tags: ${{ steps.docker_meta.outputs.tags }}
-          labels: ${{ steps.docker_meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          if [[ "${IS_PRERELEASE}" != "true" ]]; then
+            docker buildx imagetools create \
+              --tag "${IMAGE_NAME}:latest" \
+              "${IMAGE_NAME}:${DOCKER_TAG}-amd64" \
+              "${IMAGE_NAME}:${DOCKER_TAG}-arm64"
+          fi
