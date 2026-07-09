@@ -147,6 +147,8 @@ jobs:
     uses: ./.github/workflows/reusable-build.yml
     with:
       tag: ${{ github.head_ref }}
+      checkout_repository: ${{ github.event.pull_request.head.repo.full_name }}
+      checkout_ref: ${{ github.event.pull_request.head.sha }}
       runs_on: ${{ matrix.runs_on }}
       shell: ${{ matrix.shell }}
       submodules: ${{ matrix.submodules }}
@@ -173,6 +175,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3

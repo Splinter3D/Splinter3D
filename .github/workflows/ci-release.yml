@@ -268,7 +268,6 @@ jobs:
         with:
           images: ${{ needs.prepare.outputs.image_name }}
           tags: |
-            type=raw,value=${{ needs.prepare.outputs.tag }}
             type=raw,value=${{ needs.prepare.outputs.docker_tag }}
             type=raw,value=latest,enable=${{ needs.prepare.outputs.is_prerelease != 'true' }}
 
