@@ -1,0 +1,135 @@
+name: tag-on-merge
+
+on:
+  pull_request_target:
+    branches:
+      - dev
+      - main
+    types:
+      - closed
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: tag-${{ github.event.pull_request.base.ref }}
+  cancel-in-progress: false
+
+jobs:
+  tag-dev:
+    if: >-
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'dev' &&
+      github.event.pull_request.head.ref == 'release/dev'
+    runs-on: ubuntu-22.04
+    environment: dev
+    outputs:
+      tag_name: ${{ steps.version.outputs.tag }}
+
+    steps:
+      - name: Check out dev
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Fetch tags
+        run: git fetch --force --tags origin
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install release tooling
+        run: python -m pip install --upgrade pip commitizen
+
+      - name: Compute release candidate tag
+        id: version
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          tag="$(printf '%s\n' "$PR_BODY" | sed -n 's/^Release tag: `\(v[^`]*\)`$/\1/p' | head -1)"
+          if [[ -z "$tag" ]]; then
+            echo "Release tag not found in PR body." >&2
+            exit 1
+          fi
+          if [[ ! "$tag" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)-rc\.([0-9]+)$ ]]; then
+            echo "Dev releases must use an RC tag, got '$tag'." >&2
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Create tag
+        run: |
+          tag="${{ steps.version.outputs.tag }}"
+
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "Tag $tag already exists, skipping."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$tag" -m "Release candidate $tag"
+          git push origin "$tag"
+
+  tag-main:
+    if: >-
+      github.event_name == 'pull_request_target' &&
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.ref == 'hotfix/release-main'
+    runs-on: ubuntu-22.04
+    environment: production
+    outputs:
+      tag_name: ${{ steps.version.outputs.tag }}
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Fetch tags
+        run: git fetch --force --tags origin
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install release tooling
+        run: python -m pip install --upgrade pip commitizen
+
+      - name: Compute stable tag
+        id: version
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          tag="$(printf '%s\n' "$PR_BODY" | sed -n 's/^Release tag: `\(v[^`]*\)`$/\1/p' | head -1)"
+          if [[ -z "$tag" ]]; then
+            echo "Release tag not found in PR body." >&2
+            exit 1
+          fi
+          if [[ ! "$tag" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "Main releases must use a stable tag, got '$tag'." >&2
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Create tag
+        run: |
+          tag="${{ steps.version.outputs.tag }}"
+
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "Tag $tag already exists, skipping."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$tag" -m "Release $tag"
+          git push origin "$tag"

@@ -6,29 +6,9 @@ on:
       - main
 
 permissions:
-  pull-requests: write
   contents: read
 
 jobs:
-  close-invalid-pr:
-    runs-on: ubuntu-22.04
-    if: ${{ github.head_ref != 'dev' && !startsWith(github.head_ref, 'hotfix/') }}
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.base.ref }}
-          token: ${{ secrets.PAT_REJECT_PROTOTYPE_PR }}
-
-      - name: Close PR using gh
-        run: |
-          echo "Closing invalid PR..."
-          gh pr close ${{ github.event.pull_request.number }} \
-            --repo ${{ github.repository }} \
-            --comment "This PR must come from 'dev' or 'hotfix/*'."
-        env:
-          GH_TOKEN: ${{ secrets.PAT_REJECT_PROTOTYPE_PR }}
-
   prepare:
     if: ${{ github.head_ref == 'dev' || startsWith(github.head_ref, 'hotfix/') }}
     runs-on: ubuntu-22.04
@@ -37,7 +17,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.PAT_REJECT_PROTOTYPE_PR }}
 
   build:
     if: ${{ github.head_ref == 'dev' || startsWith(github.head_ref, 'hotfix/') }}
@@ -63,7 +42,7 @@ jobs:
               echo "Found package: $package"
               ls -lh "$package" "$package".sha256
           - os_name: linux-arm64
-            runs_on: 	ubuntu-24.04-arm
+            runs_on: ubuntu-24.04-arm
             shell: bash
             submodules: true
             install_command: ./.github/workflows/scripts/Linux/install.sh "$WORKSPACE"

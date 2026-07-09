@@ -4,11 +4,6 @@ on:
   push:
     tags:
       - "v*.*.*"
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: "Tag to package (defaults to latest)"
-        required: false
 
 permissions:
   contents: write
@@ -23,6 +18,7 @@ jobs:
       docker_tag: ${{ steps.release_tag.outputs.docker_tag }}
       version_tag: ${{ steps.release_tag.outputs.version_tag }}
       image_name: ${{ steps.image_name.outputs.image_name }}
+      environment_name: ${{ steps.environment.outputs.environment_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,21 +28,12 @@ jobs:
       - name: Determine release tag
         id: release_tag
         shell: bash
-        env:
-          INPUT_TAG: ${{ github.event.inputs.tag }}
         run: |
           tag=""
           if [[ "${GITHUB_EVENT_NAME}" == "push" && "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
             tag="${GITHUB_REF_NAME}"
-          elif [[ -n "${INPUT_TAG}" ]]; then
-            tag="${INPUT_TAG}"
           else
-            git fetch --tags --force
-            tag=$(git describe --tags "$(git rev-list --tags --max-count=1)" 2>/dev/null || true)
-          fi
-
-          if [[ -z "${tag}" ]]; then
-            echo "No tag found to package" >&2
+            echo "This workflow only supports tag push events" >&2
             exit 1
           fi
 
@@ -76,6 +63,29 @@ jobs:
           echo "image_name=${image_name}" >> "$GITHUB_OUTPUT"
           echo "Using image: ${image_name}"
 
+      - name: Determine deployment environment
+        id: environment
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ steps.release_tag.outputs.tag }}
+        run: |
+          git fetch origin main dev --depth=1
+
+          remote_branches="$(git branch -r --contains "${RELEASE_TAG}^{commit}" | sed 's/^[*[:space:]]*//')"
+          environment_name=""
+
+          if printf '%s\n' "${remote_branches}" | grep -qx 'origin/main'; then
+            environment_name="production"
+          elif printf '%s\n' "${remote_branches}" | grep -qx 'origin/dev'; then
+            environment_name="dev"
+          else
+            echo "Tagged commit for ${RELEASE_TAG} is not reachable from origin/main or origin/dev" >&2
+            exit 1
+          fi
+
+          echo "environment_name=${environment_name}" >> "$GITHUB_OUTPUT"
+          echo "Using environment: ${environment_name}"
+
   build:
     needs: prepare
     strategy:
@@ -102,7 +112,7 @@ jobs:
             sha_glob: output/splinter3D-*-linux-x64.tar.xz.sha256
             artifact_name: splinter3d-linux-x64
           - os_name: linux-arm64
-            runs_on: 	ubuntu-24.04-arm
+            runs_on: ubuntu-24.04-arm
             shell: bash
             submodules: true
             install_command: ./.github/workflows/scripts/Linux/install.sh "$WORKSPACE"
@@ -266,6 +276,7 @@ jobs:
   release:
     needs: [prepare, build, docker-build]
     runs-on: ubuntu-22.04
+    environment: ${{ needs.prepare.outputs.environment_name }}
     steps:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
