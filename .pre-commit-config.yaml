@@ -25,11 +25,22 @@ repos:
       #   args: ['--autofix']
       # - id: check-json
 
+  - repo: https://github.com/Splinter3D/StyleCheck
+    rev: v0.2.2
+    hooks:
+      - id: splinter3d-style
+
   - repo: local
     hooks:
       - id: check-style
         name: check-style
         entry: bash -c 'scripts/style.sh --fix'
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: check_versions
+        name: check_versions
+        entry: bash -c 'scripts/check-versions.sh'
         language: system
         pass_filenames: false
         always_run: true
