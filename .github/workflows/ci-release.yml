@@ -212,7 +212,6 @@ jobs:
     with:
       tag: ${{ needs.prepare.outputs.tag }}
       runs_on: ${{ matrix.runs_on }}
-      environment_name: ${{ needs.prepare.outputs.environment_name }}
       shell: ${{ matrix.shell }}
       submodules: ${{ matrix.submodules }}
       install_command: ${{ matrix.install_command }}
@@ -244,7 +243,6 @@ jobs:
             platform: linux/arm64
             arch_suffix: arm64
     runs-on: ${{ matrix.runs_on }}
-    environment: ${{ needs.prepare.outputs.environment_name }}
     steps:
       - name: Checkout tag
         uses: actions/checkout@v4
