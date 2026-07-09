@@ -289,6 +289,8 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v8
         with:
+          pattern: splinter3d-*
+          merge-multiple: true
           path: output
 
       - name: List artifacts
