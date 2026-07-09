@@ -1,3 +1,84 @@
+## v0.1.0 (2026-07-09)
+
+### Feat
+
+- locale checking script
+- **ci**: add github release workflows
+- docker image build
+- **ci**: multiarch build
+- adding Visual Studio 18 2026 support
+- custom tranlation
+- adding a proper gestion of the user click when selecting an object
+- docker image
+- custom tranlation
+- docker image
+- use generic build script in ci
+- macOS/Linux build script
+- **wip**: base build script
+- adding a proper gestion of the user click when selecting an object
+- adding permissions to write pr
+- adding checkout before gh pr close
+- adding the secrets in the gh pr close
+- removing the delete branch option
+- using gh pr close instead of peter evans close action
+- adding a check to avoid PR from other source that dev or hotfix/* onto main
+- adding build_only to reusable build
+- adding compilations checks on Pr onto main
+- adding VSVersion parameter and passing DevMode to package in windows build
+- adding color output for better cut rendering
+- addding the cut using the button
+- change app name to Splinter3D and link Applications folder
+
+### Fix
+
+- avoid ci on release-main branch main
+- next tag when no initial commit was pushed
+- **ci**: do not use an environment for builds
+- make dependabot target dev
+- add missing headers in RayGUI.hpp
+- remove key sorting for json autoformatter
+- ping clang-format version in pre-commit
+- use matrix to build docker images instead of qemu
+- **ci**: fixed refs and tags for reusable build and docker
+- **ci**: fixed windows executable location and ubuntu dependencies
+- **ci**: prefer Ninja on Windows and keep vcpkg toolchain integration
+- ci compilation
+- updated CODEOWNERS
+- merge conflict markers in readme
+- remove gettext from dockerfile and readme
+- remove legacy gettext/msgfmt mentions
+- **docker**: added missing dependencies for linux/amd64
+- add possibly missing dependencies and do not copy local vcpkg
+- prioritize python over python3 in windows build script
+- adidng optional includ in SceneObject
+- remove legacy gettext/msgfmt mentions
+- **docker**: added missing dependencies for linux/amd64
+- add possibly missing dependencies and do not copy local vcpkg
+- update vcpkg version in release workflow
+- add powershell call operator before python version check in build script
+- install ninja in windows for ci
+- allow windows to use ninja and make
+- infer version from scm in packaging scripts
+- enforce python3.10 to build
+- raylib renderer black screen
+- prioritize python over python3 in windows build script
+- adidng optional includ in SceneObject
+- adding content read permissions
+- blocking all the pr with main as tagrget that doesnt come from hotifx/ or dev
+- invalid indentation in the close-invalid-pr
+- invalid indentation in the close-invalid-pr
+- closing pr comments now include hotifx/
+- adding back the tag in the pr workflow
+- adding a check in the Dissector to avoid generating infinite cut planes
+- removing double cstdint include
+- using uint8_t when allowed for enum classes
+- putting the CTrl + D shortcut back to normal
+- adding cstdlib for SPLINTER3D_POSIX
+
+### Refactor
+
+- replace .cz.toml by .cz.yaml
+
 ## v0.0.1-rc (2026-03-10)
 
 ### Feat

@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   prepare:
-    if: ${{ github.head_ref == 'dev' || startsWith(github.head_ref, 'hotfix/') }}
+    if: ${{ github.head_ref == 'dev' || (startsWith(github.head_ref, 'hotfix/') && github.head_ref != 'hotfix/release-main') }}
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
@@ -19,7 +19,7 @@ jobs:
           fetch-depth: 0
 
   build:
-    if: ${{ github.head_ref == 'dev' || startsWith(github.head_ref, 'hotfix/') }}
+    if: ${{ github.head_ref == 'dev' || (startsWith(github.head_ref, 'hotfix/') && github.head_ref != 'hotfix/release-main') }}
     needs: prepare
     strategy:
       fail-fast: false
@@ -146,7 +146,7 @@ jobs:
       notary_issuer_id: ${{ secrets.NOTARY_ISSUER_ID }}
 
   docker-build:
-    if: ${{ github.head_ref == 'dev' || startsWith(github.head_ref, 'hotfix/') }}
+    if: ${{ github.head_ref == 'dev' || (startsWith(github.head_ref, 'hotfix/') && github.head_ref != 'hotfix/release-main') }}
     needs: build
     strategy:
       fail-fast: false
