@@ -9,6 +9,7 @@ on:
       - closed
 
 permissions:
+  actions: write
   contents: write
   pull-requests: read
 
@@ -75,6 +76,19 @@ jobs:
           git tag -a "$tag" -m "Release candidate $tag"
           git push origin "$tag"
 
+      - name: Trigger CI release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          curl --fail-with-body \
+            --request POST \
+            --url "https://api.github.com/repos/${{ github.repository }}/actions/workflows/ci-release.yml/dispatches" \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header "Accept: application/vnd.github+json" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            --data "{\"ref\":\"dev\",\"inputs\":{\"tag\":\"${TAG}\"}}"
+
   tag-main:
     if: >-
       github.event_name == 'pull_request_target' &&
@@ -133,3 +147,16 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag -a "$tag" -m "Release $tag"
           git push origin "$tag"
+
+      - name: Trigger CI release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          curl --fail-with-body \
+            --request POST \
+            --url "https://api.github.com/repos/${{ github.repository }}/actions/workflows/ci-release.yml/dispatches" \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header "Accept: application/vnd.github+json" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            --data "{\"ref\":\"main\",\"inputs\":{\"tag\":\"${TAG}\"}}"

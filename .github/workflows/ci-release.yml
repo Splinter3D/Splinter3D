@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -32,8 +38,10 @@ jobs:
           tag=""
           if [[ "${GITHUB_EVENT_NAME}" == "push" && "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
             tag="${GITHUB_REF_NAME}"
+          elif [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            tag="${{ inputs.tag }}"
           else
-            echo "This workflow only supports tag push events" >&2
+            echo "This workflow only supports tag push and workflow_dispatch events" >&2
             exit 1
           fi
 
