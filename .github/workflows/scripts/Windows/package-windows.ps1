@@ -52,6 +52,7 @@ $foundExe = Get-ChildItem -Path $buildDir -Recurse -Filter '*.exe' -ErrorAction 
 # If not found, also check common MSVC output locations
 if (-not $foundExe) {
   $extraCandidates = @(
+    $ProjectRoot,
     (Join-Path $ProjectRoot 'Release'),
     (Join-Path $ProjectRoot 'Debug'),
     (Join-Path $buildDir 'Release'),
