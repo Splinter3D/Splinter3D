@@ -70,7 +70,7 @@ namespace gui::pannels
         const float btnW    = pw - kPad * 2.0f;
         const float btnX    = px + kPad;
         const bool  hovered = (mouseX >= btnX && mouseX <= btnX + btnW &&
-                              mouseY >= y && mouseY <= y + kBtnH);
+                               mouseY >= y && mouseY <= y + kBtnH);
 
         const renderer::Color fillColor   = hovered ? renderer::Color(218, 221, 235, 255)
                                                     : renderer::Color(236, 238, 248, 255);

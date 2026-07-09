@@ -1,0 +1,64 @@
+name: backmerge-main-to-dev
+
+on:
+  pull_request_target:
+    branches:
+      - main
+    types:
+      - closed
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  open-backmerge-pr:
+    if: >-
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'hotfix/') &&
+      github.event.pull_request.head.ref != 'hotfix/release-main'
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Open back-merge pull request
+        run: |
+          repo="${{ github.repository }}"
+          api_url="https://api.github.com/repos/${repo}/pulls"
+
+          existing_pr="$(curl --silent \
+            --url "${api_url}?state=open&head=${{ github.repository_owner }}:${HEAD_BRANCH}&base=${BASE_BRANCH}" \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header "Accept: application/vnd.github+json" \
+            --header "X-GitHub-Api-Version: 2022-11-28")"
+
+          if echo "$existing_pr" | grep -q '"number":'; then
+            echo "An open back-merge PR from ${HEAD_BRANCH} to ${BASE_BRANCH} already exists."
+            exit 0
+          fi
+
+          payload="$(python3 - <<'PY'
+          import json
+          import os
+
+          print(json.dumps({
+              "title": os.environ["TITLE"],
+              "head": os.environ["HEAD_BRANCH"],
+              "base": os.environ["BASE_BRANCH"],
+              "body": os.environ["BODY"],
+          }))
+          PY
+          )"
+
+          curl --fail-with-body \
+            --request POST \
+            --url "$api_url" \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header "Accept: application/vnd.github+json" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            --data "$payload"
+        env:
+          BASE_BRANCH: dev
+          BODY: "Automatic back-merge PR created after merging `${{ github.event.pull_request.head.ref }}` into `main`."
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_BRANCH: main
+          TITLE: "chore(backmerge): main into dev after ${{ github.event.pull_request.head.ref }}"

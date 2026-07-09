@@ -17,6 +17,9 @@ on:
       runs_on:
         required: true
         type: string
+      environment_name:
+        required: true
+        type: string
       shell:
         required: true
         type: string
@@ -70,6 +73,7 @@ on:
 jobs:
   build:
     runs-on: ${{ inputs.runs_on }}
+    environment: ${{ inputs.environment_name }}
     env:
       GITHUB_TOKEN: ${{ secrets.token }}
       WORKSPACE: ${{ github.workspace }}

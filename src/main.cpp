@@ -86,7 +86,7 @@ int main(int argc, char** argv)
     renderer::Config         cfg{1270, 720, "Prototype 3D Slicer", 60};
     renderer::RaylibRenderer renderer(cfg);
     splinter3D::utils::clog("[main] renderer created");
-    gui::CenteredToolbar     toolbar(18.0f, 52.0f, 14.0f);
+    gui::CenteredToolbar toolbar(18.0f, 52.0f, 14.0f);
     splinter3D::utils::clog("[main] initializing toolbar");
     toolbar.initialize(renderer);
     splinter3D::utils::clog("[main] toolbar initialized");
