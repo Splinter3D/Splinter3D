@@ -4,11 +4,12 @@ import shutil
 import subprocess
 from Logger import logger
 from ParseArgs import args
-from vcpkg.SetTargets import set_vcpkg_targets
+from Platform import Arch, get_arch
 from Submodules import update_submodules
+from .MSVC import ensure_msvc_environment
 from Requirements import check_requirements
 from Platform import Platform, get_platform
-from Platform import Arch, get_arch
+from vcpkg.SetTargets import set_vcpkg_targets
 from .Cache import ensure_compatible_build_cache
 from .BuildSystem import BuildSystem, choose_build_system, BUILD_SYSTEM_TO_STRING, run_build_tool
 
@@ -38,6 +39,9 @@ def configure_build(enable_tests: bool = False):
             build_dir.mkdir(exist_ok=True)
         os.chdir("build" if build_dir.exists() else cwd)
         build_system_runtime = choose_build_system()
+        if get_platform() == Platform.WINDOWS and (build_system_runtime == BuildSystem.NINJA or
+            build_system_runtime == BuildSystem.MAKE):
+            ensure_msvc_environment()
         build_system_str = BUILD_SYSTEM_TO_STRING[build_system_runtime]
         debug_build = args.debug_build or args.debug
         build_type = "Debug" if debug_build or enable_tests else "Release"
