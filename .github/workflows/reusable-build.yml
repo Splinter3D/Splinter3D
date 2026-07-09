@@ -172,7 +172,7 @@ jobs:
 
       - name: Upload artifacts
         if: inputs.package_glob != '' && inputs.sha_glob != '' && inputs.artifact_name != '' && !inputs.build_only
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.artifact_name }}
           path: |
