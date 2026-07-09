@@ -17,6 +17,7 @@ repos:
       - id: mixed-line-ending
         args: ['--fix=lf']
       - id: no-commit-to-branch
+        args: ['--branch=main', '--branch=dev']
       - id: check-yaml
       - id: trailing-whitespace
       - id: check-json
@@ -39,6 +40,12 @@ repos:
       - id: check_versions
         name: check_versions
         entry: bash -c 'scripts/check-versions.sh'
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: check_locales
+        name: check_locales
+        entry: python3 scripts/check-locales.py
         language: system
         pass_filenames: false
         always_run: true
