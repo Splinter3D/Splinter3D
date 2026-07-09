@@ -7,10 +7,24 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../../" && pwd)"
 
+ARCH=$(uname -m)
+
+case "$ARCH" in
+    x86_64|amd64)
+        ARCH="x64"
+        ;;
+    aarch64|arm64)
+        ARCH="arm64"
+        ;;
+    *)
+        die "Unsupported architecture: $ARCH"
+        ;;
+esac
+
 BUILD_DIR="${PROJECT_ROOT}/build"
 STAGING_DIR="${PROJECT_ROOT}/staging"
 OUTPUT_DIR="${PROJECT_ROOT}/output"
-TRIPLET="x64-linux"
+TRIPLET="${ARCH}-linux"
 VERSION=""
 
 # ============================================================================
@@ -37,7 +51,6 @@ if [[ -z "$VERSION" ]]; then
 fi
 
 # Extract architecture from triplet (e.g., x64-linux -> x64)
-ARCH="${TRIPLET%%-*}"
 PACKAGE_NAME="splinter3D-${VERSION}-linux-${ARCH}.tar.xz"
 PACKAGE_PATH="${OUTPUT_DIR}/${PACKAGE_NAME}"
 SHA256_FILE="${PACKAGE_PATH}.sha256"

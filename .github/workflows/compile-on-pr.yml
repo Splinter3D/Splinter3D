@@ -46,7 +46,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os_name: linux
+          - os_name: linux-x64
             runs_on: ubuntu-22.04
             shell: bash
             submodules: true
@@ -62,7 +62,23 @@ jobs:
               fi
               echo "Found package: $package"
               ls -lh "$package" "$package".sha256
-          - os_name: macos
+          - os_name: linux-arm64
+            runs_on: 	ubuntu-24.04-arm
+            shell: bash
+            submodules: true
+            install_command: ./.github/workflows/scripts/Linux/install.sh "$WORKSPACE"
+            build_command: |
+              ./scripts/build.sh --ci
+              bash ./.github/workflows/scripts/Linux/package-linux.sh
+            verify_command: |
+              package=$(ls output/splinter3D-*-linux-arm64.tar.xz 2>/dev/null | head -1)
+              if [ -z "$package" ]; then
+                echo "ERROR: No Linux ARM64 package found"
+                exit 1
+              fi
+              echo "Found package: $package"
+              ls -lh "$package" "$package".sha256
+          - os_name: macos-arm64
             runs_on: macos-latest
             shell: bash
             submodules: true
@@ -71,14 +87,30 @@ jobs:
               ./scripts/build.sh --ci
               bash ./.github/workflows/scripts/MacOS/package-macos.sh
             verify_command: |
-              package=$(ls output/splinter3D-*-macos-*.dmg 2>/dev/null | head -1)
+              package=$(ls output/splinter3D-*-macos-arm64.dmg 2>/dev/null | head -1)
               if [ -z "$package" ]; then
                 echo "ERROR: No macOS package found"
                 exit 1
               fi
               echo "Found package: $package"
               ls -lh "$package" "$package".sha256
-          - os_name: windows
+          - os_name: macos-x64
+            runs_on: macos-26-intel
+            shell: bash
+            submodules: true
+            install_command: ./.github/workflows/scripts/MacOS/install.sh "$WORKSPACE"
+            build_command: |
+              ./scripts/build.sh --ci
+              bash ./.github/workflows/scripts/MacOS/package-macos.sh
+            verify_command: |
+              package=$(ls output/splinter3D-*-macos-x64.dmg 2>/dev/null | head -1)
+              if [ -z "$package" ]; then
+                echo "ERROR: No macOS package found"
+                exit 1
+              fi
+              echo "Found package: $package"
+              ls -lh "$package" "$package".sha256
+          - os_name: windows-x64
             runs_on: windows-latest
             shell: pwsh
             submodules: false
@@ -87,12 +119,29 @@ jobs:
               pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/build.ps1 --ci
               pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/Windows/package-windows.ps1 -ProjectRoot $env:WORKSPACE
             verify_command: |
-              $zip = Get-ChildItem -Path "$env:WORKSPACE/output" -Filter 'splinter3D-*-windows-*.zip' -ErrorAction SilentlyContinue | Select-Object -First 1
+              $zip = Get-ChildItem -Path "$env:WORKSPACE/output" -Filter 'splinter3D-*-windows-x64.zip' -ErrorAction SilentlyContinue | Select-Object -First 1
               if ($zip) {
                 Write-Host "Found package: $($zip.FullName)"
                 Write-Host "Package size: $($zip.Length) bytes"
               } else {
-                Write-Error 'No splinter3D-*-windows-*.zip package found'
+                Write-Error 'No splinter3D-*-windows-x64.zip package found'
+                exit 1
+              }
+          - os_name: windows-arm64
+            runs_on: windows-11-arm
+            shell: pwsh
+            submodules: false
+            install_command: pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/Windows/install.ps1 $env:WORKSPACE
+            build_command: |
+              pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/build.ps1 --ci
+              pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/Windows/package-windows.ps1 -ProjectRoot $env:WORKSPACE
+            verify_command: |
+              $zip = Get-ChildItem -Path "$env:WORKSPACE/output" -Filter 'splinter3D-*-windows-arm64.zip' -ErrorAction SilentlyContinue | Select-Object -First 1
+              if ($zip) {
+                Write-Host "Found package: $($zip.FullName)"
+                Write-Host "Package size: $($zip.Length) bytes"
+              } else {
+                Write-Error 'No splinter3D-*-windows-arm64.zip package found'
                 exit 1
               }
     uses: ./.github/workflows/reusable-build.yml
