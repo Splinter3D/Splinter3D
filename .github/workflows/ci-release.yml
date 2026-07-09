@@ -287,7 +287,7 @@ jobs:
         run: ls -R output
 
       - name: Create Release and upload assets
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           files: output/**/*
           tag_name: ${{ needs.prepare.outputs.tag }}
