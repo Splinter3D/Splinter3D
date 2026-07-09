@@ -9,8 +9,11 @@ namespace scene
         rObj.draw(renderer);
     }
 
-    bool SceneObject::isHit(const geometry::Ray& ray)
+    std::optional<float> SceneObject::getHitDistance(const geometry::Ray& ray)
     {
+        float closestT = std::numeric_limits<float>::max();
+        bool  hit      = false;
+
         for (const auto& tri : obj.getTransformedMesh()->triangles)
         {
             const geometry::Vec3 edge1 = tri.vertices[1] - tri.vertices[0];
@@ -35,12 +38,14 @@ namespace scene
                 continue;
 
             const float t = f * geometry::Vec3::dotProduct(edge2, q);
-            if (t > 1e-6f)
+            if (t > 1e-6f && t < closestT)
             {
-                return true;
+                closestT = t;
+                hit      = true;
             }
         }
-        return false;
+
+        return hit ? std::optional<float>(closestT) : std::nullopt;
     }
 
     objects3D::Transform SceneObject::getTransform() const

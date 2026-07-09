@@ -9,8 +9,6 @@
 #define RAYLIB_NO_WINDOWS_H
 #endif
 
-#define RAYGUI_IMPLEMENTATION
-
 #include <Geometry/Utils/MeshUtils.hpp>
 #include <Gui/CenteredToolbar.hpp>
 #include <Gui/States/ScalePannelState.hpp>
@@ -23,38 +21,21 @@
 #include <Splinter3D/Utils/DataRoot.hpp>
 #include <Splinter3D/Utils/Locale.hpp>
 #include <Splinter3D/Utils/OSCompatibility.hpp>
+#include <cstdlib>
 #include <filesystem>
 #include <iostream>
+#include <raylib.h>
 
 #if !defined(_WIN32)
 #include <limits.h>
 #include <unistd.h>
 #endif
 
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#pragma GCC diagnostic ignored "-Wsign-conversion"
-#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#pragma GCC diagnostic ignored "-Wshadow"
-#pragma GCC diagnostic ignored "-Wmissing-declarations"
-#pragma GCC diagnostic ignored "-Wcast-qual"
-#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
-#pragma GCC diagnostic ignored "-Wcast-align"
-#if !defined(__clang__)
-#pragma GCC diagnostic ignored "-Wstringop-overflow"
-#endif
-#endif
-
-#include <Renderer/RayGUI.hpp>
-
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-
 int main(int argc, char** argv)
 {
+    splinter3D::utils::logger::setDebug(true);
+    splinter3D::utils::clog("[main] startup");
+
     std::filesystem::path exePath;
     try
     {
@@ -86,23 +67,32 @@ int main(int argc, char** argv)
         dataRoot = std::filesystem::current_path();
 
     // Initialize localization (point to the detected locale folder)
-    splinter3D::utils::Locale::init("splinter3D", (dataRoot / "locale").string().c_str());
+    splinter3D::utils::clog("[main] initializing locale from ", (dataRoot / "locale").string());
+    splinter3D::utils::Locale::init((dataRoot / "locale").string().c_str());
 
     // Install cross-platform signal handlers and suppress ^C echo on POSIX
     splinter3D::utils::oscompat::InstallSignalHandlers();
     splinter3D::utils::oscompat::disableCtrlCEcho();
+    splinter3D::utils::clog("[main] creating renderer");
 
     // Example UI strings (ensure gettext is wired)
-    // std::cout << _("Play") << std::endl;
-    // std::cout << _("Settings") << std::endl;
-    // std::cout << _("Quit") << std::endl;
+    // std::cout << splinter3D::utils::Locale::gettext("play") << std::endl;
+    // std::cout << splinter3D::utils::Locale::gettext("settings.title") << std::endl;
+    // std::cout << splinter3D::utils::Locale::gettext("settings.language", {{"lang", splinter3D::utils::Locale::getActiveLanguage()}}) << std::endl;
+    // std::cout << splinter3D::utils::Locale::gettext("settings.test", {{"test", "value"}}) << std::endl;
+    // std::cout << splinter3D::utils::Locale::gettext("settings.nested_flattening.test", {{"test", "nested_value"}}) << std::endl;
+    // std::cout << splinter3D::utils::Locale::gettext("quit") << std::endl;
 
     renderer::Config         cfg{1270, 720, "Prototype 3D Slicer", 60};
     renderer::RaylibRenderer renderer(cfg);
+    splinter3D::utils::clog("[main] renderer created");
     gui::CenteredToolbar     toolbar(18.0f, 52.0f, 14.0f);
+    splinter3D::utils::clog("[main] initializing toolbar");
     toolbar.initialize(renderer);
+    splinter3D::utils::clog("[main] toolbar initialized");
 
     input::registerBindings();
+    splinter3D::utils::clog("[main] input bindings registered");
     while (!renderer.shouldClose())
     {
         float dt = renderer.beginFrame();

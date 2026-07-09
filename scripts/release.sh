@@ -44,6 +44,7 @@ run() {
 }
 
 command -v git >/dev/null 2>&1 || die "git not found"
+command -v jq  >/dev/null 2>&1 || die "jq not found"
 command -v cz  >/dev/null 2>&1 || die "cz not found"
 
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "Not in git repo"
@@ -67,6 +68,19 @@ if [[ -z "$TAG" ]]; then
     echo "[DRY-RUN] git push $REMOTE --tags"
   else
     cz bump --changelog --yes
+    if [[ -f "vcpkg.json" ]]; then
+      VERSION=$(git describe --tags --abbrev=0 2>/dev/null || true)
+      if [[ -n "$VERSION" ]]; then
+        VERSION="${VERSION#v}"
+        jq --arg version "$VERSION" '."version-semver"=$version' vcpkg.json > vcpkg.tmp.json && mv vcpkg.tmp.json vcpkg.json
+        if ! git diff --quiet -- "vcpkg.json"; then
+          git add vcpkg.json
+        fi
+        if ! git diff --cached --quiet; then
+          git commit -m "chore(release): update vcpkg.json version to $VERSION"
+        fi
+      fi
+    fi
     git push "$REMOTE" "$BRANCH"
     git push "$REMOTE" --tags
   fi
@@ -101,9 +115,23 @@ if $DRY_RUN; then
 else
   cz changelog --unreleased-version="$TAG"
 
+  if [[ -f "vcpkg.json" ]]; then
+      VERSION=$(git describe --tags --abbrev=0 2>/dev/null || true)
+      if [[ -n "$VERSION" ]]; then
+        VERSION="${VERSION#v}"
+        jq --arg version "$VERSION" '."version-semver"=$version' vcpkg.json > vcpkg.tmp.json && mv vcpkg.tmp.json vcpkg.json
+        if ! git diff --quiet -- "vcpkg.json"; then
+          git add vcpkg.json
+        fi
+    fi
+  fi
   if ! git diff --quiet -- "CHANGELOG.md"; then
     git add CHANGELOG.md
+  fi
+  if ! git diff --cached --quiet; then
     git commit -m "chore(release): $TAG"
+  else
+    echo "No changes to commit for release."
   fi
 
   git tag -a "$TAG" -m "Release $TAG"

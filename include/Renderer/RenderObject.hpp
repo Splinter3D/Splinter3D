@@ -12,7 +12,7 @@ namespace renderer
     struct RenderObject : objects3D::ObjectObserver
     {
         const objects3D::Object3D* object = nullptr;
-        Matrix                     modelMatrix;
+        Matrix                     modelMatrix = MatrixIdentity();
 
         RenderObject(Color color = Color{255, 255, 255, 255});
 

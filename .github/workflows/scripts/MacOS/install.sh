@@ -3,8 +3,6 @@
 
 set -euo pipefail
 
-PROJECT_ROOT="${1:-.}"
-
 echo "[install.sh] Installing system dependencies for macOS..."
 
 if ! command -v brew >/dev/null 2>&1; then
@@ -12,7 +10,7 @@ if ! command -v brew >/dev/null 2>&1; then
     exit 1
 fi
 
-packages=(cmake ninja pkg-config gettext)
+packages=(cmake ninja pkg-config)
 for pkg in "${packages[@]}"; do
     if brew list --versions "$pkg" >/dev/null 2>&1; then
         echo "[install.sh] $pkg already installed"

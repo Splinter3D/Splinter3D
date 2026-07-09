@@ -66,6 +66,8 @@ namespace splinter3D::utils::oscompat
     inline void disableCtrlCEcho()
     {
         static struct termios origTerm;
+        if (!isatty(STDIN_FILENO))
+            return;
         if (tcgetattr(STDIN_FILENO, &origTerm) == 0)
         {
             atexit([]() { tcsetattr(STDIN_FILENO, TCSANOW, &origTerm); });

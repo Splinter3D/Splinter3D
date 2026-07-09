@@ -30,18 +30,13 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
 fi
 
 # ============================================================================
-# Auto-detect Version from .cz.toml
+# Auto-detect Version from scm
 # ============================================================================
 
-CZ_FILE="${PROJECT_ROOT}/.cz.toml"
-if [[ ! -f "$CZ_FILE" ]]; then
-    die "Cannot auto-detect version: .cz.toml not found at $CZ_FILE"
-fi
-
-VERSION=$(grep '^\s*version\s*=' "$CZ_FILE" | sed -E 's/.*"v?([0-9.]+)".*/\1/' | head -1)
+VERSION=$(git describe --tags --abbrev=0 2>/dev/null || true)
 
 if [[ -z "$VERSION" ]]; then
-    die "Cannot parse version from .cz.toml"
+    die "Cannot parse version from git tags"
 fi
 
 # ============================================================================

@@ -3,8 +3,6 @@
 
 set -euo pipefail
 
-PROJECT_ROOT="${1:-.}"
-
 echo "[install.sh] Installing system dependencies..."
 
 sudo apt-get update
@@ -13,13 +11,13 @@ sudo apt-get install -y \
     cmake \
     pkg-config \
     git \
-    gettext \
     xz-utils \
     libxinerama-dev \
     libxcursor-dev \
     xorg-dev \
     libglu1-mesa-dev \
     autoconf \
+    autoconf-archive \
     automake \
     libtool \
     libltdl-dev

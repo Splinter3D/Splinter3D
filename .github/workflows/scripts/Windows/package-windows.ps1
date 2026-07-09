@@ -1,10 +1,23 @@
 param(
   [string]$ProjectRoot = (Get-Location).Path,
   [string]$BuildDirName = 'build',
-  [string]$Triplet = 'x64-windows',
+  [string]$Triplet,
   [string]$OutDirName = 'output',
   [switch]$DevMode = $false
 )
+
+function Get-Arch() {
+  switch ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture) {
+      'X64'   { 'x64' }
+      'X86'   { 'x86' }
+      'Arm64' { 'arm64' }
+      default { throw "Unsupported architecture" }
+  }
+}
+
+if (-not $Triplet) {
+    $Triplet = "$(Get-Arch)-windows"
+}
 
 function Fail($msg) {
   Write-Error $msg
@@ -52,6 +65,7 @@ $foundExe = Get-ChildItem -Path $buildDir -Recurse -Filter '*.exe' -ErrorAction 
 # If not found, also check common MSVC output locations
 if (-not $foundExe) {
   $extraCandidates = @(
+    $ProjectRoot,
     (Join-Path $ProjectRoot 'Release'),
     (Join-Path $ProjectRoot 'Debug'),
     (Join-Path $buildDir 'Release'),
@@ -95,25 +109,17 @@ foreach ($f in @('README.md','LICENSE*')) {
 }
 
 # ============================================================================
-# Auto-detect Version from .cz.toml
+# Auto-detect Version from scm
 # ============================================================================
 
-$czFile = Join-Path $ProjectRoot '.cz.toml'
-$version = '0.0.0'  # fallback
-if (Test-Path $czFile) {
-  try {
-    $content = Get-Content $czFile -Raw
-    if ($content -match 'version\s*=\s*"v?([0-9.]+)"') {
-      $version = $matches[1]
-      Write-Host "Auto-detected version: $version"
-    }
-  } catch {
-    Write-Warning "Could not parse version from .cz.toml; using default: $version"
-  }
+$version = git describe --tags --abbrev=0 2>$null
+if (-not $version) {
+  Fail "Cannot auto-detect version: no git tags found. Please ensure that the repository has at least one tag."
+} else {
+  Write-Host "Auto-detected version: $version"
 }
 
-# Extract architecture from triplet (e.g., x64-windows -> x64)
-$arch = $Triplet -split '-' | Select-Object -First 1
+$arch = Get-Arch
 
 # ============================================================================
 # Create output dir and package

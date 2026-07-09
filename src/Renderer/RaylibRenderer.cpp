@@ -3,7 +3,9 @@
 #include <Renderer/RaylibRenderer.hpp>
 #include <Splinter3D/Utils/Logger.hpp>
 #include <Splinter3D/Utils/OSCompatibility.hpp>
+#include <algorithm>
 #include <cstdarg>
+#include <cmath>
 #include <cstdio>
 #include <memory>
 #include <raylib.h>
@@ -92,13 +94,25 @@ namespace renderer
         : impl_(std::make_unique<Impl>())
     {
         impl_->cfg = cfg;
+        splinter3D::utils::clog("[renderer] InitWindow start");
 
         SetTraceLogCallback(RaylibToLogger);
-        SetConfigFlags(FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE);
+        SetConfigFlags(FLAG_WINDOW_RESIZABLE);
         InitWindow(cfg.width, cfg.height, cfg.title.c_str());
+        splinter3D::utils::clog("[renderer] InitWindow done");
+        ClearWindowState(FLAG_WINDOW_HIDDEN);
+        RestoreWindow();
+        SetWindowFocused();
+        SetWindowOpacity(1.0f);
+        SetWindowPosition(100, 100);
         SetWindowMinSize(640, 360);
         SetTargetFPS(cfg.target_fps);
         SetExitKey(0);
+        splinter3D::utils::clog("[renderer] window state hidden=", IsWindowHidden(),
+                                " minimized=", IsWindowMinimized(),
+                                " focused=", IsWindowFocused(),
+                                " screen=", GetScreenWidth(), "x", GetScreenHeight(),
+                                " render=", GetRenderWidth(), "x", GetRenderHeight());
 
         impl_->camera = {
             .position   = {5.0f, 5.0f, 5.0f},
@@ -106,6 +120,19 @@ namespace renderer
             .up         = {0.0f, 1.0f, 0.0f},
             .fovy       = 45.0f,
             .projection = CAMERA_PERSPECTIVE};
+
+        const Vector3 offset = {
+            impl_->camera.position.x - impl_->camera.target.x,
+            impl_->camera.position.y - impl_->camera.target.y,
+            impl_->camera.position.z - impl_->camera.target.z};
+        impl_->distance = sqrtf(offset.x * offset.x + offset.y * offset.y + offset.z * offset.z);
+        if (impl_->distance > 0.0f)
+        {
+            impl_->yaw   = atan2f(offset.x, offset.z);
+            impl_->pitch = asinf(offset.y / impl_->distance);
+        }
+        splinter3D::utils::clog("[renderer] camera initialized distance=", impl_->distance,
+                                " yaw=", impl_->yaw, " pitch=", impl_->pitch);
     }
 
     RaylibRenderer::~RaylibRenderer()
@@ -323,6 +350,8 @@ namespace renderer
             impl_->pitch -= delta.y * 0.01f;
         }
 
+        impl_->pitch = std::clamp(impl_->pitch, -1.5f, 1.5f);
+
         impl_->distance -= GetMouseWheelMove();
         impl_->distance = std::max(impl_->distance, 1.0f);
 
@@ -392,7 +421,7 @@ namespace renderer
 
         Rectangle src  = {0.0f, 0.0f, static_cast<float>(rt->tex.width), static_cast<float>(rt->tex.height)};
         Rectangle dest = {x, y, width, height};
-        drawQueue_[layer].push_back(TextureCmd{texture, src, dest});
+        drawQueue_[layer].emplace_back(std::in_place_type<TextureCmd>, texture, src, dest);
     }
 
     void RaylibRenderer::drawButton(float x, float y, float width, float height,
@@ -417,22 +446,22 @@ namespace renderer
 
     void RaylibRenderer::drawPanel(float x, float y, float width, float height, Layer layer) const
     {
-        drawQueue_[layer].push_back(RectCmd{x, y, width, height, Palette::Background});
+        drawQueue_[layer].emplace_back(std::in_place_type<RectCmd>, x, y, width, height, Palette::Background);
     }
 
     void RaylibRenderer::drawText(float x, float y, const char* text, int fontSize, Layer layer) const
     {
-        drawQueue_[layer].push_back(TextCmd{text, (int) x, (int) y, fontSize, Palette::Secondary});
+        drawQueue_[layer].emplace_back(std::in_place_type<TextCmd>, text, (int) x, (int) y, fontSize, Palette::Secondary);
     }
 
     void RaylibRenderer::drawRectangle(float x, float y, float width, float height, Color color, Layer layer) const
     {
-        drawQueue_[layer].push_back(RectCmd{x, y, width, height, color});
+        drawQueue_[layer].emplace_back(std::in_place_type<RectCmd>, x, y, width, height, color);
     }
 
     void RaylibRenderer::drawRectangleLines(float x, float y, float width, float height, Color color, Layer layer) const
     {
-        drawQueue_[layer].push_back(RectLinesCmd{x, y, width, height, color});
+        drawQueue_[layer].emplace_back(std::in_place_type<RectLinesCmd>, x, y, width, height, color);
     }
 
     void* RaylibRenderer::getCanvas() const
@@ -442,17 +471,17 @@ namespace renderer
 
     void RaylibRenderer::drawValueBox(float x, float y, float w, float h, const char* label, int& value, int min, int max, bool& editMode, Layer layer) const
     {
-        drawQueue_[layer].push_back(ValueBoxCmd{x, y, w, h, label, value, min, max, editMode, &value, &editMode});
+        drawQueue_[layer].emplace_back(std::in_place_type<ValueBoxCmd>, x, y, w, h, label, value, min, max, editMode, &value, &editMode);
     }
 
     void RaylibRenderer::drawFloatValueBox(float x, float y, float w, float h, const char* label, float& value, float min, float max, bool& editMode, Layer layer) const
     {
-        drawQueue_[layer].push_back(ValueBoxFloatCmd{x, y, w, h, label, value, min, max, editMode, &value, &editMode});
+        drawQueue_[layer].emplace_back(std::in_place_type<ValueBoxFloatCmd>, x, y, w, h, label, value, min, max, editMode, &value, &editMode);
     }
 
     void RaylibRenderer::drawCheckbox(float x, float y, float size, const char* label, bool& checked, Layer layer) const
     {
-        drawQueue_[layer].push_back(CheckboxCmd{x, y, size, label, checked, &checked});
+        drawQueue_[layer].emplace_back(std::in_place_type<CheckboxCmd>, x, y, size, label, checked, &checked);
     }
 
 #pragma region GUI Utils
@@ -586,14 +615,14 @@ namespace renderer
 
     void RaylibRenderer::drawGrid(int slices, float spacing, Layer layer)
     {
-        drawQueue_[layer].push_back(GridCmd{slices, spacing});
+        drawQueue_[layer].emplace_back(std::in_place_type<GridCmd>, slices, spacing);
     }
 
     void RaylibRenderer::drawAxis(float size, Layer layer)
     {
-        drawQueue_[layer].push_back(LineCmd{{0, 0, 0}, {size, 0, 0}, RED});
-        drawQueue_[layer].push_back(LineCmd{{0, 0, 0}, {0, size, 0}, GREEN});
-        drawQueue_[layer].push_back(LineCmd{{0, 0, 0}, {0, 0, size}, BLUE});
+        drawQueue_[layer].emplace_back(std::in_place_type<LineCmd>, geometry::Vec3{0, 0, 0}, geometry::Vec3{size, 0, 0}, RED);
+        drawQueue_[layer].emplace_back(std::in_place_type<LineCmd>, geometry::Vec3{0, 0, 0}, geometry::Vec3{0, size, 0}, GREEN);
+        drawQueue_[layer].emplace_back(std::in_place_type<LineCmd>, geometry::Vec3{0, 0, 0}, geometry::Vec3{0, 0, size}, BLUE);
     }
 
     void RaylibRenderer::ensureCCW(geometry::Triangle& tri, geometry::Vec3 cameraPos)
@@ -615,7 +644,7 @@ namespace renderer
 
     void RaylibRenderer::drawTriangle(const geometry::Triangle& tri, Color color, Layer layer)
     {
-        drawQueue_[layer].push_back(TriangleCmd{tri, color, Matrix()});
+        drawQueue_[layer].emplace_back(std::in_place_type<TriangleCmd>, tri, color, MatrixIdentity());
     }
 
     void RaylibRenderer::drawMesh(const geometry::Mesh& mesh, Color color, Layer layer)
@@ -631,7 +660,7 @@ namespace renderer
         for (auto& tri : obj.object->getMesh()->triangles)
         {
             TriangleCmd cmd{tri, color, obj.modelMatrix};
-            drawQueue_[layer].push_back(cmd);
+            drawQueue_[layer].emplace_back(std::in_place_type<TriangleCmd>, cmd.tri, cmd.color, cmd.modelMatrix);
         }
     }
 } // namespace renderer

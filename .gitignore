@@ -66,9 +66,15 @@ vcpkg_installed/
 
 # Locale lang
 ACTIVE_LANG
-*.mo
 
 # Scripts
 !/scripts/
 !/scripts/build.sh.d
 !/scripts/style.sh.d
+!/scripts/Build/vcpkg
+
+# Python cache
+__pycache__/
+
+# Docker
+!Dockerfile

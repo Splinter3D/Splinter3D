@@ -2,6 +2,7 @@
 #include <Renderer/Palette.hpp>
 #include <Splinter3D/Events/EventBus.hpp>
 #include <Splinter3D/Events/OpenPannelEvent.hpp>
+#include <Splinter3D/Utils/Logger.hpp>
 
 namespace gui
 {
@@ -21,7 +22,11 @@ namespace gui
     {
         // Bake the icon once into a GPU texture
         if (drawIcon)
+        {
+            splinter3D::utils::clog("[button] creating icon for ", id_);
             iconTexture_ = renderer.createIcon(64, 64, [drawIcon](void* canvas) { drawIcon(canvas); });
+            splinter3D::utils::clog("[button] icon created for ", id_);
+        }
     }
 
     void Button::subscribeToPannelEvents()
