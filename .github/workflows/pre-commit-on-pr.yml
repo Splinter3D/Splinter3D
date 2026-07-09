@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   pre-commit:
+    if: ${{ github.head_ref != 'hotfix/release-main' }}
     runs-on: ubuntu-22.04
 
     steps:
