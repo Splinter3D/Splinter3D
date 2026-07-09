@@ -163,3 +163,30 @@ jobs:
       notary_key_b64: ${{ secrets.NOTARY_KEY_B64 }}
       notary_key_id: ${{ secrets.NOTARY_KEY_ID }}
       notary_issuer_id: ${{ secrets.NOTARY_ISSUER_ID }}
+
+  docker-build:
+    if: ${{ github.head_ref == 'dev' || startsWith(github.head_ref, 'hotfix/') }}
+    needs: build
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image for amd64 and arm64
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: false
+          provenance: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
