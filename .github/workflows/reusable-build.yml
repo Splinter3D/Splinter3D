@@ -85,7 +85,7 @@ jobs:
         shell: ${{ inputs.shell }}
     steps:
       - name: Checkout tag
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           repository: ${{ inputs.checkout_repository != '' && inputs.checkout_repository || github.repository }}
