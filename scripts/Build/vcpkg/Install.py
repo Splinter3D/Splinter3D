@@ -10,10 +10,24 @@ from vcpkg.Validation import expected_vcpkg_executable_name, inspect_vcpkg_root
 
 __all__ = ["install_vcpkg"]
 
+def _looks_like_vcpkg_root(path: str) -> bool:
+    normalized = os.path.abspath(path)
+    return any(
+        os.path.exists(candidate)
+        for candidate in (
+            os.path.join(normalized, "scripts", "buildsystems", "vcpkg.cmake"),
+            os.path.join(normalized, "bootstrap-vcpkg.sh"),
+            os.path.join(normalized, "bootstrap-vcpkg.bat"),
+            os.path.join(normalized, "ports"),
+        )
+    )
+
 def _normalize_vcpkg_root(vcpkg_path: str) -> str:
     normalized = os.path.abspath(vcpkg_path)
     if os.path.isfile(normalized):
-        normalized = os.path.dirname(normalized)
+        candidate_root = os.path.dirname(normalized)
+        if _looks_like_vcpkg_root(candidate_root):
+            normalized = candidate_root
     return normalized
 
 def _get_vcpkg_path() -> str:
@@ -111,12 +125,21 @@ def install_vcpkg() -> str:
         configured_vcpkg = _ensure_current_platform_vcpkg(configured_root)
         if configured_vcpkg is not None:
             return configured_vcpkg
-        detected_vcpkg = detect_vcpkg()
-        if detected_vcpkg:
-            vcpkg_root = _normalize_vcpkg_root(detected_vcpkg)
-            detected_root = _ensure_current_platform_vcpkg(vcpkg_root)
-            if detected_root is not None:
-                return detected_root
+        if os.path.isdir(configured_root) and _looks_like_vcpkg_root(configured_root):
+            logger.info(f"Using configured vcpkg root: {configured_root}")
+            vcpkg_path = configured_root
+        else:
+            detected_vcpkg = detect_vcpkg()
+            if detected_vcpkg:
+                vcpkg_root = _normalize_vcpkg_root(detected_vcpkg)
+                if _looks_like_vcpkg_root(vcpkg_root):
+                    detected_root = _ensure_current_platform_vcpkg(vcpkg_root)
+                    if detected_root is not None:
+                        return detected_root
+                else:
+                    logger.info(
+                        f"Ignoring vcpkg executable without a usable root for CMake integration: {detected_vcpkg}"
+                    )
         if args.dry_run:
             logger.info(f"DRY RUN: ensure vcpkg is available at {configured_root}")
             return configured_root
