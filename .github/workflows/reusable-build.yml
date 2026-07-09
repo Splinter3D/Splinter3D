@@ -85,7 +85,7 @@ jobs:
         shell: ${{ inputs.shell }}
     steps:
       - name: Checkout tag
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           repository: ${{ inputs.checkout_repository != '' && inputs.checkout_repository || github.repository }}
@@ -172,7 +172,7 @@ jobs:
 
       - name: Upload artifacts
         if: inputs.package_glob != '' && inputs.sha_glob != '' && inputs.artifact_name != '' && !inputs.build_only
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.artifact_name }}
           path: |

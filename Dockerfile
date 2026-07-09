@@ -1,5 +1,7 @@
 FROM debian:trixie-slim
 
+LABEL org.opencontainers.image.source="https://github.com/Splinter3D/Splinter3D"
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential ca-certificates cmake curl git pkg-config \
