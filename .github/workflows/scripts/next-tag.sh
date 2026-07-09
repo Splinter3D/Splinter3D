@@ -16,6 +16,10 @@ if [[ "$MODE" != "stable" && "$MODE" != "rc" ]]; then
   die "Usage: $0 <stable|rc>"
 fi
 
+if git remote get-url origin >/dev/null 2>&1; then
+  git fetch --force --tags origin >/dev/null 2>&1
+fi
+
 latest_stable_tag="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname | head -n 1)"
 base_version="$DEFAULT_VERSION"
 
@@ -24,12 +28,7 @@ if [[ -n "$latest_stable_tag" ]]; then
     [[ -n "$rc_tag" ]] || continue
     git tag -d "$rc_tag" >/dev/null
   done < <(git tag --list 'v*-rc.*')
-
-  base_version="$(cz bump --get-next)"
-
-  if git remote get-url origin >/dev/null 2>&1; then
-    git fetch --force --tags origin >/dev/null 2>&1
-  fi
+  base_version="$(cz bump --get-next --yes)"
 fi
 
 if [[ -z "$base_version" ]]; then
