@@ -1,7 +1,4 @@
 {
-  "name": "prototype",
-  "version-semver": "0.0.1-rc",
-  "license": "MIT",
   "builtin-baseline": "fab1c6dc7a944372a90a1e19ab5e8e32cd658fc2",
   "dependencies": [
     {
@@ -17,10 +14,13 @@
       "version>=": "3.12.0"
     }
   ],
+  "license": "MIT",
+  "name": "prototype",
   "overrides": [
     {
       "name": "raylib",
       "version": "5.5#1"
     }
-  ]
+  ],
+  "version-semver": "0.0.1-rc"
 }

@@ -1,12 +1,12 @@
 {
-    "play": "Play",
-    "settings": {
-        "title":"Settings",
-        "language": "Language: {lang}",
-        "test": "Test {} {{test}}",
-        "nested_flattening": {
-            "test": "Nested Test {{test}}"
-        }
+  "play": "Play",
+  "quit": "Quit",
+  "settings": {
+    "language": "Language: {lang}",
+    "nested_flattening": {
+      "test": "Nested Test {{test}}"
     },
-    "quit": "Quit"
+    "test": "Test {} {{test}}",
+    "title": "Settings"
+  }
 }
