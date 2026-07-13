@@ -1,3 +1,9 @@
+## v0.1.3 (2026-07-13)
+
+### Fix
+
+- **build**: make --vcpkg—path authoritative
+
 ## v0.1.2 (2026-07-09)
 
 ### Fix
