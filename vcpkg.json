@@ -1,6 +1,6 @@
 {
   "name": "prototype",
-  "version-semver": "0.1.1",
+  "version-semver": "0.1.3",
   "license": "MIT",
   "builtin-baseline": "fab1c6dc7a944372a90a1e19ab5e8e32cd658fc2",
   "dependencies": [

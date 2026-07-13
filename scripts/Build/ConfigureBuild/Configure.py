@@ -21,6 +21,12 @@ _VISUAL_STUDIO_ARCH = {
     Arch.aarch64: "ARM64",
 }
 
+
+def _toolchain_file_from_targets(vcpkg_targets: list[str]) -> str | None:
+    prefix = "-DCMAKE_TOOLCHAIN_FILE="
+    return next((target.removeprefix(prefix) for target in vcpkg_targets if target.startswith(prefix)), None)
+
+
 def configure_build(enable_tests: bool = False):
     logger.info("Starting build configuration...")
     check_requirements()
@@ -32,7 +38,7 @@ def configure_build(enable_tests: bool = False):
     cwd = os.getcwd()
     try:
         build_dir = pathlib.Path("build")
-        ensure_compatible_build_cache(build_dir)
+        ensure_compatible_build_cache(build_dir, _toolchain_file_from_targets(vcpkg_targets))
         if args.dry_run:
             logger.info(f"DRY RUN: create {build_dir}")
         else:
