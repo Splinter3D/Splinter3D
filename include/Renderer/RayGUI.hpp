@@ -4633,10 +4633,10 @@ int GuiTextBox(Rectangle bounds, char* text, int textSize, bool editMode)
             // Delete related codepoints from text, before current cursor position
             if ((textBoxCursorIndex > 0) && IsKeyPressed(KEY_BACKSPACE) && (IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)))
             {
-                int offset           = textBoxCursorIndex;
-                int accCodepointSize = 0;
-                int prevCodepointSize;
-                int prevCodepoint;
+                int offset            = textBoxCursorIndex;
+                int accCodepointSize  = 0;
+                int prevCodepointSize = 0;
+                int prevCodepoint     = 0;
 
                 // Check whitespace to delete (ASCII only)
                 while (offset > 0)
@@ -4686,10 +4686,10 @@ int GuiTextBox(Rectangle bounds, char* text, int textSize, bool editMode)
             // Move cursor position with keys
             if ((textBoxCursorIndex > 0) && IsKeyPressed(KEY_LEFT) && (IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)))
             {
-                int offset           = textBoxCursorIndex;
-                int accCodepointSize = 0;
-                int prevCodepointSize;
-                int prevCodepoint;
+                int offset            = textBoxCursorIndex;
+                int accCodepointSize  = 0;
+                int prevCodepointSize = 0;
+                int prevCodepoint     = 0;
 
                 // Check whitespace to skip (ASCII only)
                 while (offset > 0)

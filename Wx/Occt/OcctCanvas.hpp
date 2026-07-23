@@ -7,10 +7,14 @@
 #include <OpenGl_GraphicDriver.hxx>
 #include <V3d_View.hxx>
 #include <V3d_Viewer.hxx>
-#include <Xw_Window.hxx>
 #include <functional>
+#if defined(__WXGTK__)
+#include <Xw_Window.hxx>
 #include <gdk/gdkx.h>
 #include <gtk/gtk.h>
+#elif defined(__WXMSW__)
+#include <WNT_Window.hxx>
+#endif
 #include <map>
 #include <string>
 #include <wx/glcanvas.h>
@@ -185,7 +189,7 @@ namespace wx::occt
             return a;
         }
 
-        // ── Init OCCT (premier paint) ─────────────────────────────────────
+        // ── Init OCCT ─────────────────────────────────────
         void initOcct()
         {
             if (m_initialized)
@@ -194,11 +198,17 @@ namespace wx::occt
 
             SetCurrent(*m_glContext);
 
+#if defined(__WXGTK__)
             GdkDisplay* gdkDisp  = gdk_display_get_default();
             Display*    xDisplay = GDK_DISPLAY_XDISPLAY(gdkDisp);
-
             Handle(Aspect_DisplayConnection) disp =
                 new Aspect_DisplayConnection(xDisplay);
+#else
+            // Windows (and other none-X11 platform) : no X11 display.
+            Handle(Aspect_DisplayConnection) disp =
+                new Aspect_DisplayConnection();
+#endif
+
             Handle(OpenGl_GraphicDriver) driver =
                 new OpenGl_GraphicDriver(disp, false);
             driver->ChangeOptions().buffersNoSwap = false;
@@ -211,27 +221,36 @@ namespace wx::occt
             m_context = new AIS_InteractiveContext(m_viewer);
             m_context->SetDisplayMode(AIS_Shaded, false);
 
-            // Sélection = objet entier (mode 0), highlight orange
+            // Selection = entire object (mode 0), orange highlight
             m_context->SetAutoActivateSelection(true);
             Quantity_Color selColor(1.0, 0.55, 0.0, Quantity_TOC_RGB);
             m_context->SelectionStyle()->SetColor(selColor);
             m_context->SelectionStyle()->SetDisplayMode(AIS_Shaded);
 
-            // Hover = bleu clair
+            // Hover = light blue
             Quantity_Color hvColor(0.3, 0.75, 1.0, Quantity_TOC_RGB);
             m_context->HighlightStyle()->SetColor(hvColor);
 
+#if defined(__WXGTK__)
             GdkWindow* gdkWin = gtk_widget_get_window(
                 static_cast<GtkWidget*>(GetHandle()));
             ::Window xwin = GDK_WINDOW_XID(gdkWin);
 
-            Handle(Xw_Window) xwWin = new Xw_Window(disp, xwin);
-            m_view                  = m_viewer->CreateView();
-            m_view->SetWindow(xwWin);
-            if (!xwWin->IsMapped())
-                xwWin->Map();
+            Handle(Xw_Window) occtWin = new Xw_Window(disp, xwin);
+#elif defined(__WXMSW__)
+            // Windows : we get the HWND via wxWidgets.
+            Handle(WNT_Window) occtWin =
+                new WNT_Window((Aspect_Handle) GetHWND());
+#else
+#error "Plateform not supported by OcctCanvas : add the OCCT branch corresponding (ex: Cocoa_Window for macOS ?)."
+#endif
 
-            // Fond dégradé gris moyen → gris foncé (vertical)
+            m_view = m_viewer->CreateView();
+            m_view->SetWindow(occtWin);
+            if (!occtWin->IsMapped())
+                occtWin->Map();
+
+            // Shade background : middle grey → dark grey (vertical)
             m_view->SetBgGradientColors(
                 Quantity_Color(0.25, 0.25, 0.28, Quantity_TOC_RGB),
                 Quantity_Color(0.12, 0.12, 0.14, Quantity_TOC_RGB),
@@ -240,7 +259,6 @@ namespace wx::occt
             m_view->TriedronDisplay(Aspect_TOTP_LEFT_LOWER,
                                     Quantity_NOC_GOLD, 0.08, V3d_ZBUFFER);
 
-            // Affiche les shapes déjà ajoutées avant l'init
             for (auto& [n, obj] : m_objects)
                 m_context->Display(obj.aisShape, AIS_Shaded, 0, false);
             if (!m_objects.empty())
