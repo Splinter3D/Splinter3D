@@ -1,5 +1,6 @@
 {
     "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "C_Cpp.intelliSenseEngine": "default",
     "C_Cpp.codeAnalysis.exclude": {
         "${workspaceFolder}/build": true,
