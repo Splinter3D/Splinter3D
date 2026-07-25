@@ -116,6 +116,20 @@ jobs:
 
           echo "CODESIGN_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
 
+      - name: Configure vcpkg NuGet binary cache
+        shell: bash
+        run: |
+          dotnet nuget add source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" \
+            --name github \
+            --username "${{ github.repository_owner }}" \
+            --password "$GITHUB_TOKEN" \
+            --store-password-in-clear-text \
+            || dotnet nuget update source github \
+                 --username "${{ github.repository_owner }}" \
+                 --password "$GITHUB_TOKEN" \
+                 --store-password-in-clear-text
+          echo "VCPKG_BINARY_SOURCES=clear;nuget,https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json,readwrite" >> "$GITHUB_ENV"
+
       - name: Install dependencies
         run: ${{ inputs.install_command }}
 
