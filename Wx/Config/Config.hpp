@@ -42,4 +42,4 @@ namespace wx::config
         }
     };
 
-} // namespace wx
+} // namespace wx::config

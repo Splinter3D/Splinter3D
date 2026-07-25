@@ -108,4 +108,4 @@ namespace wx::widgets
         std::function<void(bool)> m_onToggle;
     };
 
-} // namespace wx
+} // namespace wx::widgets

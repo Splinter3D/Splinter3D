@@ -129,4 +129,4 @@ namespace wx::widgets
         std::function<void(const wxString&)> m_onChange;
     };
 
-} // namespace wx
+} // namespace wx::widgets

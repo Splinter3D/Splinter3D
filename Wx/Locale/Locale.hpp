@@ -83,4 +83,4 @@ namespace wx::locale
         }
     };
 
-} // namespace wx
+} // namespace wx::locale

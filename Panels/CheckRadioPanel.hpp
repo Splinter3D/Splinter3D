@@ -21,13 +21,13 @@ class CheckRadioPanel : public wxPanel
 
         auto* result = new wxStaticText(this, wxID_ANY, _("Current mode: Mode A"));
         auto* radio  = wx::widgets::RadioBox(this)
-                          .title(_("Select a mode"))
-                          .choices(modes)
-                          .columns(1)
-                          .onChange([result](const wxString& sel) {
+                           .title(_("Select a mode"))
+                           .choices(modes)
+                           .columns(1)
+                           .onChange([result](const wxString& sel) {
                               result->SetLabel(_("Current mode: ") + sel);
-                          })
-                          .build();
+                           })
+                           .build();
 
         auto* readBtn = wx::widgets::Button(this)
                             .label(_("Read selections"))

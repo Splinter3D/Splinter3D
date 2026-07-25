@@ -12,12 +12,12 @@ class TextPanel : public wxPanel
         auto* singleLine = wx::widgets::TextInput(this).hint(_("Single-line input...")).build();
         auto* password   = wx::widgets::TextInput(this).hint(_("Password input...")).password().build();
         auto* multiLine  = wx::widgets::TextInput(this)
-                              .value(_("Multi-line text area.\nYou can type here freely."))
-                              .multiline()
-                              .height(100)
-                              .build();
-        auto* readOnly = wx::widgets::TextInput(this).value(_("This is read-only text.")).readOnly().build();
-        auto* spin     = wx::widgets::SpinInput(this).range(0, 100).value(0).build();
+                               .value(_("Multi-line text area.\nYou can type here freely."))
+                               .multiline()
+                               .height(100)
+                               .build();
+        auto* readOnly   = wx::widgets::TextInput(this).value(_("This is read-only text.")).readOnly().build();
+        auto* spin       = wx::widgets::SpinInput(this).range(0, 100).value(0).build();
 
         auto* submit = wx::widgets::Button(this)
                            .label(_("Show entered values"))

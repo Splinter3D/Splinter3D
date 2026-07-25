@@ -57,4 +57,4 @@ namespace wx::theme
         Theme()     = default;
     };
 
-} // namespace wx
+} // namespace wx::theme

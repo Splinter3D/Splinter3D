@@ -129,4 +129,4 @@ namespace wx::widgets
         int       m_val    = 0;
     };
 
-} // namespace wx
+} // namespace wx::widgets

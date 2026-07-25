@@ -20,12 +20,12 @@ class ListsPanel : public wxPanel
 
         auto* comboResult = new wxStaticText(this, wxID_ANY, _("Selected: (none)"));
         auto* combo       = wx::widgets::ComboBox(this)
-                          .placeholder(_("Pick a fruit"))
-                          .choices(fruits)
-                          .onSelect([comboResult](const wxString& s) {
+                                .placeholder(_("Pick a fruit"))
+                                .choices(fruits)
+                                .onSelect([comboResult](const wxString& s) {
                               comboResult->SetLabel(_("Selected: ") + s);
-                          })
-                          .build();
+                                })
+                                .build();
 
         wxArrayString langs;
         langs.Add("C++");

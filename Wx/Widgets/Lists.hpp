@@ -110,4 +110,4 @@ namespace wx::widgets
         int           m_height = 0;
     };
 
-} // namespace wx
+} // namespace wx::widgets

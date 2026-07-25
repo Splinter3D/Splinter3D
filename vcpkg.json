@@ -9,7 +9,7 @@
       "version>=": "3.3.1#1"
     },
     {
-      "name":"opencascade",
+      "name": "opencascade",
       "version>=": "8.0.0"
     },
     {
