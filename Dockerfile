@@ -44,4 +44,4 @@ EXPOSE 6080
 USER appuser
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["./splinter3D"]
+CMD ["build/bin/splinter3D"]

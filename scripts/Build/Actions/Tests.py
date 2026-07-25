@@ -18,6 +18,7 @@ def _resolve_test_executable() -> pathlib.Path:
     executable_name = test_executable_name()
     build_root = pathlib.Path("build")
     candidates = [
+        build_root / "bin" / executable_name,
         build_root / executable_name,
         build_root / "Debug" / executable_name,
         build_root / "Release" / executable_name,
@@ -50,6 +51,7 @@ def generate_coverage():
         return
     with open("code_coverage.txt", "w", encoding="utf-8") as coverage_file:
         if get_platform() == Platform.DARWIN:
+            test_executable = _resolve_test_executable()
             subprocess.run(
                 ["xcrun", "llvm-profdata", "merge", "-sparse", *glob.glob("unit_tests-*.profraw"), "-o", "unit_tests.profdata"],
                 check=True,
@@ -59,7 +61,7 @@ def generate_coverage():
                     "xcrun",
                     "llvm-cov",
                     "report",
-                    f"./build/{test_executable_name()}",
+                    str(test_executable),
                     "-instr-profile=unit_tests.profdata",
                     "-ignore-filename-regex=.*/tests/.*",
                     "-enable-name-compression",
