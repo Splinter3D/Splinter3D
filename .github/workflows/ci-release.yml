@@ -230,6 +230,7 @@ jobs:
       artifact_name: ${{ matrix.artifact_name }}
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
+      nuget_feed_token: ${{ secrets.NUGET_FEED_TOKEN }}
       apple_dev_id_cert_b64: ${{ secrets.APPLE_DEV_ID_CERT_B64 }}
       apple_dev_id_cert_pwd: ${{ secrets.APPLE_DEV_ID_CERT_PWD }}
       apple_team_id: ${{ secrets.APPLE_TEAM_ID }}

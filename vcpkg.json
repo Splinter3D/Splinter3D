@@ -5,6 +5,14 @@
   "builtin-baseline": "fab1c6dc7a944372a90a1e19ab5e8e32cd658fc2",
   "dependencies": [
     {
+      "name": "wxwidgets",
+      "version>=": "3.3.1#1"
+    },
+    {
+      "name":"opencascade",
+      "version>=": "8.0.0"
+    },
+    {
       "name": "raylib",
       "version>=": "5.5"
     },

@@ -1,0 +1,392 @@
+# Spanish translations for demo
+msgid ""
+msgstr ""
+"Project-Id-Version: demo 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: es\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "wxWidgets Demo"
+msgstr "Demo wxWidgets"
+
+msgid "— Buttons showcase —"
+msgstr "— Muestra de botones —"
+
+msgid "Normal Button"
+msgstr "Botón normal"
+
+msgid "You clicked a normal button!"
+msgstr "¡Hiciste clic en un botón normal!"
+
+msgid "Button"
+msgstr "Botón"
+
+msgid "Toggle me OFF"
+msgstr "Desactivar"
+
+msgid "Toggle me ON"
+msgstr "Activar"
+
+msgid "Disabled Button"
+msgstr "Botón desactivado"
+
+msgid "Pick a Color (dialog)"
+msgstr "Elegir un color (diálogo)"
+
+msgid "You picked: R=%d G=%d B=%d"
+msgstr "Elegiste: R=%d V=%d A=%d"
+
+msgid "Color picked"
+msgstr "Color elegido"
+
+msgid "Open File (dialog)"
+msgstr "Abrir archivo (diálogo)"
+
+msgid "Choose a file"
+msgstr "Elige un archivo"
+
+msgid "All files (*.*)|*.*"
+msgstr "Todos los archivos (*.*)|*.*"
+
+msgid "Selected: "
+msgstr "Seleccionado: "
+
+msgid "File"
+msgstr "Archivo"
+
+msgid "Show Progress Dialog"
+msgstr "Mostrar progreso"
+
+msgid "Loading..."
+msgstr "Cargando..."
+
+msgid "Please wait"
+msgstr "Por favor espera"
+
+msgid "Step %d/100"
+msgstr "Paso %d/100"
+
+msgid "— Text inputs showcase —"
+msgstr "— Muestra de campos de texto —"
+
+msgid "Single-line input…"
+msgstr "Entrada de una línea…"
+
+msgid "Password input…"
+msgstr "Entrada de contraseña…"
+
+msgid "Multi-line text area.\nYou can type here freely."
+msgstr "Área de texto multilínea.\nPuedes escribir aquí libremente."
+
+msgid "This is read-only text."
+msgstr "Este texto es de solo lectura."
+
+msgid "Show entered values"
+msgstr "Mostrar valores ingresados"
+
+msgid "Text: %s\nPassword: %s\nNumber: %d"
+msgstr "Texto: %s\nContraseña: %s\nNúmero: %d"
+
+msgid "Values"
+msgstr "Valores"
+
+msgid "Single line:"
+msgstr "Línea única:"
+
+msgid "Password:"
+msgstr "Contraseña:"
+
+msgid "Multi-line:"
+msgstr "Multilínea:"
+
+msgid "Read-only:"
+msgstr "Solo lectura:"
+
+msgid "Numeric (SpinCtrl):"
+msgstr "Numérico (SpinCtrl):"
+
+msgid "— Sliders & Gauge showcase —"
+msgstr "— Muestra de controles deslizantes —"
+
+msgid "Slider value: 50"
+msgstr "Valor del control: 50"
+
+msgid "Slider value: %d"
+msgstr "Valor del control: %d"
+
+msgid "Gauge:"
+msgstr "Indicador:"
+
+msgid "Vertical: 30"
+msgstr "Vertical: 30"
+
+msgid "Vertical: %d"
+msgstr "Vertical: %d"
+
+msgid "— Checkboxes & Radio showcase —"
+msgstr "— Muestra de casillas y botones de opción —"
+
+msgid "Option Alpha"
+msgstr "Opción Alfa"
+
+msgid "Option Beta"
+msgstr "Opción Beta"
+
+msgid "Option Gamma (disabled)"
+msgstr "Opción Gamma (desactivada)"
+
+msgid "Select a mode"
+msgstr "Seleccionar un modo"
+
+msgid "Mode A"
+msgstr "Modo A"
+
+msgid "Mode B"
+msgstr "Modo B"
+
+msgid "Mode C"
+msgstr "Modo C"
+
+msgid "Current mode: Mode A"
+msgstr "Modo actual: Modo A"
+
+msgid "Current mode: "
+msgstr "Modo actual: "
+
+msgid "Read selections"
+msgstr "Leer selecciones"
+
+msgid "Alpha: %s\nBeta: %s\nMode: %s"
+msgstr "Alfa: %s\nBeta: %s\nModo: %s"
+
+msgid "ON"
+msgstr "ACTIVADO"
+
+msgid "OFF"
+msgstr "DESACTIVADO"
+
+msgid "Selections"
+msgstr "Selecciones"
+
+msgid "— Lists & ComboBox showcase —"
+msgstr "— Muestra de listas y menús desplegables —"
+
+msgid "ComboBox (dropdown):"
+msgstr "Menú desplegable:"
+
+msgid "Pick a fruit"
+msgstr "Elige una fruta"
+
+msgid "Apple"
+msgstr "Manzana"
+
+msgid "Banana"
+msgstr "Plátano"
+
+msgid "Cherry"
+msgstr "Cereza"
+
+msgid "Durian"
+msgstr "Durián"
+
+msgid "Elderberry"
+msgstr "Saúco"
+
+msgid "Selected: (none)"
+msgstr "Seleccionado: (ninguno)"
+
+msgid "ListBox (multi-select, Ctrl+click):"
+msgstr "ListBox (selección múltiple, Ctrl+clic):"
+
+msgid "Show selected languages"
+msgstr "Mostrar lenguajes seleccionados"
+
+msgid "Nothing selected"
+msgstr "Nada seleccionado"
+
+msgid "List"
+msgstr "Lista"
+
+msgid "Selected"
+msgstr "Seleccionado"
+
+msgid "— Dialogs & Popups showcase —"
+msgstr "— Muestra de diálogos y ventanas emergentes —"
+
+msgid "wxMessageBox — Info"
+msgstr "wxMessageBox — Información"
+
+msgid "This is an info message."
+msgstr "Este es un mensaje informativo."
+
+msgid "Info"
+msgstr "Información"
+
+msgid "wxMessageBox — Warning"
+msgstr "wxMessageBox — Advertencia"
+
+msgid "This is a warning!"
+msgstr "¡Esto es una advertencia!"
+
+msgid "Warning"
+msgstr "Advertencia"
+
+msgid "wxMessageBox — Error"
+msgstr "wxMessageBox — Error"
+
+msgid "Something went wrong."
+msgstr "Algo salió mal."
+
+msgid "Error"
+msgstr "Error"
+
+msgid "wxMessageBox — Yes/No"
+msgstr "wxMessageBox — Sí/No"
+
+msgid "Do you like wxWidgets?"
+msgstr "¿Te gusta wxWidgets?"
+
+msgid "Question"
+msgstr "Pregunta"
+
+msgid "Great!"
+msgstr "¡Genial!"
+
+msgid "Give it time ;)"
+msgstr "Dale tiempo ;)"
+
+msgid "Answer"
+msgstr "Respuesta"
+
+msgid "wxTextEntryDialog — Ask input"
+msgstr "wxTextEntryDialog — Entrada de texto"
+
+msgid "What is your name?"
+msgstr "¿Cuál es tu nombre?"
+
+msgid "Enter name"
+msgstr "Ingresa el nombre"
+
+msgid "Hello, "
+msgstr "Hola, "
+
+msgid "Hi"
+msgstr "Hola"
+
+msgid "wxNumberEntryDialog — Ask number"
+msgstr "wxNumberEntryDialog — Entrada numérica"
+
+msgid "Enter a number:"
+msgstr "Ingresa un número:"
+
+msgid "Number:"
+msgstr "Número:"
+
+msgid "Pick"
+msgstr "Elegir"
+
+msgid "You entered: %ld"
+msgstr "Ingresaste: %ld"
+
+msgid "Number"
+msgstr "Número"
+
+msgid "&File"
+msgstr "&Archivo"
+
+msgid "&New\tCtrl+N"
+msgstr "&Nuevo\tCtrl+N"
+
+msgid "&Open\tCtrl+O"
+msgstr "&Abrir\tCtrl+O"
+
+msgid "E&xit\tAlt+F4"
+msgstr "&Salir\tAlt+F4"
+
+msgid "&View"
+msgstr "&Vista"
+
+msgid "&Dark mode\tCtrl+D"
+msgstr "Modo &oscuro\tCtrl+D"
+
+msgid "Font: Small  (9pt)"
+msgstr "Fuente: Pequeña (9pt)"
+
+msgid "Font: Normal (11pt)"
+msgstr "Fuente: Normal (11pt)"
+
+msgid "Font: Large  (14pt)"
+msgstr "Fuente: Grande (14pt)"
+
+msgid "Font: X-Large (18pt)"
+msgstr "Fuente: Muy grande (18pt)"
+
+msgid "&Language"
+msgstr "&Idioma"
+
+msgid "System default"
+msgstr "Idioma del sistema"
+
+msgid "&Help"
+msgstr "&Ayuda"
+
+msgid "&About"
+msgstr "&Acerca de"
+
+msgid "wxWidgets Demo\nAll major widgets in one place."
+msgstr "Demo wxWidgets\nTodos los widgets principales en un solo lugar."
+
+msgid "About"
+msgstr "Acerca de"
+
+msgid "New file created (demo)."
+msgstr "Nuevo archivo creado (demo)."
+
+msgid "New"
+msgstr "Nuevo"
+
+msgid "Open file"
+msgstr "Abrir archivo"
+
+msgid "Opened: "
+msgstr "Abierto: "
+
+msgid "Open"
+msgstr "Abrir"
+
+msgid "Dark mode ON"
+msgstr "Modo oscuro ACTIVADO"
+
+msgid "Light mode ON"
+msgstr "Modo claro ACTIVADO"
+
+msgid "Font size: %dpt"
+msgstr "Tamaño de fuente: %dpt"
+
+msgid "Language saved.\nPlease restart the app to apply the change."
+msgstr "Idioma guardado.\nReinicia la aplicación para aplicar el cambio."
+
+msgid "Language"
+msgstr "Idioma"
+
+msgid "wxWidgets demo ready.   View → Dark mode / Font   Language → change lang"
+msgstr "Demo wxWidgets lista.   Vista → Modo oscuro / Fuente   Idioma → cambiar idioma"
+
+msgid "Buttons"
+msgstr "Botones"
+
+msgid "Text inputs"
+msgstr "Campos de texto"
+
+msgid "Sliders"
+msgstr "Controles"
+
+msgid "Check / Radio"
+msgstr "Casillas / Opciones"
+
+msgid "Lists & Combo"
+msgstr "Listas & Combo"
+
+msgid "Dialogs"
+msgstr "Diálogos"
