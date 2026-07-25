@@ -44,4 +44,5 @@ if __name__ == "__main__":
     try:
         main()
     except Exception as e:
+        logger.error(str(e))
         exit(1)

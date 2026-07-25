@@ -107,7 +107,40 @@ def _ensure_matching_cache_paths(build_dir: pathlib.Path, cache_entries: dict[st
             shutil.rmtree(build_dir, ignore_errors=True)
 
 
-def ensure_compatible_build_cache(build_dir: pathlib.Path):
+def _toolchain_files_used_by_cmake(build_dir: pathlib.Path) -> set[str]:
+    """Return toolchain files recorded in CMake's generated system files."""
+    toolchain_files: set[str] = set()
+    include_pattern = re.compile(r'^include\("(.+vcpkg\.cmake)"\)$')
+    for system_file in build_dir.glob("CMakeFiles/*/CMakeSystem.cmake"):
+        for line in system_file.read_text(encoding="utf-8", errors="ignore").splitlines():
+            match = include_pattern.match(line.strip())
+            if match:
+                toolchain_files.add(_normalize_cache_path(match.group(1)))
+    return toolchain_files
+
+
+def _ensure_matching_toolchain_file(
+    build_dir: pathlib.Path, cache_entries: dict[str, str], expected_toolchain_file: str | None
+):
+    if expected_toolchain_file is None:
+        return
+
+    expected = _normalize_cache_path(str(pathlib.Path(expected_toolchain_file).resolve()))
+    cached = _normalize_cache_path(cache_entries.get("CMAKE_TOOLCHAIN_FILE", ""))
+    system_toolchains = _toolchain_files_used_by_cmake(build_dir)
+    mismatches = [path for path in (cached, *system_toolchains) if path and path != expected]
+    if not mismatches:
+        return
+
+    reason = f"it uses vcpkg toolchain '{mismatches[0]}' instead of '{expected}'"
+    if not _confirm_delete_mismatched_cache(build_dir, reason):
+        raise RuntimeError("Build cache uses a different vcpkg toolchain.")
+    if not args.dry_run:
+        logger.info(f"Deleting stale build cache at {build_dir}")
+        shutil.rmtree(build_dir, ignore_errors=True)
+
+
+def ensure_compatible_build_cache(build_dir: pathlib.Path, expected_toolchain_file: str | None = None):
     logger.info(f"Ensuring compatible build cache at {build_dir}")
     cache_file = build_dir / "CMakeCache.txt"
     if not cache_file.is_file():
@@ -115,6 +148,10 @@ def ensure_compatible_build_cache(build_dir: pathlib.Path):
 
     cache_entries = _read_cache_entries(cache_file)
     _ensure_matching_cache_paths(build_dir, cache_entries)
+    if not cache_file.is_file():
+        return
+
+    _ensure_matching_toolchain_file(build_dir, cache_entries, expected_toolchain_file)
     if not cache_file.is_file():
         return
 

@@ -1,12 +1,59 @@
 {
-    "bindings": [
-        { "action": "DeleteSelectedObject", "keys": ["Suppr"] },
-        { "action": "DuplicateSelectedObject", "keys": ["Ctrl", "D"] },
-        { "action": "OpenPannelExport", "keys": ["Ctrl", "E"] },
-        { "action": "Import", "keys": ["Ctrl", "I"] },
-        { "action": "OpenPannelRotation", "keys": ["Ctrl", "R"] },
-        { "action": "OpenPannelTransform", "keys": ["Ctrl", "T"] },
-        { "action": "OpenPannelScale", "keys": ["Ctrl", "S"] },
-        { "action": "OpenPannelCut", "keys": ["Ctrl", "X"] }
-    ]
+  "bindings": [
+    {
+      "action": "DeleteSelectedObject",
+      "keys": [
+        "Suppr"
+      ]
+    },
+    {
+      "action": "DuplicateSelectedObject",
+      "keys": [
+        "Ctrl",
+        "D"
+      ]
+    },
+    {
+      "action": "OpenPannelExport",
+      "keys": [
+        "Ctrl",
+        "E"
+      ]
+    },
+    {
+      "action": "Import",
+      "keys": [
+        "Ctrl",
+        "I"
+      ]
+    },
+    {
+      "action": "OpenPannelRotation",
+      "keys": [
+        "Ctrl",
+        "R"
+      ]
+    },
+    {
+      "action": "OpenPannelTransform",
+      "keys": [
+        "Ctrl",
+        "T"
+      ]
+    },
+    {
+      "action": "OpenPannelScale",
+      "keys": [
+        "Ctrl",
+        "S"
+      ]
+    },
+    {
+      "action": "OpenPannelCut",
+      "keys": [
+        "Ctrl",
+        "X"
+      ]
+    }
+  ]
 }

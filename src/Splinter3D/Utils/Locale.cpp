@@ -10,13 +10,13 @@
 #include <algorithm>
 #include <clocale>
 #include <fstream>
-#include <string>
 #include <nlohmann/json.hpp>
+#include <string>
 
 namespace splinter3D::utils
 {
     // Static member definitions
-    std::string Locale::s_localePath;
+    std::string                                  Locale::s_localePath;
     std::unordered_map<std::string, std::string> Locale::s_translations;
 
     /**
@@ -226,7 +226,7 @@ namespace splinter3D::utils
      */
     std::string Locale::getActiveLanguage()
     {
-        std::string activeFile = "./locale/ACTIVE_LANG";
+        std::string   activeFile = "./locale/ACTIVE_LANG";
         std::ifstream ifs(activeFile);
         if (ifs.good())
         {
@@ -251,7 +251,7 @@ namespace splinter3D::utils
         if (lang == nullptr || lang[0] == '\0')
             return false;
 
-        std::string   file = s_localePath + "/" + lang + ".json";
+        std::string file = s_localePath + "/" + lang + ".json";
         return std::filesystem::exists(file);
     }
 
@@ -442,7 +442,7 @@ namespace splinter3D::utils
      */
     void Locale::loadTranslations(const char* lang)
     {
-        std::ifstream file(s_localePath + "/" + lang + ".json");
+        std::ifstream                                file(s_localePath + "/" + lang + ".json");
         std::unordered_map<std::string, std::string> translations;
         if (!file.is_open())
         {
@@ -455,8 +455,7 @@ namespace splinter3D::utils
             nlohmann::json jsonTranslations;
             file >> jsonTranslations;
 
-            const auto flatten = [&translations](const auto& self, const nlohmann::json& node, std::string& keyPath) -> void
-            {
+            const auto flatten = [&translations](const auto& self, const nlohmann::json& node, std::string& keyPath) -> void {
                 if (node.is_object())
                 {
                     for (auto it = node.begin(); it != node.end(); ++it)
@@ -486,7 +485,9 @@ namespace splinter3D::utils
             flatten(flatten, jsonTranslations, keyPath);
 
             s_translations = translations;
-        } catch (const std::exception& e) {
+        }
+        catch (const std::exception& e)
+        {
             clog("[Locale::loadTranslations] Error parsing translation file: ", e.what());
         }
     }

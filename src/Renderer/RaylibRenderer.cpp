@@ -4,8 +4,8 @@
 #include <Splinter3D/Utils/Logger.hpp>
 #include <Splinter3D/Utils/OSCompatibility.hpp>
 #include <algorithm>
-#include <cstdarg>
 #include <cmath>
+#include <cstdarg>
 #include <cstdio>
 #include <memory>
 #include <raylib.h>

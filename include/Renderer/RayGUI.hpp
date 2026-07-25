@@ -1091,11 +1091,14 @@ typedef enum
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <ctype.h>  // required for: isspace() [GuiTextBox()]
+#include <map>      // Required for: std::map [GuiFloatValueBox()]
 #include <math.h>   // Required for: roundf() [GuiColorPicker()]
 #include <stdarg.h> // Required for: va_list, va_start(), vfprintf(), va_end() [TextFormat()]
 #include <stdio.h>  // Required for: FILE, fopen(), fclose(), fprintf(), feof(), fscanf(), snprintf(), vsnprintf() [GuiLoadStyle(), GuiLoadIcons()]
 #include <stdlib.h> // Required for: malloc(), calloc(), free() [GuiLoadStyle(), GuiLoadIcons()]
 #include <string.h> // Required for: strlen() [GuiTextBox(), GuiValueBox()], memset(), memcpy()
+#include <string>   // Required for: std::string [GuiFloatValueBox()]
+#include <utility>  // Required for: std::pair [GuiFloatValueBox()]
 
 #ifdef __cplusplus
 #define RAYGUI_CLITERAL(name) name

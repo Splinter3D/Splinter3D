@@ -1,10 +1,23 @@
 param(
   [string]$ProjectRoot = (Get-Location).Path,
   [string]$BuildDirName = 'build',
-  [string]$Triplet = 'x64-windows',
+  [string]$Triplet,
   [string]$OutDirName = 'output',
   [switch]$DevMode = $false
 )
+
+function Get-Arch() {
+  switch ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture) {
+      'X64'   { 'x64' }
+      'X86'   { 'x86' }
+      'Arm64' { 'arm64' }
+      default { throw "Unsupported architecture" }
+  }
+}
+
+if (-not $Triplet) {
+    $Triplet = "$(Get-Arch)-windows"
+}
 
 function Fail($msg) {
   Write-Error $msg
@@ -52,6 +65,7 @@ $foundExe = Get-ChildItem -Path $buildDir -Recurse -Filter '*.exe' -ErrorAction 
 # If not found, also check common MSVC output locations
 if (-not $foundExe) {
   $extraCandidates = @(
+    $ProjectRoot,
     (Join-Path $ProjectRoot 'Release'),
     (Join-Path $ProjectRoot 'Debug'),
     (Join-Path $buildDir 'Release'),
@@ -105,8 +119,7 @@ if (-not $version) {
   Write-Host "Auto-detected version: $version"
 }
 
-# Extract architecture from triplet (e.g., x64-windows -> x64)
-$arch = $Triplet -split '-' | Select-Object -First 1
+$arch = Get-Arch
 
 # ============================================================================
 # Create output dir and package

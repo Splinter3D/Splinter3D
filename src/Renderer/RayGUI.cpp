@@ -27,11 +27,10 @@
 #endif
 #endif
 
+#include <Renderer/RayGUI.hpp>
 #include <map>
 #include <string>
 #include <utility>
-
-#include <Renderer/RayGUI.hpp>
 
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
