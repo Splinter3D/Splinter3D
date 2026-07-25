@@ -52,6 +52,8 @@ on:
     secrets:
       token:
         required: true
+      nuget_feed_token:
+        required: true
       apple_dev_id_cert_b64:
         required: false
       apple_dev_id_cert_pwd:
@@ -72,6 +74,7 @@ jobs:
     runs-on: ${{ inputs.runs_on }}
     env:
       GITHUB_TOKEN: ${{ secrets.token }}
+      NUGET_FEED_TOKEN: ${{ secrets.nuget_feed_token }}
       WORKSPACE: ${{ github.workspace }}
       APPLE_TEAM_ID: ${{ secrets.apple_team_id }}
       APPLE_DEV_ID_CERT_B64: ${{ secrets.apple_dev_id_cert_b64 }}
@@ -122,11 +125,11 @@ jobs:
           dotnet nuget add source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" \
             --name github \
             --username "${{ github.repository_owner }}" \
-            --password "$GITHUB_TOKEN" \
+            --password "$NUGET_FEED_TOKEN" \
             --store-password-in-clear-text \
             || dotnet nuget update source github \
                  --username "${{ github.repository_owner }}" \
-                 --password "$GITHUB_TOKEN" \
+                 --password "$NUGET_FEED_TOKEN" \
                  --store-password-in-clear-text
           echo "VCPKG_BINARY_SOURCES=clear;nuget,https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json,readwrite" >> "$GITHUB_ENV"
 
