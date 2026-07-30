@@ -1,4 +1,4 @@
-# Splinter3D ui
+# Splinter3D ui - New architecture
 
 ## Bootstrap
 

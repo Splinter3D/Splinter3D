@@ -70,7 +70,7 @@ namespace ui::widgets
          *                      .build();
          * @endcode
          */
-        CheckBox &setChecked(bool checked);
+        CheckBox &setChecked(bool checked = false);
 
         /**
          * @brief Sets the checkbox state.
@@ -81,7 +81,7 @@ namespace ui::widgets
          *
          * @return Reference to this builder for method chaining.
          */
-        CheckBox &setEnabled(bool state);
+        CheckBox &setEnabled(bool state = true);
 
         /**
          * @brief Registers a callback executed when the checked state changes.

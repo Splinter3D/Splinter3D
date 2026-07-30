@@ -12,13 +12,13 @@ namespace ui::widgets
         return *this;
     }
 
-    CheckBox &CheckBox::setChecked(bool checked = false)
+    CheckBox &CheckBox::setChecked(bool checked)
     {
         checked_ = checked;
         return *this;
     }
 
-    CheckBox &CheckBox::setEnabled(bool state = true)
+    CheckBox &CheckBox::setEnabled(bool state)
     {
         enabled_ = state;
         return *this;
