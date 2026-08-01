@@ -68,7 +68,7 @@ msg "Arch: $ARCH"
 [[ -d "$BUILD_DIR" ]] || die "Build directory not found: $BUILD_DIR"
 
 SPLINTER_EXE=""
-for search_dir in "$BUILD_DIR" "$PROJECT_ROOT"; do
+for search_dir in "$BUILD_DIR/bin" "$BUILD_DIR" "$PROJECT_ROOT"; do
     SPLINTER_EXE=$(find "$search_dir" -maxdepth 1 -type f \( -name "splinter3D" -o -name "splinter3D-app" \) 2>/dev/null | head -1)
     [[ -n "$SPLINTER_EXE" ]] && break
 done
@@ -81,7 +81,7 @@ if [[ -z "$SPLINTER_EXE" ]]; then
     fi
 fi
 
-[[ -n "$SPLINTER_EXE" ]] || die "Executable not found in $BUILD_DIR or $PROJECT_ROOT"
+[[ -n "$SPLINTER_EXE" ]] || die "Executable not found in $BUILD_DIR/bin, $BUILD_DIR, or $PROJECT_ROOT"
 msg "Found executable: $SPLINTER_EXE"
 
 # ============================================================================

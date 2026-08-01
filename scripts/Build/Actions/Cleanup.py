@@ -28,15 +28,24 @@ _FCLEAN_ARTIFACTS = (
     "unit_tests.profdata",
     "vgcore*",
     "cmake-build-debug",
+    "build"
 )
 
 
 def clean():
+    ignore_patterns = ["bin", "lib"]
+    build_glob = glob.glob("build/*", recursive=True) + glob.glob("build/.*", recursive=True)
+    build_glob = [path for path in build_glob if not any(pattern in path for pattern in ignore_patterns)]
+
     if args.dry_run:
         logger.info("DRY RUN: remove build")
         return
     logger.info("Cleaning build directory...")
-    shutil.rmtree("build", ignore_errors=True)
+    for path in build_glob:
+        if os.path.isdir(path) and not os.path.islink(path):
+            shutil.rmtree(path, ignore_errors=True)
+        else:
+            pathlib.Path(path).unlink(missing_ok=True)
 
 
 def fclean():
