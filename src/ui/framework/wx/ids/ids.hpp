@@ -26,12 +26,12 @@ namespace ui::framework::wx
          */
         namespace file
         {
-            constexpr int kNew = wxID_NEW;
-            constexpr int kOpen = wxID_OPEN;
-            constexpr int kSave = wxID_SAVE;
+            constexpr int kNew    = wxID_NEW;
+            constexpr int kOpen   = wxID_OPEN;
+            constexpr int kSave   = wxID_SAVE;
             constexpr int kSaveAs = wxID_SAVEAS;
-            constexpr int kClose = wxID_CLOSE;
-            constexpr int kExit = wxID_EXIT;
+            constexpr int kClose  = wxID_CLOSE;
+            constexpr int kExit   = wxID_EXIT;
 
         } // namespace file
 
@@ -42,15 +42,15 @@ namespace ui::framework::wx
          */
         namespace edit
         {
-            constexpr int kUndo = wxID_UNDO;
-            constexpr int kRedo = wxID_REDO;
-            constexpr int kCut = wxID_CUT;
-            constexpr int kCopy = wxID_COPY;
-            constexpr int kPaste = wxID_PASTE;
-            constexpr int kDelete = wxID_DELETE;
+            constexpr int kUndo      = wxID_UNDO;
+            constexpr int kRedo      = wxID_REDO;
+            constexpr int kCut       = wxID_CUT;
+            constexpr int kCopy      = wxID_COPY;
+            constexpr int kPaste     = wxID_PASTE;
+            constexpr int kDelete    = wxID_DELETE;
             constexpr int kSelectAll = wxID_SELECTALL;
-            constexpr int kFind = wxID_FIND;
-            constexpr int kReplace = wxID_REPLACE;
+            constexpr int kFind      = wxID_FIND;
+            constexpr int kReplace   = wxID_REPLACE;
 
         } // namespace edit
 
@@ -59,7 +59,7 @@ namespace ui::framework::wx
          */
         namespace help
         {
-            constexpr int kHelp = wxID_HELP;
+            constexpr int kHelp  = wxID_HELP;
             constexpr int kAbout = wxID_ABOUT;
 
         } // namespace help
@@ -71,11 +71,11 @@ namespace ui::framework::wx
          */
         namespace dialog
         {
-            constexpr int kOk = wxID_OK;
+            constexpr int kOk     = wxID_OK;
             constexpr int kCancel = wxID_CANCEL;
-            constexpr int kApply = wxID_APPLY;
-            constexpr int kYes = wxID_YES;
-            constexpr int kNo = wxID_NO;
+            constexpr int kApply  = wxID_APPLY;
+            constexpr int kYes    = wxID_YES;
+            constexpr int kNo     = wxID_NO;
 
         } // namespace dialog
 
@@ -107,12 +107,12 @@ namespace ui::framework::wx
          */
         namespace view
         {
-            constexpr int kRefresh = app::kBase + 0;
-            constexpr int kResetLayout = app::kBase + 1;
+            constexpr int kRefresh          = app::kBase + 0;
+            constexpr int kResetLayout      = app::kBase + 1;
             constexpr int kToggleFullscreen = app::kBase + 2;
-            constexpr int kShowToolbar = app::kBase + 3;
-            constexpr int kShowStatusbar = app::kBase + 4;
-            constexpr int kShowGrid = app::kBase + 5;
+            constexpr int kShowToolbar      = app::kBase + 3;
+            constexpr int kShowStatusbar    = app::kBase + 4;
+            constexpr int kShowGrid         = app::kBase + 5;
 
         } // namespace view
 
@@ -122,8 +122,8 @@ namespace ui::framework::wx
         namespace theme
         {
             constexpr int kToggleDarkMode = app::kBase + 100;
-            constexpr int kLightMode = app::kBase + 101;
-            constexpr int kDarkMode = app::kBase + 102;
+            constexpr int kLightMode      = app::kBase + 101;
+            constexpr int kDarkMode       = app::kBase + 102;
 
         } // namespace theme
 
@@ -134,8 +134,8 @@ namespace ui::framework::wx
         {
             constexpr int kDefault = app::kBase + 200;
             constexpr int kEnglish = app::kBase + 201;
-            constexpr int kFrench = app::kBase + 202;
-            constexpr int kGerman = app::kBase + 203;
+            constexpr int kFrench  = app::kBase + 202;
+            constexpr int kGerman  = app::kBase + 203;
             constexpr int kSpanish = app::kBase + 204;
 
         } // namespace language
@@ -145,8 +145,8 @@ namespace ui::framework::wx
          */
         namespace tools
         {
-            constexpr int kPreferences = app::kBase + 300;
-            constexpr int kSettings = app::kBase + 301;
+            constexpr int kPreferences   = app::kBase + 300;
+            constexpr int kSettings      = app::kBase + 301;
             constexpr int kPluginManager = app::kBase + 302;
 
         } // namespace tools
@@ -156,9 +156,9 @@ namespace ui::framework::wx
          */
         namespace window
         {
-            constexpr int kNewWindow = app::kBase + 400;
-            constexpr int kCloseWindow = app::kBase + 401;
-            constexpr int kNextWindow = app::kBase + 402;
+            constexpr int kNewWindow      = app::kBase + 400;
+            constexpr int kCloseWindow    = app::kBase + 401;
+            constexpr int kNextWindow     = app::kBase + 402;
             constexpr int kPreviousWindow = app::kBase + 403;
 
         } // namespace window
@@ -170,8 +170,8 @@ namespace ui::framework::wx
          */
         namespace debug
         {
-            constexpr int kReloadTheme = app::kBase + 500;
-            constexpr int kReloadLocale = app::kBase + 501;
+            constexpr int kReloadTheme    = app::kBase + 500;
+            constexpr int kReloadLocale   = app::kBase + 501;
             constexpr int kShowDebugPanel = app::kBase + 502;
 
         } // namespace debug

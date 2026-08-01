@@ -14,7 +14,7 @@ namespace ui::framework::wx
          */
         class WidgetEvents final : public EventBinder
         {
-        public:
+          public:
             using EventBinder::EventBinder;
 
             /**
@@ -22,7 +22,7 @@ namespace ui::framework::wx
              */
             void bind() override;
 
-        private:
+          private:
             /**
              * @brief Handles generic widget updates.
              */

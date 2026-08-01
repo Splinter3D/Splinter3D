@@ -10,7 +10,7 @@ namespace ui::framework::wx
 {
     namespace events
     {
-        EventManager::EventManager(wxFrame *frame)
+        EventManager::EventManager(wxFrame* frame)
         {
             if (!frame)
                 return;
@@ -33,7 +33,7 @@ namespace ui::framework::wx
 
         void EventManager::bindAll()
         {
-            for (auto &binder : binders_)
+            for (auto& binder : binders_)
             {
                 if (binder)
                     binder->bind();

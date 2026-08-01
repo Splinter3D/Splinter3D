@@ -16,8 +16,7 @@ namespace ui::framework::wx
         {
             frame_->Bind(
                 wxEVT_CHAR_HOOK,
-                [this](wxKeyEvent &event)
-                {
+                [this](wxKeyEvent& event) {
                     const int key = event.GetKeyCode();
 
                     // Ctrl + S
@@ -61,8 +60,7 @@ namespace ui::framework::wx
         {
             frame_->Bind(
                 wxEVT_CHAR_HOOK,
-                [this](wxKeyEvent &event)
-                {
+                [this](wxKeyEvent& event) {
                     if (event.GetKeyCode() == WXK_F11)
                     {
                         wxCommandEvent fullscreenEvent(

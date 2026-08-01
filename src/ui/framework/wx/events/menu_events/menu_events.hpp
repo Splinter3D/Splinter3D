@@ -8,12 +8,12 @@ namespace ui::framework::wx
     {
         class MenuEvents final : public EventBinder
         {
-        public:
+          public:
             using EventBinder::EventBinder;
 
             void bind() override;
 
-        private:
+          private:
             void bindFileMenu();
             void bindHelpMenu();
 

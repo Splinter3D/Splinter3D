@@ -32,13 +32,13 @@ namespace ui::widgets
      */
     class ListBox
     {
-    public:
+      public:
         /**
          * @brief Creates a new ListBox builder.
          *
          * @param parent Parent wxWindow that will own the created list box.
          */
-        explicit ListBox(wxWindow *parent);
+        explicit ListBox(wxWindow* parent);
 
         /**
          * @brief Sets the items displayed in the list box.
@@ -61,7 +61,7 @@ namespace ui::widgets
          *                     .build();
          * @endcode
          */
-        ListBox &setChoices(const wxArrayString &choices);
+        ListBox& setChoices(const wxArrayString& choices);
 
         /**
          * @brief Sets the multiSelection state.
@@ -70,7 +70,7 @@ namespace ui::widgets
          *
          * @return Reference to this builder for method chaining.
          */
-        ListBox &multiSelection();
+        ListBox& multiSelection();
 
         /**
          * @brief Sets the number of visible rows in the list box.
@@ -92,7 +92,7 @@ namespace ui::widgets
          *                     .build();
          * @endcode
          */
-        ListBox &setRows(int rows);
+        ListBox& setRows(int rows);
 
         /**
          * @brief Registers a callback executed when an item is selected.
@@ -122,7 +122,7 @@ namespace ui::widgets
          * In multi-selection mode, the callback is invoked whenever the selection
          * changes. Use wxListBox::GetSelections() to retrieve all selected items.
          */
-        ListBox &onSelect(std::function<void(wxListBox &, int)> callback);
+        ListBox& onSelect(std::function<void(wxListBox&, int)> callback);
 
         /**
          * @brief Creates the wxListBox instance.
@@ -137,14 +137,14 @@ namespace ui::widgets
          *
          * @warning The returned pointer must not be manually deleted.
          */
-        wxListBox *build() const;
+        wxListBox* build() const;
 
-    private:
-        wxWindow *parent_ = nullptr;
-        wxArrayString choices_;
-        bool multi_selection_ = false;
-        int rows_ = 0;
-        std::function<void(wxListBox &, int)> on_select_;
+      private:
+        wxWindow*                            parent_ = nullptr;
+        wxArrayString                        choices_;
+        bool                                 multi_selection_ = false;
+        int                                  rows_            = 0;
+        std::function<void(wxListBox&, int)> on_select_;
     };
 
 } // namespace ui::widgets

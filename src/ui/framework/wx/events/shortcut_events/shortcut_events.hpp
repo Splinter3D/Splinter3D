@@ -17,7 +17,7 @@ namespace ui::framework::wx
          */
         class ShortcutEvents final : public EventBinder
         {
-        public:
+          public:
             using EventBinder::EventBinder;
 
             /**
@@ -25,7 +25,7 @@ namespace ui::framework::wx
              */
             void bind() override;
 
-        private:
+          private:
             /**
              * @brief Handles standard application shortcuts.
              */

@@ -1,70 +1,24 @@
-# Splinter3D ui - New architecture
+# UI/
 
-## Bootstrap
+Everything related to visual presentation. Based on wxWidgets.
 
-- Doxyfile (if you want to generate documentation)
+## Content
 
-## Doxygen
+- `windows/` — full windows (`MainWindow`, `SettingsWindow`, `AboutWindow`). One window = one clear, self-contained UI flow.
+- `panels/` — workspaces within a window (`ExplorerPanel`, `ViewerPanel`, `PropertyPanel`, `ConsolePanel`).
+- `layouts/` — spatial organization of widgets (`MainLayout`, `ViewerLayout`...).
+- `menus/` — drop-down menus used when a feature is too small to warrant its own window.
+- `toolbars/` — button/icon bars (New, Open, Save, Undo...).
+- `dialogs/` — transient pop-ups (`OpenDialog`, `SaveDialog`, `ExportDialog`, `SettingsDialog`).
+- `widgets/` — reusable basic components (`button`, `combo_box`, `slider`...), containing no business logic.
+- `framework/`
+  - `wx/` — everything wrapping wxWidgets (`Events/`, `Helpers/`, `IDs/`, `Builders/`).
+  - `occt/` — widgets for integrating OCCT into the UI (not to be confused with `rendering/occt/`, which is the rendering engine).
 
-### How to Generate Documentation
+## Dependency Rule
 
-By using Doxygen, you need to use a specific commenting style in your code. Here are some examples of how to comment your code for Doxygen:
+`ui/` never directly references `geometry/` or `rendering/`. To trigger a business action, it goes through `application/` (e.g., `application/commands/`). To update itself (state, selection, notifications), it observes `core/`.
 
-```cpp
-/**
- * @brief This is a brief description of the function.
- *
- * This is a more detailed description of the function, explaining its purpose and usage.
- *
- * @param param1 Description of the first parameter.
- * @param param2 Description of the second parameter.
- * @return Description of the return value.
- * @code{.cpp}
- * // some code
- * @endcode
- */
-```
+## Pending Decision
 
-Common Doxygen tags in C++:
-
-| Tag              | Purpose |
-|------------------|---------|
-| @brief           | Short description |
-| @param           | Function parameter |
-| @return          | Return value |
-| @code / @endcode | Code examples |
-| @note            | Additional information |
-| @warning         | Warning |
-| @see             | Reference to another class/function |
-| @ingroup         | Documentation grouping |
-
-Then you can generate the documentation, running the following command:
-
-```bash
-doxygen Doxyfile
-```
-
-**Assure that the Doxyfile is properly configured for your project.**
-
-Example of a Doxyfile configuration:
-```Doxyfile
-PROJECT_NAME = "Splinter3D"
-
-INPUT = widgets
-
-RECURSIVE = YES
-
-FILE_PATTERNS = *.hpp *.cpp
-
-GENERATE_HTML = YES
-
-OUTPUT_DIRECTORY = docs
-
-EXTRACT_PRIVATE = NO
-
-EXTRACT_PUBLIC = YES
-
-MARKDOWN_SUPPORT = YES
-
-SOURCE_BROWSER = YES
-```
+`ui/framework/occt/` and `rendering/occt/` share the same name despite having different roles—if you keep both, rename one of them (e.g., `occt_widgets/`) to avoid confusion when reviewing the code later.

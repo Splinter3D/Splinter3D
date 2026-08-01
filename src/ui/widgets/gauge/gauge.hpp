@@ -23,13 +23,13 @@ namespace ui::widgets
      */
     class Gauge
     {
-    public:
+      public:
         /**
          * @brief Creates a new Gauge builder.
          *
          * @param parent Parent wxWindow that will own the created gauge.
          */
-        explicit Gauge(wxWindow *parent);
+        explicit Gauge(wxWindow* parent);
 
         /**
          * @brief Sets the maximum value of the gauge.
@@ -50,7 +50,7 @@ namespace ui::widgets
          *                    .build();
          * @endcode
          */
-        Gauge &setRange(int range);
+        Gauge& setRange(int range);
 
         /**
          * @brief Sets the initial gauge value.
@@ -69,7 +69,7 @@ namespace ui::widgets
          *                    .build();
          * @endcode
          */
-        Gauge &setValue(int value);
+        Gauge& setValue(int value);
 
         /**
          * @brief Creates the wxGauge instance.
@@ -83,12 +83,12 @@ namespace ui::widgets
          *
          * @warning The returned pointer must not be manually deleted.
          */
-        wxGauge *build() const;
+        wxGauge* build() const;
 
-    private:
-        wxWindow *parent_ = nullptr;
-        int range_ = 100;
-        int value_ = 0;
+      private:
+        wxWindow* parent_ = nullptr;
+        int       range_  = 100;
+        int       value_  = 0;
     };
 
 } // namespace ui::widgets

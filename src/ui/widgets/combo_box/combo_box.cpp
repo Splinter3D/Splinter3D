@@ -2,31 +2,31 @@
 
 namespace ui::widgets
 {
-    ComboBox::ComboBox(wxWindow *parent) : parent_(parent)
+    ComboBox::ComboBox(wxWindow* parent) : parent_(parent)
     {
     }
 
-    ComboBox &ComboBox::setPlaceholder(const wxString &placeholder)
+    ComboBox& ComboBox::setPlaceholder(const wxString& placeholder)
     {
         placeholder_ = placeholder;
         return *this;
     }
 
-    ComboBox &ComboBox::setChoices(const wxArrayString &choices)
+    ComboBox& ComboBox::setChoices(const wxArrayString& choices)
     {
         choices_ = choices;
         return *this;
     }
 
-    ComboBox &ComboBox::onSelect(std::function<void(wxComboBox &, const wxString &)> callback)
+    ComboBox& ComboBox::onSelect(std::function<void(wxComboBox&, const wxString&)> callback)
     {
         on_select_ = std::move(callback);
         return *this;
     }
 
-    wxComboBox *ComboBox::build() const
+    wxComboBox* ComboBox::build() const
     {
-        auto *combo_box = new wxComboBox(
+        auto* combo_box = new wxComboBox(
             parent_,
             wxID_ANY,
             placeholder_,
@@ -37,8 +37,7 @@ namespace ui::widgets
 
         if (on_select_)
             combo_box->Bind(wxEVT_COMBOBOX,
-                            [callback = on_select_, combo_box](wxCommandEvent &)
-                            {
+                            [callback = on_select_, combo_box](wxCommandEvent&) {
                                 callback(*combo_box, combo_box->GetStringSelection());
                             });
 

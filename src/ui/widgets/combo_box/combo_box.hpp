@@ -32,13 +32,13 @@ namespace ui::widgets
      */
     class ComboBox
     {
-    public:
+      public:
         /**
          * @brief Creates a new ComboBox builder.
          *
          * @param parent Parent wxWindow that will own the created combo box.
          */
-        explicit ComboBox(wxWindow *parent);
+        explicit ComboBox(wxWindow* parent);
 
         /**
          * @brief Sets the placeholder text displayed before a selection is made.
@@ -57,7 +57,7 @@ namespace ui::widgets
          *                   .build();
          * @endcode
          */
-        ComboBox &setPlaceholder(const wxString &placeholder);
+        ComboBox& setPlaceholder(const wxString& placeholder);
 
         /**
          * @brief Sets the list of selectable items.
@@ -80,7 +80,7 @@ namespace ui::widgets
          *                   .build();
          * @endcode
          */
-        ComboBox &setChoices(const wxArrayString &choices);
+        ComboBox& setChoices(const wxArrayString& choices);
 
         /**
          * @brief Registers a callback executed when an item is selected.
@@ -106,7 +106,7 @@ namespace ui::widgets
          *     .build();
          * @endcode
          */
-        ComboBox &onSelect(std::function<void(wxComboBox &, const wxString &)> callback);
+        ComboBox& onSelect(std::function<void(wxComboBox&, const wxString&)> callback);
 
         /**
          * @brief Creates the wxComboBox instance.
@@ -121,13 +121,13 @@ namespace ui::widgets
          *
          * @warning The returned pointer must not be manually deleted.
          */
-        wxComboBox *build() const;
+        wxComboBox* build() const;
 
-    private:
-        wxWindow *parent_ = nullptr;
-        wxString placeholder_;
-        wxArrayString choices_;
-        std::function<void(wxComboBox &, const wxString &)> on_select_;
+      private:
+        wxWindow*                                         parent_ = nullptr;
+        wxString                                          placeholder_;
+        wxArrayString                                     choices_;
+        std::function<void(wxComboBox&, const wxString&)> on_select_;
     };
 
 } // namespace ui::widgets

@@ -14,7 +14,7 @@ namespace ui::framework::wx
         class LocaleEvents final : public EventBinder
         {
 
-        public:
+          public:
             using EventBinder::EventBinder;
 
             /**
@@ -26,13 +26,13 @@ namespace ui::framework::wx
              * @brief Sets callback called after language change.
              */
             void setLanguageCallback(
-                std::function<void(const std::string &)> callback);
+                std::function<void(const std::string&)> callback);
 
-        private:
+          private:
             void bindLanguages();
 
-        private:
-            std::function<void(const std::string &)> on_language_changed_;
+          private:
+            std::function<void(const std::string&)> on_language_changed_;
         };
 
     } // namespace events

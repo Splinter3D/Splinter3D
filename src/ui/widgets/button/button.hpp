@@ -23,13 +23,13 @@ namespace ui::widgets
      */
     class Button
     {
-    public:
+      public:
         /**
          * @brief Creates a new Button builder.
          *
          * @param parent Parent wxWindow that will own the created button.
          */
-        explicit Button(wxWindow *parent);
+        explicit Button(wxWindow* parent);
 
         /**
          * @brief Sets the text displayed on the button.
@@ -48,7 +48,7 @@ namespace ui::widgets
          *                 .build();
          * @endcode
          */
-        Button &setLabel(const wxString &label);
+        Button& setLabel(const wxString& label);
 
         /**
          * @brief Sets the tooltip displayed when hovering the button.
@@ -57,7 +57,7 @@ namespace ui::widgets
          *
          * @return Reference to this builder for method chaining.
          */
-        Button &setTooltip(const wxString &tooltip);
+        Button& setTooltip(const wxString& tooltip);
 
         /**
          * @brief Sets the button state.
@@ -68,7 +68,7 @@ namespace ui::widgets
          *
          * @return Reference to this builder for method chaining.
          */
-        Button &setEnabled(bool state);
+        Button& setEnabled(bool state);
 
         /**
          * @brief Registers a callback executed when the button is clicked.
@@ -77,7 +77,7 @@ namespace ui::widgets
          *
          * @return Reference to this builder for method chaining.
          */
-        Button &onClick(std::function<void()> callback);
+        Button& onClick(std::function<void()> callback);
 
         /**
          * @brief Creates the wxButton instance.
@@ -89,13 +89,13 @@ namespace ui::widgets
          *
          * @warning The returned pointer must not be manually deleted.
          */
-        wxButton *build() const;
+        wxButton* build() const;
 
-    private:
-        wxWindow *parent_ = nullptr;
-        wxString label_;
-        wxString tooltip_;
-        bool enabled_ = true;
+      private:
+        wxWindow*             parent_ = nullptr;
+        wxString              label_;
+        wxString              tooltip_;
+        bool                  enabled_ = true;
         std::function<void()> on_click_;
     };
 

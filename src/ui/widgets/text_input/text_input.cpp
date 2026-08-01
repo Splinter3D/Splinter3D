@@ -2,59 +2,59 @@
 
 namespace ui::widgets
 {
-    TextInput::TextInput(wxWindow *parent) : parent_(parent)
+    TextInput::TextInput(wxWindow* parent) : parent_(parent)
     {
     }
 
-    TextInput &TextInput::setHint(const wxString &hint)
+    TextInput& TextInput::setHint(const wxString& hint)
     {
         hint_ = hint;
         return *this;
     }
 
-    TextInput &TextInput::setValue(const wxString &value)
+    TextInput& TextInput::setValue(const wxString& value)
     {
         value_ = value;
         return *this;
     }
 
-    TextInput &TextInput::setLines(int lines)
+    TextInput& TextInput::setLines(int lines)
     {
         lines_ = lines;
         return *this;
     }
 
-    TextInput &TextInput::setPasswordMode(bool state)
+    TextInput& TextInput::setPasswordMode(bool state)
     {
         password_mode_ = state;
         return *this;
     }
 
-    TextInput &TextInput::multiline()
+    TextInput& TextInput::multiline()
     {
         multiline_ = true;
         return *this;
     }
 
-    TextInput &TextInput::readOnly()
+    TextInput& TextInput::readOnly()
     {
         read_only_ = true;
         return *this;
     }
 
-    TextInput &TextInput::onChange(std::function<void(wxTextCtrl &, const wxString &)> callback)
+    TextInput& TextInput::onChange(std::function<void(wxTextCtrl&, const wxString&)> callback)
     {
         on_change_ = std::move(callback);
         return *this;
     }
 
-    TextInput &TextInput::onEnter(std::function<void(wxTextCtrl &)> callback)
+    TextInput& TextInput::onEnter(std::function<void(wxTextCtrl&)> callback)
     {
         on_enter_ = std::move(callback);
         return *this;
     }
 
-    wxTextCtrl *TextInput::build() const
+    wxTextCtrl* TextInput::build() const
     {
         long style = 0;
 
@@ -70,7 +70,7 @@ namespace ui::widgets
         if (on_enter_)
             style |= wxTE_PROCESS_ENTER;
 
-        auto *text = new wxTextCtrl(
+        auto* text = new wxTextCtrl(
             parent_,
             wxID_ANY,
             value_,
@@ -93,8 +93,7 @@ namespace ui::widgets
         if (on_change_)
         {
             text->Bind(wxEVT_TEXT,
-                       [callback = on_change_, text](wxCommandEvent &)
-                       {
+                       [callback = on_change_, text](wxCommandEvent&) {
                            callback(*text, text->GetValue());
                        });
         }
@@ -102,8 +101,7 @@ namespace ui::widgets
         if (on_enter_)
         {
             text->Bind(wxEVT_TEXT_ENTER,
-                       [callback = on_enter_, text](wxCommandEvent &)
-                       {
+                       [callback = on_enter_, text](wxCommandEvent&) {
                            callback(*text);
                        });
         }

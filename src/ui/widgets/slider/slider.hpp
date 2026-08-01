@@ -27,13 +27,13 @@ namespace ui::widgets
      */
     class Slider
     {
-    public:
+      public:
         /**
          * @brief Creates a new Slider builder.
          *
          * @param parent Parent wxWindow that will own the created slider.
          */
-        explicit Slider(wxWindow *parent);
+        explicit Slider(wxWindow* parent);
 
         /**
          * @brief Sets the minimum and maximum values of the slider.
@@ -53,7 +53,7 @@ namespace ui::widgets
          *                    .build();
          * @endcode
          */
-        Slider &setRange(int min_range, int max_range);
+        Slider& setRange(int min_range, int max_range);
 
         /**
          * @brief Sets the initial slider value.
@@ -72,7 +72,7 @@ namespace ui::widgets
          *                    .build();
          * @endcode
          */
-        Slider &setValue(int value);
+        Slider& setValue(int value);
 
         /**
          * @brief Sets the slider vertical.
@@ -81,7 +81,7 @@ namespace ui::widgets
          *
          * @return Reference to this builder for method chaining.
          */
-        Slider &vertical();
+        Slider& vertical();
 
         /**
          * @brief Displays value labels alongside the slider.
@@ -91,7 +91,7 @@ namespace ui::widgets
          *
          * @return Reference to this builder for method chaining.
          */
-        Slider &withLabels();
+        Slider& withLabels();
 
         /**
          * @brief Sets the length of the slider.
@@ -113,7 +113,7 @@ namespace ui::widgets
          *                    .build();
          * @endcode
          */
-        Slider &setLength(int length);
+        Slider& setLength(int length);
 
         /**
          * @brief Registers a callback executed when the slider value changes.
@@ -139,7 +139,7 @@ namespace ui::widgets
          *     .build();
          * @endcode
          */
-        Slider &onChange(std::function<void(wxSlider &, int)> callback);
+        Slider& onChange(std::function<void(wxSlider&, int)> callback);
 
         /**
          * @brief Creates the wxSlider instance.
@@ -154,17 +154,17 @@ namespace ui::widgets
          *
          * @warning The returned pointer must not be manually deleted.
          */
-        wxSlider *build() const;
+        wxSlider* build() const;
 
-    private:
-        wxWindow *parent_ = nullptr;
-        int min_range_ = 0;
-        int max_range_ = 100;
-        int value_ = 0;
-        int length_ = 100;
-        bool vertical_ = false;
-        bool with_labels_ = false;
-        std::function<void(wxSlider &, int)> on_change_;
+      private:
+        wxWindow*                           parent_      = nullptr;
+        int                                 min_range_   = 0;
+        int                                 max_range_   = 100;
+        int                                 value_       = 0;
+        int                                 length_      = 100;
+        bool                                vertical_    = false;
+        bool                                with_labels_ = false;
+        std::function<void(wxSlider&, int)> on_change_;
     };
 
 } // namespace ui::widgets

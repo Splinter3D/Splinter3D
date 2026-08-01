@@ -17,8 +17,8 @@ namespace ui::framework::wx
          */
         class EventBinder
         {
-        public:
-            explicit EventBinder(wxFrame *frame)
+          public:
+            explicit EventBinder(wxFrame* frame)
                 : frame_(frame)
             {
             }
@@ -30,8 +30,8 @@ namespace ui::framework::wx
              */
             virtual void bind() = 0;
 
-        protected:
-            wxFrame *frame_;
+          protected:
+            wxFrame* frame_;
         };
 
     } // namespace events

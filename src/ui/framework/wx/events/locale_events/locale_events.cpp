@@ -1,8 +1,7 @@
 #include "locale_events.hpp"
 
-#include "ui/framework/wx/ids/ids.hpp"
-
 #include "app/config/config_manager.hpp"
+#include "ui/framework/wx/ids/ids.hpp"
 
 namespace ui::framework::wx
 {
@@ -14,7 +13,7 @@ namespace ui::framework::wx
         }
 
         void LocaleEvents::setLanguageCallback(
-            std::function<void(const std::string &)> callback)
+            std::function<void(const std::string&)> callback)
         {
             on_language_changed_ = std::move(callback);
         }
@@ -23,28 +22,26 @@ namespace ui::framework::wx
         {
 
             auto bindLanguage =
-                [this](int id, const std::string &language)
-            {
-                frame_->Bind(
-                    wxEVT_MENU,
+                [this](int id, const std::string& language) {
+                    frame_->Bind(
+                        wxEVT_MENU,
 
-                    [this, language](wxCommandEvent &)
-                    {
-                        auto config =
-                            app::config::ConfigManager::load();
+                        [this, language](wxCommandEvent&) {
+                            auto config =
+                                app::config::ConfigManager::load();
 
-                        config.language = language;
+                            config.language = language;
 
-                        app::config::ConfigManager::save(config);
+                            app::config::ConfigManager::save(config);
 
-                        if (on_language_changed_)
-                        {
-                            on_language_changed_(language);
-                        }
-                    },
+                            if (on_language_changed_)
+                            {
+                                on_language_changed_(language);
+                            }
+                        },
 
-                    id);
-            };
+                        id);
+                };
             bindLanguage(ids::language::kDefault, "default");
             bindLanguage(ids::language::kEnglish, "en");
             bindLanguage(ids::language::kFrench, "fr");

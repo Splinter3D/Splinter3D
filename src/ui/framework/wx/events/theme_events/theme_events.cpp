@@ -1,9 +1,8 @@
 #include "theme_events.hpp"
 
-#include "ui/framework/wx/ids/ids.hpp"
-
-#include "app/theme/theme_manager.hpp"
 #include "app/config/config_manager.hpp"
+#include "app/theme/theme_manager.hpp"
+#include "ui/framework/wx/ids/ids.hpp"
 
 namespace ui::framework::wx
 {
@@ -19,8 +18,7 @@ namespace ui::framework::wx
         {
             frame_->Bind(
                 wxEVT_MENU,
-                [this](wxCommandEvent &event)
-                {
+                [this](wxCommandEvent& event) {
                     applyTheme(event.IsChecked());
                 },
                 ids::theme::kToggleDarkMode);
@@ -30,16 +28,14 @@ namespace ui::framework::wx
         {
             frame_->Bind(
                 wxEVT_MENU,
-                [this](wxCommandEvent &)
-                {
+                [this](wxCommandEvent&) {
                     applyTheme(false);
                 },
                 ids::theme::kLightMode);
 
             frame_->Bind(
                 wxEVT_MENU,
-                [this](wxCommandEvent &)
-                {
+                [this](wxCommandEvent&) {
                     applyTheme(true);
                 },
                 ids::theme::kDarkMode);
@@ -47,7 +43,7 @@ namespace ui::framework::wx
 
         void ThemeEvents::applyTheme(bool dark)
         {
-            auto &manager = app::theme::ThemeManager::get();
+            auto& manager = app::theme::ThemeManager::get();
 
             manager.setDark(dark);
             manager.apply(frame_);

@@ -26,13 +26,13 @@ namespace ui::widgets
      */
     class CheckBox
     {
-    public:
+      public:
         /**
          * @brief Creates a new CheckBox builder.
          *
          * @param parent Parent wxWindow that will own the created check box.
          */
-        explicit CheckBox(wxWindow *parent);
+        explicit CheckBox(wxWindow* parent);
 
         /**
          * @brief Sets the text displayed next to the check box.
@@ -51,7 +51,7 @@ namespace ui::widgets
          *                      .build();
          * @endcode
          */
-        CheckBox &setLabel(const wxString &label);
+        CheckBox& setLabel(const wxString& label);
 
         /**
          * @brief Sets the checked state.
@@ -70,7 +70,7 @@ namespace ui::widgets
          *                      .build();
          * @endcode
          */
-        CheckBox &setChecked(bool checked = false);
+        CheckBox& setChecked(bool checked = false);
 
         /**
          * @brief Sets the checkbox state.
@@ -81,7 +81,7 @@ namespace ui::widgets
          *
          * @return Reference to this builder for method chaining.
          */
-        CheckBox &setEnabled(bool state = true);
+        CheckBox& setEnabled(bool state = true);
 
         /**
          * @brief Registers a callback executed when the checked state changes.
@@ -107,7 +107,7 @@ namespace ui::widgets
          *     .build();
          * @endcode
          */
-        CheckBox &onToggle(std::function<void(wxCheckBox &, bool)> callback);
+        CheckBox& onToggle(std::function<void(wxCheckBox&, bool)> callback);
 
         /**
          * @brief Creates the wxCheckBox instance.
@@ -122,14 +122,14 @@ namespace ui::widgets
          *
          * @warning The returned pointer must not be manually deleted.
          */
-        wxCheckBox *build() const;
+        wxCheckBox* build() const;
 
-    private:
-        wxWindow *parent_ = nullptr;
-        wxString label_;
-        bool checked_ = false;
-        bool enabled_ = true;
-        std::function<void(wxCheckBox &, bool)> on_toggle_;
+      private:
+        wxWindow*                              parent_ = nullptr;
+        wxString                               label_;
+        bool                                   checked_ = false;
+        bool                                   enabled_ = true;
+        std::function<void(wxCheckBox&, bool)> on_toggle_;
     };
 
-} // namespace widgets
+} // namespace ui::widgets

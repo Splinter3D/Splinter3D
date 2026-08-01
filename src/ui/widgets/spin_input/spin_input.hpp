@@ -26,13 +26,13 @@ namespace ui::widgets
      */
     class SpinInput
     {
-    public:
+      public:
         /**
          * @brief Creates a new SpinInput builder.
          *
          * @param parent Parent wxWindow that will own the created spin control.
          */
-        explicit SpinInput(wxWindow *parent);
+        explicit SpinInput(wxWindow* parent);
 
         /**
          * @brief Sets the minimum and maximum values of the spin control.
@@ -52,7 +52,7 @@ namespace ui::widgets
          *                  .build();
          * @endcode
          */
-        SpinInput &setRange(int min_range, int max_range);
+        SpinInput& setRange(int min_range, int max_range);
 
         /**
          * @brief Sets the initial value of the spin control.
@@ -71,7 +71,7 @@ namespace ui::widgets
          *                  .build();
          * @endcode
          */
-        SpinInput &setValue(int value);
+        SpinInput& setValue(int value);
 
         /**
          * @brief Registers a callback executed when the value changes.
@@ -97,7 +97,7 @@ namespace ui::widgets
          *     .build();
          * @endcode
          */
-        SpinInput &onChange(std::function<void(wxSpinCtrl &, int)> callback);
+        SpinInput& onChange(std::function<void(wxSpinCtrl&, int)> callback);
 
         /**
          * @brief Creates the wxSpinCtrl instance.
@@ -112,14 +112,14 @@ namespace ui::widgets
          *
          * @warning The returned pointer must not be manually deleted.
          */
-        wxSpinCtrl *build() const;
+        wxSpinCtrl* build() const;
 
-    private:
-        wxWindow *parent_ = nullptr;
-        int min_range_ = 0;
-        int max_range_ = 100;
-        int value_ = 0;
-        std::function<void(wxSpinCtrl &, int)> on_change_;
+      private:
+        wxWindow*                             parent_    = nullptr;
+        int                                   min_range_ = 0;
+        int                                   max_range_ = 100;
+        int                                   value_     = 0;
+        std::function<void(wxSpinCtrl&, int)> on_change_;
     };
 
 } // namespace ui::widgets

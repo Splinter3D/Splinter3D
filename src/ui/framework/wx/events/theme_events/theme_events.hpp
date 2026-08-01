@@ -19,7 +19,7 @@ namespace ui::framework::wx
          */
         class ThemeEvents final : public EventBinder
         {
-        public:
+          public:
             using EventBinder::EventBinder;
 
             /**
@@ -27,7 +27,7 @@ namespace ui::framework::wx
              */
             void bind() override;
 
-        private:
+          private:
             /**
              * @brief Registers the dark mode toggle event.
              */

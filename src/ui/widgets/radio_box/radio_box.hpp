@@ -32,13 +32,13 @@ namespace ui::widgets
      */
     class RadioBox
     {
-    public:
+      public:
         /**
          * @brief Creates a new RadioBox builder.
          *
          * @param parent Parent wxWindow that will own the created radio box.
          */
-        explicit RadioBox(wxWindow *parent);
+        explicit RadioBox(wxWindow* parent);
 
         /**
          * @brief Sets the title displayed above the radio box.
@@ -57,7 +57,7 @@ namespace ui::widgets
          *                      .build();
          * @endcode
          */
-        RadioBox &setTitle(const wxString &title);
+        RadioBox& setTitle(const wxString& title);
 
         /**
          * @brief Sets the number of columns used to display choices.
@@ -76,7 +76,7 @@ namespace ui::widgets
          *                      .build();
          * @endcode
          */
-        RadioBox &setColumns(int columns);
+        RadioBox& setColumns(int columns);
 
         /**
          * @brief Sets the available radio choices.
@@ -99,7 +99,7 @@ namespace ui::widgets
          *                      .build();
          * @endcode
          */
-        RadioBox &setChoices(const wxArrayString &choices);
+        RadioBox& setChoices(const wxArrayString& choices);
 
         /**
          * @brief Registers a callback executed when the selected item changes.
@@ -125,7 +125,7 @@ namespace ui::widgets
          *     .build();
          * @endcode
          */
-        RadioBox &onChange(std::function<void(wxRadioBox &, const wxString &)> callback);
+        RadioBox& onChange(std::function<void(wxRadioBox&, const wxString&)> callback);
 
         /**
          * @brief Creates the wxRadioBox instance.
@@ -140,14 +140,14 @@ namespace ui::widgets
          *
          * @warning The returned pointer must not be manually deleted.
          */
-        wxRadioBox *build() const;
+        wxRadioBox* build() const;
 
-    private:
-        wxWindow *parent_ = nullptr;
-        wxString title_;
-        wxArrayString choices_;
-        int columns_ = 1;
-        std::function<void(wxRadioBox &, const wxString &)> on_change_;
+      private:
+        wxWindow*                                         parent_ = nullptr;
+        wxString                                          title_;
+        wxArrayString                                     choices_;
+        int                                               columns_ = 1;
+        std::function<void(wxRadioBox&, const wxString&)> on_change_;
     };
 
 } // namespace ui::widgets

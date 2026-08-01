@@ -1,7 +1,6 @@
 #pragma once
 #include <functional>
 #include <optional>
-
 #include <wx/colordlg.h>
 #include <wx/filedlg.h>
 #include <wx/numdlg.h>
@@ -26,9 +25,9 @@ namespace ui::dialogs
      * @param msg Message displayed inside the dialog.
      * @param title Dialog title.
      */
-    inline void info(wxWindow *parent,
-                     const wxString &msg,
-                     const wxString &title = _("Info"))
+    inline void info(wxWindow*       parent,
+                     const wxString& msg,
+                     const wxString& title = _("Info"))
     {
         wxMessageBox(
             msg,
@@ -52,9 +51,9 @@ namespace ui::dialogs
      * @param msg Message displayed inside the dialog.
      * @param title Dialog title.
      */
-    inline void warning(wxWindow *parent,
-                        const wxString &msg,
-                        const wxString &title = _("Warning"))
+    inline void warning(wxWindow*       parent,
+                        const wxString& msg,
+                        const wxString& title = _("Warning"))
     {
         wxMessageBox(
             msg,
@@ -78,9 +77,9 @@ namespace ui::dialogs
      * @param msg Message displayed inside the dialog.
      * @param title Dialog title.
      */
-    inline void error(wxWindow *parent,
-                      const wxString &msg,
-                      const wxString &title = _("Error"))
+    inline void error(wxWindow*       parent,
+                      const wxString& msg,
+                      const wxString& title = _("Error"))
     {
         wxMessageBox(
             msg,
@@ -111,9 +110,9 @@ namespace ui::dialogs
      *
      * @return true if the user clicked "Yes".
      */
-    inline bool confirm(wxWindow *parent,
-                        const wxString &msg,
-                        const wxString &title = _("Question"))
+    inline bool confirm(wxWindow*       parent,
+                        const wxString& msg,
+                        const wxString& title = _("Question"))
     {
         return wxMessageBox(
                    msg,
@@ -148,10 +147,10 @@ namespace ui::dialogs
      * @return Entered text, or std::nullopt if cancelled.
      */
     inline std::optional<wxString> askText(
-        wxWindow *parent,
-        const wxString &prompt,
-        const wxString &title = _("Input"),
-        const wxString &defaultValue = "")
+        wxWindow*       parent,
+        const wxString& prompt,
+        const wxString& title        = _("Input"),
+        const wxString& defaultValue = "")
     {
         wxTextEntryDialog dlg(
             parent,
@@ -194,12 +193,12 @@ namespace ui::dialogs
      * @return Entered integer, or std::nullopt if cancelled.
      */
     inline std::optional<long> askInteger(
-        wxWindow *parent,
-        const wxString &prompt,
-        const wxString &title = _("Input"),
-        long defaultValue = 0,
-        long min = 0,
-        long max = 1000)
+        wxWindow*       parent,
+        const wxString& prompt,
+        const wxString& title        = _("Input"),
+        long            defaultValue = 0,
+        long            min          = 0,
+        long            max          = 1000)
     {
         wxNumberEntryDialog dlg(
             parent,
@@ -236,7 +235,7 @@ namespace ui::dialogs
      *
      * @return Selected color, or std::nullopt if cancelled.
      */
-    inline std::optional<wxColour> pickColor(wxWindow *parent)
+    inline std::optional<wxColour> pickColor(wxWindow* parent)
     {
         wxColourDialog dlg(parent);
 
@@ -269,9 +268,9 @@ namespace ui::dialogs
      * @return Selected file path, or std::nullopt if cancelled.
      */
     inline std::optional<wxString> openFile(
-        wxWindow *parent,
-        const wxString &title = _("Open file"),
-        const wxString &filter = _("All files (*.*)|*.*"))
+        wxWindow*       parent,
+        const wxString& title  = _("Open file"),
+        const wxString& filter = _("All files (*.*)|*.*"))
     {
         wxFileDialog dlg(
             parent,
@@ -315,10 +314,10 @@ namespace ui::dialogs
      * @param perStep Function executed for each progress step.
      */
     inline void progress(
-        wxWindow *parent,
-        const wxString &title,
-        int steps,
-        std::function<void(wxProgressDialog &, int)> perStep)
+        wxWindow*                                   parent,
+        const wxString&                             title,
+        int                                         steps,
+        std::function<void(wxProgressDialog&, int)> perStep)
     {
         wxProgressDialog dlg(
             title,

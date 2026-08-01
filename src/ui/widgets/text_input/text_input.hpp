@@ -27,13 +27,13 @@ namespace ui::widgets
      */
     class TextInput
     {
-    public:
+      public:
         /**
          * @brief Creates a new TextInput builder.
          *
          * @param parent Parent wxWindow that will own the created text control.
          */
-        explicit TextInput(wxWindow *parent);
+        explicit TextInput(wxWindow* parent);
 
         /**
          * @brief Sets the placeholder text displayed when the input is empty.
@@ -52,7 +52,7 @@ namespace ui::widgets
          *                   .build();
          * @endcode
          */
-        TextInput &setHint(const wxString &hint);
+        TextInput& setHint(const wxString& hint);
 
         /**
          * @brief Sets the initial text value of the input.
@@ -61,7 +61,7 @@ namespace ui::widgets
          *
          * @return Reference to this builder for method chaining.
          */
-        TextInput &setValue(const wxString &value);
+        TextInput& setValue(const wxString& value);
 
         /**
          * @brief Sets the number of visible text lines.
@@ -87,7 +87,7 @@ namespace ui::widgets
          * @note
          * This setting has no visible effect unless multiline mode is enabled.
          */
-        TextInput &setLines(int lines);
+        TextInput& setLines(int lines);
 
         /**
          * @brief Set password mode state.
@@ -98,14 +98,14 @@ namespace ui::widgets
          *
          * @return Reference to this builder for method chaining.
          */
-        TextInput &setPasswordMode(bool state);
+        TextInput& setPasswordMode(bool state);
 
         /**
          * @brief Enables multiline text input.
          *
          * @return Reference to this builder for method chaining.
          */
-        TextInput &multiline();
+        TextInput& multiline();
 
         /**
          * @brief Makes the text control read-only.
@@ -114,7 +114,7 @@ namespace ui::widgets
          *
          * @return Reference to this builder for method chaining.
          */
-        TextInput &readOnly();
+        TextInput& readOnly();
 
         /**
          * @brief Registers a callback executed when the text changes.
@@ -139,7 +139,7 @@ namespace ui::widgets
          *     .build();
          * @endcode
          */
-        TextInput &onChange(std::function<void(wxTextCtrl &, const wxString &)> callback);
+        TextInput& onChange(std::function<void(wxTextCtrl&, const wxString&)> callback);
 
         /**
          * @brief Registers a callback executed when Enter is pressed.
@@ -163,7 +163,7 @@ namespace ui::widgets
          * @note
          * This option automatically enables wxTE_PROCESS_ENTER.
          */
-        TextInput &onEnter(std::function<void(wxTextCtrl &)> callback);
+        TextInput& onEnter(std::function<void(wxTextCtrl&)> callback);
 
         /**
          * @brief Creates the wxTextCtrl instance.
@@ -178,18 +178,18 @@ namespace ui::widgets
          *
          * @warning The returned pointer must not be manually deleted.
          */
-        wxTextCtrl *build() const;
+        wxTextCtrl* build() const;
 
-    private:
-        wxWindow *parent_ = nullptr;
-        wxString hint_;
-        wxString value_;
-        int lines_ = 0;
-        bool password_mode_ = false;
-        bool multiline_ = false;
-        bool read_only_ = false;
-        std::function<void(wxTextCtrl &, const wxString &)> on_change_;
-        std::function<void(wxTextCtrl &)> on_enter_;
+      private:
+        wxWindow*                                         parent_ = nullptr;
+        wxString                                          hint_;
+        wxString                                          value_;
+        int                                               lines_         = 0;
+        bool                                              password_mode_ = false;
+        bool                                              multiline_     = false;
+        bool                                              read_only_     = false;
+        std::function<void(wxTextCtrl&, const wxString&)> on_change_;
+        std::function<void(wxTextCtrl&)>                  on_enter_;
     };
 
 } // namespace ui::widgets

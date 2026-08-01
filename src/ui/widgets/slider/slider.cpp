@@ -2,48 +2,48 @@
 
 namespace ui::widgets
 {
-    Slider::Slider(wxWindow *parent) : parent_(parent)
+    Slider::Slider(wxWindow* parent) : parent_(parent)
     {
     }
 
-    Slider &Slider::setRange(int min_range, int max_range)
+    Slider& Slider::setRange(int min_range, int max_range)
     {
         min_range_ = min_range;
         max_range_ = max_range;
         return *this;
     }
 
-    Slider &Slider::setValue(int value)
+    Slider& Slider::setValue(int value)
     {
         value_ = value;
         return *this;
     }
 
-    Slider &Slider::vertical()
+    Slider& Slider::vertical()
     {
         vertical_ = true;
         return *this;
     }
 
-    Slider &Slider::withLabels()
+    Slider& Slider::withLabels()
     {
         with_labels_ = true;
         return *this;
     }
 
-    Slider &Slider::setLength(int length)
+    Slider& Slider::setLength(int length)
     {
         length_ = length;
         return *this;
     }
 
-    Slider &Slider::onChange(std::function<void(wxSlider &, int)> callback)
+    Slider& Slider::onChange(std::function<void(wxSlider&, int)> callback)
     {
         on_change_ = std::move(callback);
         return *this;
     }
 
-    wxSlider *Slider::build() const
+    wxSlider* Slider::build() const
     {
         long style = vertical_ ? wxSL_VERTICAL : wxSL_HORIZONTAL;
         if (with_labels_)
@@ -64,7 +64,7 @@ namespace ui::widgets
                        : wxSize(length, -1);
         }
 
-        auto *slider = new wxSlider(
+        auto* slider = new wxSlider(
             parent_,
             wxID_ANY,
             value_,
@@ -76,8 +76,7 @@ namespace ui::widgets
 
         if (on_change_)
             slider->Bind(wxEVT_SLIDER,
-                         [callback = on_change_, slider](wxCommandEvent &)
-                         {
+                         [callback = on_change_, slider](wxCommandEvent&) {
                              callback(*slider, slider->GetValue());
                          });
 

@@ -2,38 +2,38 @@
 
 namespace ui::widgets
 {
-    ListBox::ListBox(wxWindow *parent) : parent_(parent)
+    ListBox::ListBox(wxWindow* parent) : parent_(parent)
     {
     }
 
-    ListBox &ListBox::setChoices(const wxArrayString &choices)
+    ListBox& ListBox::setChoices(const wxArrayString& choices)
     {
         choices_ = choices;
         return *this;
     }
 
-    ListBox &ListBox::multiSelection()
+    ListBox& ListBox::multiSelection()
     {
         multi_selection_ = true;
         return *this;
     }
 
-    ListBox &ListBox::setRows(int rows)
+    ListBox& ListBox::setRows(int rows)
     {
         rows_ = rows;
         return *this;
     }
 
-    ListBox &ListBox::onSelect(std::function<void(wxListBox &, int)> callback)
+    ListBox& ListBox::onSelect(std::function<void(wxListBox&, int)> callback)
     {
         on_select_ = std::move(callback);
         return *this;
     }
 
-    wxListBox *ListBox::build() const
+    wxListBox* ListBox::build() const
     {
-        long style = multi_selection_ ? wxLB_MULTIPLE : wxLB_SINGLE;
-        auto *listBox = new wxListBox(
+        long  style   = multi_selection_ ? wxLB_MULTIPLE : wxLB_SINGLE;
+        auto* listBox = new wxListBox(
             parent_,
             wxID_ANY,
             wxDefaultPosition,
@@ -48,8 +48,7 @@ namespace ui::widgets
         }
         if (on_select_)
             listBox->Bind(wxEVT_LISTBOX,
-                          [callback = on_select_, listBox](wxCommandEvent &e)
-                          {
+                          [callback = on_select_, listBox](wxCommandEvent& e) {
                               callback(*listBox, e.GetSelection());
                           });
 

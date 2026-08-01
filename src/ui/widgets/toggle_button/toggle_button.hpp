@@ -25,13 +25,13 @@ namespace ui::widgets
      */
     class ToggleButton
     {
-    public:
+      public:
         /**
          * @brief Creates a new ToggleButton builder.
          *
          * @param parent Parent wxWindow that will own the created toggle button.
          */
-        explicit ToggleButton(wxWindow *parent);
+        explicit ToggleButton(wxWindow* parent);
 
         /**
          * @brief Sets the text displayed on the toggle button.
@@ -50,7 +50,7 @@ namespace ui::widgets
          *                    .build();
          * @endcode
          */
-        ToggleButton &setLabel(const wxString &label);
+        ToggleButton& setLabel(const wxString& label);
 
         /**
          * @brief Registers a callback executed when the toggle state changes.
@@ -76,7 +76,7 @@ namespace ui::widgets
          *     .build();
          * @endcode
          */
-        ToggleButton &onToggle(std::function<void(wxToggleButton &, bool)> callback);
+        ToggleButton& onToggle(std::function<void(wxToggleButton&, bool)> callback);
 
         /**
          * @brief Creates the wxToggleButton instance.
@@ -91,12 +91,12 @@ namespace ui::widgets
          *
          * @warning The returned pointer must not be manually deleted.
          */
-        wxToggleButton *build() const;
+        wxToggleButton* build() const;
 
-    private:
-        wxWindow *parent_ = nullptr;
-        wxString label_;
-        std::function<void(wxToggleButton &, bool)> on_toggle_;
+      private:
+        wxWindow*                                  parent_ = nullptr;
+        wxString                                   label_;
+        std::function<void(wxToggleButton&, bool)> on_toggle_;
     };
 
 } // namespace ui::widgets

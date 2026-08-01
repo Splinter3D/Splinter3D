@@ -1,9 +1,9 @@
 #pragma once
 
+#include "event_binder.hpp"
+
 #include <memory>
 #include <vector>
-
-#include "event_binder.hpp"
 
 namespace ui::framework::wx
 {
@@ -33,20 +33,20 @@ namespace ui::framework::wx
          */
         class EventManager
         {
-        public:
+          public:
             /**
              * @brief Creates an event manager for a frame.
              *
              * @param frame Window receiving the wxWidgets events.
              */
-            explicit EventManager(wxFrame *frame);
+            explicit EventManager(wxFrame* frame);
 
             /**
              * @brief Registers all application events.
              */
             void bindAll();
 
-        private:
+          private:
             std::vector<std::unique_ptr<EventBinder>> binders_;
         };
 

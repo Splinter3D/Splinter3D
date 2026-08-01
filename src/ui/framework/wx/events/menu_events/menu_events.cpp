@@ -1,8 +1,7 @@
 #include "menu_events.hpp"
 
-#include "ui/dialogs/dialogs.hpp"
 #include "app/locale/locale.hpp"
-
+#include "ui/dialogs/dialogs.hpp"
 #include "ui/framework/wx/ids/ids.hpp"
 
 using app::locale::tr;
@@ -21,32 +20,28 @@ namespace ui::framework::wx
         {
             frame_->Bind(
                 wxEVT_MENU,
-                [this](wxCommandEvent &)
-                {
+                [this](wxCommandEvent&) {
                     onNew();
                 },
                 ids::file::kNew);
 
             frame_->Bind(
                 wxEVT_MENU,
-                [this](wxCommandEvent &)
-                {
+                [this](wxCommandEvent&) {
                     onOpen();
                 },
                 ids::file::kOpen);
 
             frame_->Bind(
                 wxEVT_MENU,
-                [this](wxCommandEvent &)
-                {
+                [this](wxCommandEvent&) {
                     onSave();
                 },
                 ids::file::kSave);
 
             frame_->Bind(
                 wxEVT_MENU,
-                [this](wxCommandEvent &)
-                {
+                [this](wxCommandEvent&) {
                     onExit();
                 },
                 ids::file::kExit);
@@ -56,8 +51,7 @@ namespace ui::framework::wx
         {
             frame_->Bind(
                 wxEVT_MENU,
-                [this](wxCommandEvent &)
-                {
+                [this](wxCommandEvent&) {
                     onAbout();
                 },
                 ids::help::kAbout);
