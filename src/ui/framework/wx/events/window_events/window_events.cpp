@@ -17,8 +17,7 @@ namespace ui::framework::wx
         {
             frame_->Bind(
                 wxEVT_MENU,
-                [this](wxCommandEvent &event)
-                {
+                [this](wxCommandEvent& event) {
                     toggleFullscreen(event.IsChecked());
                 },
                 ids::view::kToggleFullscreen);
@@ -30,7 +29,7 @@ namespace ui::framework::wx
                 enabled,
                 wxFULLSCREEN_ALL);
 
-            if (auto *menu = frame_->GetMenuBar())
+            if (auto* menu = frame_->GetMenuBar())
             {
                 menu->Check(
                     ids::view::kToggleFullscreen,
@@ -42,8 +41,7 @@ namespace ui::framework::wx
         {
             frame_->Bind(
                 wxEVT_CLOSE_WINDOW,
-                [this](wxCloseEvent &event)
-                {
+                [this](wxCloseEvent& event) {
                     frame_->Destroy();
                 });
         }
@@ -52,8 +50,7 @@ namespace ui::framework::wx
         {
             frame_->Bind(
                 wxEVT_SIZE,
-                [](wxSizeEvent &event)
-                {
+                [](wxSizeEvent& event) {
                     event.Skip();
                 });
         }

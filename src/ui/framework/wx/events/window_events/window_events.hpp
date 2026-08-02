@@ -16,7 +16,7 @@ namespace ui::framework::wx
          */
         class WindowEvents final : public EventBinder
         {
-        public:
+          public:
             using EventBinder::EventBinder;
 
             /**
@@ -24,7 +24,7 @@ namespace ui::framework::wx
              */
             void bind() override;
 
-        private:
+          private:
             void bindFullscreen();
 
             void bindClose();
