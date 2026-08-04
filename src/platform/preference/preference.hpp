@@ -2,13 +2,13 @@
 
 #include <string>
 
-namespace plateform::preference
+namespace platform::preference
 {
     /**
      * @brief Stores persistent application settings.
      *
      * This structure only contains user preferences.
-     * File loading and saving are handled by ConfigManager.
+     * File loading and saving are handled by PreferenceManager.
      */
     struct Preference
     {
@@ -17,4 +17,4 @@ namespace plateform::preference
         int         fontSize = 11;
     };
 
-} // namespace plateform::preference
+} // namespace platform::preference

@@ -242,7 +242,7 @@ namespace wx::occt
             Handle(WNT_Window) occtWin =
                 new WNT_Window((Aspect_Handle) GetHWND());
 #else
-#error "Plateform not supported by OcctCanvas : add the OCCT branch corresponding (ex: Cocoa_Window for macOS ?)."
+#error "Platform not supported by OcctCanvas : add the OCCT branch corresponding (ex: Cocoa_Window for macOS ?)."
 #endif
 
             m_view = m_viewer->CreateView();

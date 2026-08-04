@@ -43,9 +43,9 @@ namespace ui::framework::wx
             void applyFontSize(wxWindow* window, int points);
 
           private:
-            ThemeManager() = default;
-            bool dark_     = false;
-            int  fontSize_ = 11;
+            ThemeManager()  = default;
+            bool dark_      = false;
+            int  font_size_ = 11;
         };
 
     } // namespace theme

@@ -24,7 +24,7 @@ platform/       OS-related concerns (files, config, threads...)
 - **`app/`** contains *only* startup logic. If you put business logic or data managers there, the layer loses its purpose and becomes a catch-all.
 - **`ui/`** must never call `geometry/` or `rendering/` directly. It goes through `application/` (triggering a command) and observes `core/` (state, events) to update itself.
 - **`core/`** is the only layer allowed to be known by both `ui/` and `application/`/`geometry/`/`rendering/`. It is the mandatory gateway, not a catch-all folder either.
-- **`platform/`** never knows anything about the layers above it. A `ConfigManager` must never include a UI header.
+- **`platform/`** never knows anything about the layers above it. A `PreferenceManager` must never include a UI header.
 
 ## Auxiliary folders
 

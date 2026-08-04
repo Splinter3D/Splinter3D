@@ -1,6 +1,6 @@
 #include "locale_events.hpp"
 
-#include "app/config/config_manager.hpp"
+#include "platform/preference/preference_manager.hpp"
 #include "ui/framework/wx/ids/ids.hpp"
 
 namespace ui::framework::wx
@@ -28,11 +28,11 @@ namespace ui::framework::wx
 
                         [this, language](wxCommandEvent&) {
                             auto config =
-                                app::config::ConfigManager::load();
+                                platform::preference::PreferenceManager::load();
 
                             config.language = language;
 
-                            app::config::ConfigManager::save(config);
+                            platform::preference::PreferenceManager::save(config);
 
                             if (on_language_changed_)
                             {

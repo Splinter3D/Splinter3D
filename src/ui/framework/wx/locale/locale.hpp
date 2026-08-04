@@ -1,6 +1,6 @@
 #pragma once
 
-#include "locale_manager.hpp"
+#include "platform/locale/locale_manager.hpp"
 
 #include <wx/string.h>
 
@@ -10,7 +10,7 @@ namespace ui::framework::wx
     {
         inline wxString tr(const std::string& key)
         {
-            return wxString::FromUTF8(LocaleManager::get().gettext(key));
+            return wxString::FromUTF8(platform::locale::LocaleManager::get().gettext(key));
         }
 
     } // namespace locale

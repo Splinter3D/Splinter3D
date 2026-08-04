@@ -12,22 +12,22 @@ namespace ui::framework::wx
 
         void ThemeManager::setDark(bool enabled)
         {
-            theme_.dark = enabled;
+            dark_ = enabled;
         }
 
         bool ThemeManager::isDark() const
         {
-            return theme_.dark;
+            return dark_;
         }
 
         void ThemeManager::setFontSize(int points)
         {
-            fontSize_ = points;
+            font_size_ = points;
         }
 
         int ThemeManager::getFontSize() const
         {
-            return fontSize_;
+            return font_size_;
         }
 
         void ThemeManager::apply(wxWindow* window)
@@ -36,12 +36,12 @@ namespace ui::framework::wx
                 return;
 
             const wxColour background =
-                theme_.dark
+                dark_
                     ? wxColour(30, 30, 30)
                     : wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
 
             const wxColour foreground =
-                theme_.dark
+                dark_
                     ? wxColour(220, 220, 220)
                     : wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT);
 

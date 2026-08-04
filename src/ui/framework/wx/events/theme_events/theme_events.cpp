@@ -1,8 +1,8 @@
 #include "theme_events.hpp"
 
-#include "app/config/config_manager.hpp"
-#include "app/theme/theme_manager.hpp"
+#include "platform/preference/preference_manager.hpp"
 #include "ui/framework/wx/ids/ids.hpp"
+#include "ui/framework/wx/theme/theme_manager.hpp"
 
 namespace ui::framework::wx
 {
@@ -43,16 +43,16 @@ namespace ui::framework::wx
 
         void ThemeEvents::applyTheme(bool dark)
         {
-            auto& manager = app::theme::ThemeManager::get();
+            auto& manager = theme::ThemeManager::get();
 
             manager.setDark(dark);
             manager.apply(frame_);
 
-            auto config = app::config::ConfigManager::load();
+            auto config = platform::preference::PreferenceManager::load();
 
             config.darkMode = dark;
 
-            app::config::ConfigManager::save(config);
+            platform::preference::PreferenceManager::save(config);
         }
 
     } // namespace events

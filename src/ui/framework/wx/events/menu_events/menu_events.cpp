@@ -1,10 +1,8 @@
 #include "menu_events.hpp"
 
-#include "app/locale/locale.hpp"
 #include "ui/dialogs/dialogs.hpp"
 #include "ui/framework/wx/ids/ids.hpp"
-
-using app::locale::tr;
+#include "ui/framework/wx/locale/locale.hpp"
 
 namespace ui::framework::wx
 {
@@ -62,8 +60,8 @@ namespace ui::framework::wx
             // TODO: implement/complete the function.
             ui::dialogs::info(
                 frame_,
-                tr("New file created (demo)."),
-                tr("New"));
+                locale::tr("New file created (demo)."),
+                locale::tr("New"));
         }
 
         void MenuEvents::onOpen()
@@ -72,8 +70,8 @@ namespace ui::framework::wx
             if (auto path = ui::dialogs::openFile(frame_))
             {
                 ui::dialogs::info(frame_,
-                                  tr("Opened: ") + *path,
-                                  tr("Open"));
+                                  locale::tr("Opened: ") + *path,
+                                  locale::tr("Open"));
             }
         }
 
@@ -93,8 +91,8 @@ namespace ui::framework::wx
             // TODO: implement function
             ui::dialogs::info(
                 frame_,
-                tr("wxWidgets Demo\nAll major widgets in one place."),
-                tr("About"));
+                locale::tr("wxWidgets Demo\nAll major widgets in one place."),
+                locale::tr("About"));
         }
 
     } // namespace events

@@ -4,7 +4,7 @@
 
 #include <string>
 
-namespace plateform::preference
+namespace platform::preference
 {
 
     /**
@@ -32,4 +32,4 @@ namespace plateform::preference
         static void save(const Preference& preference, const std::string& path = "./splinter3D.cfg");
     };
 
-} // namespace plateform::preference
+} // namespace platform::preference

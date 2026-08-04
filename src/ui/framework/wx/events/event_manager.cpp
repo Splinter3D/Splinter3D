@@ -4,6 +4,7 @@
 #include "menu_events/menu_events.hpp"
 #include "shortcut_events/shortcut_events.hpp"
 #include "theme_events/theme_events.hpp"
+#include "widget_events/widget_events.hpp"
 #include "window_events/window_events.hpp"
 
 namespace ui::framework::wx
@@ -26,6 +27,9 @@ namespace ui::framework::wx
 
             binders_.emplace_back(
                 std::make_unique<ShortcutEvents>(frame));
+
+            binders_.emplace_back(
+                std::make_unique<WidgetEvents>(frame));
 
             binders_.emplace_back(
                 std::make_unique<WindowEvents>(frame));

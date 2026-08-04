@@ -2,7 +2,7 @@
 
 #include <fstream>
 
-namespace plateform::preference
+namespace platform::preference
 {
 
     Preference PreferenceManager::load(const std::string& path)
@@ -49,4 +49,4 @@ namespace plateform::preference
              << "\n";
     }
 
-} // namespace plateform::preference
+} // namespace platform::preference

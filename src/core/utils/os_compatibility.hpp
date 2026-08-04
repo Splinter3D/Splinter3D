@@ -35,10 +35,21 @@
 namespace core::utils
 {
 
-    // Signal flag set when a console interrupt/close is requested
+    /**
+     * @brief Flag set to true when a console interrupt or close request
+     * is received (POSIX only).
+     *
+     * Query via SignalReceived(), reset via ClearSignal().
+     */
     inline std::atomic<bool> s_signalReceived{false};
 
-    // Install platform signal/console handlers that set s_signalReceived
+    /**
+     * @brief Installs signal handlers for graceful shutdown on interrupt.
+     *
+     * On POSIX, installs handlers for SIGINT and SIGTERM that set
+     * s_signalReceived. On Windows, this is currently a no-op (kept
+     * deliberately minimal to avoid pulling in <windows.h> here).
+     */
     inline void InstallSignalHandlers()
     {
 #if defined(SPLINTER3D_POSIX)
@@ -49,13 +60,23 @@ namespace core::utils
 #endif
     }
 
-    // Query whether a signal was received
+    /**
+     * @brief Checks whether an interrupt/termination signal was received.
+     *
+     * @return true if a signal was caught since the last call to
+     * ClearSignal(), false otherwise.
+     */
     inline bool SignalReceived()
     {
         return s_signalReceived.load();
     }
 
-    // Clear the signal flag
+    /**
+     * @brief Resets the signal flag.
+     *
+     * Should be called after handling a received signal, if the
+     * application wishes to keep monitoring for further signals.
+     */
     inline void ClearSignal()
     {
         s_signalReceived.store(false);
@@ -63,6 +84,13 @@ namespace core::utils
 
     // Terminal echo control (to hide control character echo like ^C on POSIX)
 #if defined(SPLINTER3D_POSIX)
+    /**
+     * @brief Disables terminal echo of control characters (e.g. "^C").
+     *
+     * Only affects POSIX terminals attached to standard input. Restores
+     * the original terminal settings automatically at process exit via
+     * atexit(). No-op if stdin is not a TTY.
+     */
     inline void disableCtrlCEcho()
     {
         static struct termios origTerm;
@@ -79,6 +107,13 @@ namespace core::utils
         }
     }
 
+    /**
+     * @brief Restores the terminal to its original state.
+     *
+     * On POSIX, the actual restoration happens automatically via the
+     * atexit() handler registered in disableCtrlCEcho(); this function
+     * exists mainly for symmetry and explicit call sites.
+     */
     inline void restoreTerminal()
     {
         // atexit handler in disableCtrlCEcho will restore terminal
