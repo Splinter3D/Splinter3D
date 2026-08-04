@@ -1,0 +1,22 @@
+#pragma once
+
+namespace core::utils
+{
+
+    /**
+     * @brief A base class for classes that should not be copyable.
+     */
+    class NonCopyable
+    {
+      public:
+        NonCopyable(const NonCopyable& other)          = delete;
+        NonCopyable& operator=(const NonCopyable& rhs) = delete;
+        NonCopyable(NonCopyable&& other)               = delete;
+        NonCopyable& operator=(NonCopyable&& rhs)      = delete;
+
+      protected:
+        constexpr explicit NonCopyable() noexcept = default;
+        ~NonCopyable() noexcept                   = default;
+    };
+
+} // namespace core::utils
