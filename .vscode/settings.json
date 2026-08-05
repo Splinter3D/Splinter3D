@@ -16,5 +16,6 @@
   "[cpp]": {
     "editor.defaultFormatter": null,
     "editor.formatOnSave": true
-  }
+  },
+  "python-envs.defaultEnvManager": "ms-python.python:system"
 }
