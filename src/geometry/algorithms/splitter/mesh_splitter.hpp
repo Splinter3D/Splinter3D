@@ -1,9 +1,17 @@
 #pragma once
-#include <Geometry/Mesh.hpp>
-#include <utility>
 
-namespace geometry::utils::splitter
+#include <geometry/math/triangle.hpp>
+#include <geometry/math/vec3.hpp>
+#include <geometry/mesh/mesh.hpp>
+#include <utility>
+#include <vector>
+
+namespace geometry::algorithms::splitter
 {
+    using Mesh     = geometry::mesh::Mesh;
+    using Vec3     = geometry::math::Vec3;
+    using Triangle = geometry::math::Triangle;
+
     /**
      * @brief Splits a mesh into two watertight halves along an arbitrary plane.
      *
@@ -29,14 +37,14 @@ namespace geometry::utils::splitter
      *               Does not need to be normalized.
      * @return       A pair {above, below} of watertight meshes.
      */
-    std::pair<Mesh, Mesh> splitByPlane(const Mesh&           mesh,
-                                       const geometry::Vec3& point,
-                                       const geometry::Vec3& normal);
+    std::pair<Mesh, Mesh> splitByPlane(const Mesh& mesh,
+                                       const Vec3& point,
+                                       const Vec3& normal);
 
     /**
      * @brief Splits a mesh into a grid of smaller meshes along axis-aligned planes.
      * @details This is a wrapper around splitByPlane() that performs multiple splits along
      * @return A vector of meshes resulting from splitting the input mesh by a 3D grid of planes.
      */
-    std::vector<Mesh> splitByGrid(const Mesh& mesh, const geometry::Vec3& cellSize);
-} // namespace geometry::utils::splitter
+    std::vector<Mesh> splitByGrid(const Mesh& mesh, const Vec3& cellSize);
+} // namespace geometry::algorithms::splitter

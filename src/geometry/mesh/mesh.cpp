@@ -1,13 +1,16 @@
-#include <Geometry/Mesh.hpp>
 #include <cmath>
 #include <cstdint>
 #include <fstream>
+#include <geometry/mesh/mesh.hpp>
 #include <iomanip>
 #include <sstream>
 #include <stdexcept>
 
-namespace geometry
+namespace geometry::mesh
 {
+    using Vec3     = geometry::math::Vec3;
+    using Triangle = geometry::math::Triangle;
+
     Mesh Mesh::fromSTL(const std::string& filename)
     {
         std::ifstream file(filename, std::ios::binary);
@@ -124,8 +127,8 @@ namespace geometry
 
         for (const auto& tri : triangles)
         {
-            geometry::Vec3 normal = geometry::Vec3::cross(tri.vertices[1] - tri.vertices[0], tri.vertices[2] - tri.vertices[0]);
-            float          len    = std::sqrt(geometry::Vec3::dotProduct(normal, normal));
+            Vec3  normal = Vec3::cross(tri.vertices[1] - tri.vertices[0], tri.vertices[2] - tri.vertices[0]);
+            float len    = std::sqrt(Vec3::dotProduct(normal, normal));
             if (len > 0.0f)
             {
                 normal.x /= len;
@@ -134,7 +137,7 @@ namespace geometry
             }
             else
             {
-                normal = geometry::Vec3(0.0f, 0.0f, 0.0f);
+                normal = Vec3(0.0f, 0.0f, 0.0f);
             }
 
             out << "  facet normal " << normal.x << ' ' << normal.y << ' ' << normal.z << "\n";
@@ -167,8 +170,8 @@ namespace geometry
 
         for (const auto& tri : triangles)
         {
-            geometry::Vec3 normal = geometry::Vec3::cross(tri.vertices[1] - tri.vertices[0], tri.vertices[2] - tri.vertices[0]);
-            float          len    = std::sqrt(geometry::Vec3::dotProduct(normal, normal));
+            Vec3  normal = Vec3::cross(tri.vertices[1] - tri.vertices[0], tri.vertices[2] - tri.vertices[0]);
+            float len    = std::sqrt(Vec3::dotProduct(normal, normal));
             if (len > 0.0f)
             {
                 normal.x /= len;
@@ -177,7 +180,7 @@ namespace geometry
             }
             else
             {
-                normal = geometry::Vec3(0.0f, 0.0f, 0.0f);
+                normal = Vec3(0.0f, 0.0f, 0.0f);
             }
 
             const float normalData[3] = {normal.x, normal.y, normal.z};
@@ -195,4 +198,4 @@ namespace geometry
 
         return out.good();
     }
-} // namespace geometry
+} // namespace geometry::mesh

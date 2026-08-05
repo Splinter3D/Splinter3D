@@ -1,10 +1,11 @@
-#include <Geometry/Utils/Splitter/MeshDissector.hpp>
-#include <Geometry/Utils/Splitter/MeshSplitter.hpp>
-#include <Splinter3D/Utils/Logger.hpp>
 #include <cmath>
+#include <geometry/algorithms/splitter/mesh_dissector.hpp>
+#include <geometry/algorithms/splitter/mesh_splitter.hpp>
+#include <platform/logger/logger.hpp>
 
-namespace geometry::utils::splitter
+namespace geometry::algorithms::splitter
 {
+
 #pragma region Private helper functions
 
     /**
@@ -382,7 +383,7 @@ namespace geometry::utils::splitter
         }
         for (const auto& cut : cutOrders)
         {
-            splinter3D::utils::Logger::getInstance().clog(
+            platform::logger::Logger::getInstance().clog(
                 "[MeshSplitter] Cut at plane (", cut.planePoint.x, ", ", cut.planePoint.y, ", ", cut.planePoint.z,
                 ") with normal (", cut.planeNormal.x, ", ", cut.planeNormal.y, ", ", cut.planeNormal.z,
                 ") → pieces: ", pieces.size(), "\n");
@@ -390,4 +391,4 @@ namespace geometry::utils::splitter
         return pieces;
     }
 
-} // namespace geometry::utils::splitter
+} // namespace geometry::algorithms::splitter

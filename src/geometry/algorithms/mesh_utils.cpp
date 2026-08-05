@@ -1,13 +1,12 @@
-#include <Geometry/Utils/MeshUtils.hpp>
-#include <raymath.h> // for Vector3 operations
+#include <geometry/algorithms/mesh_utils.hpp>
 
-namespace geometry::utils
+namespace geometry::algorithms
 {
     // -----------------------------
     // Mesh bounds computations
     // -----------------------------
 
-    MeshBounds computeMeshBounds(const geometry::Mesh& mesh)
+    MeshBounds computeMeshBounds(const geometry::mesh::Mesh& mesh)
     {
         MeshBounds bounds;
         for (const auto& tri : mesh.triangles)
@@ -32,16 +31,16 @@ namespace geometry::utils
                 }
             }
         }
-        bounds.size = Vec3{
+        bounds.size = geometry::math::Vec3{
             bounds.max.x - bounds.min.x,
             bounds.max.y - bounds.min.y,
             bounds.max.z - bounds.min.z};
         return bounds;
     }
 
-    geometry::Vec3 computeBoundsCenter(const MeshBounds& bounds)
+    geometry::math::Vec3 computeBoundsCenter(const MeshBounds& bounds)
     {
-        return geometry::Vec3{
+        return geometry::math::Vec3{
             (bounds.min.x + bounds.max.x) * 0.5f,
             (bounds.min.y + bounds.max.y) * 0.5f,
             (bounds.min.z + bounds.max.z) * 0.5f};
@@ -55,22 +54,4 @@ namespace geometry::utils
         return 0.5f * std::sqrt(dx * dx + dy * dy + dz * dz);
     }
 
-    // -----------------------------
-    // Camera framing
-    // -----------------------------
-
-    void frameCameraOnMesh(renderer::IRenderer& renderer, const MeshBounds& bounds)
-    {
-        if (!bounds.valid)
-            return;
-
-        geometry::Vec3 center = computeBoundsCenter(bounds);
-        renderer.setCameraTarget(center);
-
-        float radius   = std::max(computeBoundsRadius(bounds), 0.5f);
-        float distance = radius * 2.0f;
-
-        renderer.setOrbitDistance(distance);
-        renderer.setOrbitAngles(0.8f, 0.6f);
-    }
-} // namespace geometry::utils
+} // namespace geometry::algorithms

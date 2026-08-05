@@ -1,18 +1,18 @@
-#include <Geometry/Utils/MeshUtils.hpp>
-#include <Geometry/Utils/Splitter/MeshDissector.hpp>
-#include <Splinter3D/Utils/Logger.hpp>
+#include <geometry/algorithms/mesh_utils.hpp>
+#include <geometry/algorithms/splitter/mesh_dissector.hpp>
+#include <platform/logger/logger.hpp>
 
-namespace geometry::utils::splitter
+namespace geometry::algorithms::splitter
 {
     std::vector<CutOrder> MeshDissector::getCutOrder(Mesh& mesh, const DissectorConfig& config)
     {
-        geometry::utils::MeshBounds bounds = geometry::utils::computeMeshBounds(mesh);
+        MeshBounds bounds = geometry::algorithms::computeMeshBounds(mesh);
         if (!bounds.valid || config.maxPieceSize.x <= 0 || config.maxPieceSize.y <= 0 || config.maxPieceSize.z <= 0)
         {
             return {};
         }
 
-        splinter3D::utils::Logger::getInstance().clog(
+        platform::logger::Logger::getInstance().clog(
             "[MeshDissector] Mesh bounds: min(", bounds.min.x, ", ", bounds.min.y, ", ", bounds.min.z,
             ") max(", bounds.max.x, ", ", bounds.max.y, ", ", bounds.max.z, ")\n");
 
@@ -21,7 +21,7 @@ namespace geometry::utils::splitter
         int                   nbCutY = static_cast<int>(std::ceil((bounds.max.y - bounds.min.y) / config.maxPieceSize.y)) - 1;
         int                   nbCutZ = static_cast<int>(std::ceil((bounds.max.z - bounds.min.z) / config.maxPieceSize.z)) - 1;
 
-        splinter3D::utils::Logger::getInstance().clog(
+        platform::logger::Logger::getInstance().clog(
             "[MeshDissector] Cutting into grid of ", nbCutX + 1, " x ", nbCutY + 1, " x ", nbCutZ + 1,
             " = ", (nbCutX + 1) * (nbCutY + 1) * (nbCutZ + 1), " pieces\n");
 
@@ -55,4 +55,4 @@ namespace geometry::utils::splitter
 
         return cutOrders;
     }
-} // namespace geometry::utils::splitter
+} // namespace geometry::algorithms::splitter

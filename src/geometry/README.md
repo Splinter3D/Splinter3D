@@ -5,6 +5,7 @@ The domain layer: everything that handles the 3D data itself, regardless of how 
 ## Contents
 
 - `math/` — mathematical primitives (vectors, matrices, quaternions, etc.).
+  - `constants/` - mathematical constants
 - `mesh/` — mesh data structure and its direct utilities.
 - `algorithms/` — generic geometric algorithms.
   - `splitter/` — `MeshDissector`, `MeshSplitter`: the core logic of Splinter3D, isolated in its own subfolder rather than being buried in a general `algorithms/` folder.

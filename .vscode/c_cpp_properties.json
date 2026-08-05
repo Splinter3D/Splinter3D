@@ -3,8 +3,6 @@
     {
       "name": "Linux",
       "includePath": [
-        "${workspaceFolder}/include",
-        "${workspaceFolder}/include/**",
         "${workspaceFolder}/src",
         "${workspaceFolder}/build/vcpkg_installed/x64-linux/include",
         "${workspaceFolder}/build/vcpkg_installed/arm64-osx/include"
@@ -22,8 +20,6 @@
     {
       "name": "Windows",
       "includePath": [
-        "${workspaceFolder}/include",
-        "${workspaceFolder}/include/**",
         "${workspaceFolder}/src",
         "${workspaceFolder}/build/vcpkg_installed/x64-windows/include"
       ],

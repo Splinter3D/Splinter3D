@@ -1,7 +1,8 @@
 #pragma once
 
-#include <Geometry/Triangle.hpp>
-#include <Geometry/Vec3.hpp>
+#include <fstream>
+#include <geometry/math/triangle.hpp>
+#include <geometry/math/vec3.hpp>
 #include <string>
 #include <vector>
 
@@ -10,15 +11,21 @@ namespace renderer
     class RMesh;
 } // namespace renderer
 
-namespace geometry
+namespace geometry::mesh
 {
+    /**
+     * @brief Represents a 3D mesh composed of triangles.
+     *
+     * The Mesh class provides functionality to load and save meshes in the STL format.
+     * It supports both ASCII and binary STL formats.
+     */
     struct Mesh
     {
-        std::vector<geometry::Triangle> triangles;
+        std::vector<geometry::math::Triangle> triangles;
 
         Mesh() = default;
 
-        Mesh(const std::vector<geometry::Triangle>& tris)
+        Mesh(const std::vector<geometry::math::Triangle>& tris)
             : triangles(tris)
         { }
 
@@ -66,4 +73,4 @@ namespace geometry
          */
         static Mesh fromBinarySTL(std::ifstream& file);
     };
-} // namespace geometry
+} // namespace geometry::mesh
