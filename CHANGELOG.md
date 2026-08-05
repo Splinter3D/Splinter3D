@@ -2,7 +2,7 @@
 
 ### Fix
 
-- **build**: make --vcpkg—path authoritative
+- **build**: make --vcpkg-path authoritative
 
 ## v0.1.2 (2026-07-09)
 

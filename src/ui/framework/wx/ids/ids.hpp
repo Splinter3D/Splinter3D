@@ -93,6 +93,7 @@ namespace ui::framework::wx
          * - +300 to +399 : Tool actions
          * - +400 to +499 : Window management
          * - +500 to +599 : Debug actions
+         * - +600 to +699 : Panel identifiers
          */
         namespace app
         {
@@ -175,6 +176,21 @@ namespace ui::framework::wx
             constexpr int kShowDebugPanel = app::kBase + 502;
 
         } // namespace debug
+
+        /**
+         * @brief Panel identifiers.
+         *
+         * Used as keys into ui::panels::PanelRegistry (see
+         * ui/panels/panel_registry.hpp) - NOT fired as wx command events like
+         * the other ranges above. A window passes one of these to
+         * PanelRegistry::Instance().Create(id, parent) to instantiate the
+         * corresponding panel.
+         */
+        namespace panels
+        {
+            constexpr int kExample = app::kBase + 600;
+
+        } // namespace panels
 
     } // namespace ids
 } // namespace ui::framework::wx

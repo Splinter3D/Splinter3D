@@ -4,12 +4,12 @@ The bridge between `ui/` and the rest of the system. It is the only layer known 
 
 ## Contents
 
-- `events/` — application-internal event definitions (distinct from wx events, which remain in `ui/framework/wx/events/`).
-- `event_bus/` — publish/subscribe mechanism for propagating events between layers without direct dependencies.
-- `interface/` — interfaces/contracts shared across layers (e.g., `ISelectable`, `IRenderable`).
-- `models/` — data structures shared between UI and logic (e.g., selection state, current session). Do not include purely geometric data here (`Mesh` remains in `geometry/`).
-- `state/` — global application state (current session, open document, etc.).
-- `utils/` — generic utilities with no business-specific dependencies.
+- `events/` - application-internal event definitions (distinct from wx events, which remain in `ui/framework/wx/events/`).
+- `event_bus/` - publish/subscribe mechanism for propagating events between layers without direct dependencies.
+- `interface/` - interfaces/contracts shared across layers (e.g., `ISelectable`, `IRenderable`).
+- `models/` - data structures shared between UI and logic (e.g., selection state, current session). Do not include purely geometric data here (`Mesh` remains in `geometry/`).
+- `state/` - global application state (current session, open document, etc.).
+- `utils/` - generic utilities with no business-specific dependencies.
 
 ## Purpose of this folder
 
