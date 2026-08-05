@@ -28,7 +28,7 @@ platform/       OS-related concerns (files, config, threads...)
 
 ## Auxiliary folders
 
-- `tests/`: `unit/`, `integration/`, `end_to_end/` — mirrors the `src/` structure but tests each layer in isolation, followed by their integration.
+- `tests/`: `unit/`, `integration/`, `end_to_end/` - mirrors the `src/` structure but tests each layer in isolation, followed by their integration.
 - `third_party/`: only if an external library is vendored directly into the repo (i.e., not via a package manager). - `plugins/`: intended for future extensibility; empty for now.
 
 ## Convention

@@ -17,7 +17,7 @@ namespace core::event_bus
      * EventBus decouples layers that must react to events (typically
      * ui/) from the layers that produce them (typically application/ or
      * platform/), without requiring either side to know about the other
-     * directly — matching the role described in core/README.md.
+     * directly - matching the role described in core/README.md.
      *
      * EventBus is a Singleton: there is exactly one instance shared
      * across the whole application.

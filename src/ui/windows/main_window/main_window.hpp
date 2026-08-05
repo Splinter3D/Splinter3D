@@ -1,43 +1,47 @@
 #pragma once
 
-#include <wx/frame.h>
+#include "ui/windows/base_window/base_window.hpp"
 
 namespace ui::windows
 {
     /**
-     * @brief The application's main window.
+     * @brief Main application window.
      *
-     * MainWindow is the root wxFrame of Splinter3D. It contains no
-     * business logic — its sole responsibility is to host the visual
-     * structure of the application (menus, toolbars, panels, status bar).
-     *
-     * It is created by Bootstrap and owned by App for the lifetime of
-     * the application.
-     *
-     * ---
-     *
-     * Example:
-     *
-     * @code{.cpp}
-     * auto mainWindow = std::make_unique<ui::windows::MainWindow>();
-     * mainWindow->Show(true);
-     * @endcode
+     * MainWindow is the primary window displayed by the application.
+     * It is responsible for creating the main layout, the status bar,
+     * and the initial workspace panels.
      */
-    class MainWindow : public wxFrame
+    class MainWindow : public BaseWindow
     {
       public:
         /**
-         * @brief Constructs the main window.
-         *
-         * Creates an empty top-level frame with a status bar. Menus,
-         * toolbars, and panels are added incrementally as the
-         * application grows.
+         * @brief Constructs the main application window.
          */
         MainWindow();
 
+      protected:
         /**
-         * @brief Destroys the main window.
+         * @brief Creates the status bar.
          */
-        ~MainWindow() override = default;
+        void InitStatusBar() override;
+
+        /**
+         * @brief Creates the main layout.
+         */
+        void InitLayout() override;
+
+        /**
+         * @brief Creates the default panels.
+         */
+        void InitPanels() override;
+
+      private:
+        /**
+         * @brief Root layout of the window.
+         *
+         * Once assigned with SetSizer(), ownership is transferred to
+         * wxWidgets. The pointer is retained only for adding child panels.
+         */
+        wxBoxSizer* rootSizer_ = nullptr;
     };
 } // namespace ui::windows

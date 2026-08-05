@@ -5,6 +5,7 @@
 #include "core/utils/os_compatibility.hpp"
 #include "platform/locale/locale_manager.hpp"
 #include "platform/logger/logger.hpp"
+#include "ui/panels/panel_registration.hpp"
 #include "ui/windows/main_window/main_window.hpp"
 
 #include <filesystem>
@@ -18,7 +19,7 @@ namespace app
          * @brief Resolves the current executable's absolute path.
          *
          * Relies on wxStandardPaths, which transparently handles
-         * Windows, Linux, and macOS — avoiding manual platform-specific
+         * Windows, Linux, and macOS - avoiding manual platform-specific
          * lookups such as readlink("/proc/self/exe").
          *
          * @return The absolute path to the running executable.
@@ -53,6 +54,13 @@ namespace app
 
         core::utils::InstallSignalHandlers();
         core::utils::disableCtrlCEcho();
+
+        // Populates every *Registry (PanelRegistry today, ToolBarRegistry /
+        // MenuRegistry later) with their factories. Must run before any window
+        // is created, since a window's InitPanels()/InitToolBars()/InitMenuBar()
+        // may query these registries as soon as it's constructed.
+        platform::logger::clog("[bootstrap] registering panels");
+        ui::panels::RegisterAllPanels();
 
         platform::logger::clog("[bootstrap] creating main window");
         auto mainWindow = std::make_unique<ui::windows::MainWindow>();

@@ -13,7 +13,7 @@ namespace app
      * @brief Owns and manages the application's high-level lifecycle.
      *
      * App is the top-level orchestrator of Splinter3D. It does not create
-     * any business logic or draw anything itself — it simply owns the
+     * any business logic or draw anything itself - it simply owns the
      * main window and drives its lifecycle (initialization, execution,
      * shutdown).
      *

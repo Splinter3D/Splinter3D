@@ -2,7 +2,7 @@
 
 file(GLOB_RECURSE SRC_SPLINTER3D CONFIGURE_DEPENDS "src/*.cpp")
 if(NOT SRC_SPLINTER3D)
-    message(FATAL_ERROR "No source files found under src/ — check path or globs.")
+    message(FATAL_ERROR "No source files found under src/ - check path or globs.")
 endif()
 
 #######################################
