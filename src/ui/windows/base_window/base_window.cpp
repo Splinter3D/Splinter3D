@@ -17,9 +17,9 @@ namespace ui::windows
     void BaseWindow::InitializeAll()
     {
         InitMenuBar();
-        InitToolBars();
         InitStatusBar();
         InitLayout();
+        InitToolBars();
         InitPanels();
         BindEvents();
     }

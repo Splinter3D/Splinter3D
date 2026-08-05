@@ -3,21 +3,21 @@
 find_package(nfd CONFIG REQUIRED)
 find_package(wxWidgets CONFIG REQUIRED COMPONENTS core base gl)
 
-# find_package(OpenCASCADE REQUIRED)
-# set(OCCT_LIBRARIES
-#     TKernel
-#     TKMath
-#     TKG3d
-#     TKBRep
-#     TKGeomBase
-#     TKService
-#     TKOpenGl
-#     TKV3d
-#     TKPrim
-#     TKDE
-#     TKDESTEP
-#     TKDESTL
-# )
+find_package(OpenCASCADE REQUIRED)
+set(OCCT_LIBRARIES
+    TKernel
+    TKMath
+    TKG3d
+    TKBRep
+    TKGeomBase
+    TKService
+    TKOpenGl
+    TKV3d
+    TKPrim
+    TKDE
+    TKDESTEP
+    TKDESTL
+)
 
 set(GLFW_LINK_TARGET "")
 

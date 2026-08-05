@@ -94,6 +94,8 @@ namespace ui::framework::wx
          * - +400 to +499 : Window management
          * - +500 to +599 : Debug actions
          * - +600 to +699 : Panel identifiers
+         * - +700 to +799 : Toolbar identifiers
+         * - +800 to +899 : Menu identifiers
          */
         namespace app
         {
@@ -191,6 +193,36 @@ namespace ui::framework::wx
             constexpr int kExample = app::kBase + 600;
 
         } // namespace panels
+
+        /**
+         * @brief Toolbar identifiers.
+         *
+         * Used as keys into ui::toolbars::ToolBarRegistry (see
+         * ui/toolbars/toolbar_registry.hpp) - NOT fired as wx command events.
+         * A window passes one of these to
+         * ToolBarRegistry::getInstance().Create(id, parent) to instantiate
+         * the corresponding toolbar.
+         */
+        namespace toolbars
+        {
+            constexpr int kExample = app::kBase + 700;
+
+        } // namespace toolbars
+
+        /**
+         * @brief Menu identifiers.
+         *
+         * Used as keys into ui::menus::MenuRegistry (see
+         * ui/menus/menu_registry.hpp) - NOT fired as wx command events. A
+         * window passes one of these to
+         * MenuRegistry::getInstance().Create(id) to instantiate the
+         * corresponding wxMenu.
+         */
+        namespace menus
+        {
+            constexpr int kExample = app::kBase + 800;
+
+        } // namespace menus
 
     } // namespace ids
 } // namespace ui::framework::wx

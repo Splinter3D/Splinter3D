@@ -5,7 +5,9 @@
 #include "core/utils/os_compatibility.hpp"
 #include "platform/locale/locale_manager.hpp"
 #include "platform/logger/logger.hpp"
+#include "ui/menus/menu_registration.hpp"
 #include "ui/panels/panel_registration.hpp"
+#include "ui/toolbars/toolbar_registration.hpp"
 #include "ui/windows/main_window/main_window.hpp"
 
 #include <filesystem>
@@ -55,10 +57,16 @@ namespace app
         core::utils::InstallSignalHandlers();
         core::utils::disableCtrlCEcho();
 
-        // Populates every *Registry (PanelRegistry today, ToolBarRegistry /
-        // MenuRegistry later) with their factories. Must run before any window
-        // is created, since a window's InitPanels()/InitToolBars()/InitMenuBar()
+        // Populates every *Registry (PanelRegistry, ToolBarRegistry,
+        // MenuRegistry) with their factories. Must run before any window is
+        // created, since a window's InitMenuBar()/InitToolBars()/InitPanels()
         // may query these registries as soon as it's constructed.
+        platform::logger::clog("[bootstrap] registering menus");
+        ui::menus::RegisterAllMenus();
+
+        platform::logger::clog("[bootstrap] registering toolbars");
+        ui::toolbars::RegisterAllToolBars();
+
         platform::logger::clog("[bootstrap] registering panels");
         ui::panels::RegisterAllPanels();
 

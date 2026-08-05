@@ -54,7 +54,7 @@ namespace geometry::algorithms::splitter
     /**
      * @brief Appends a triangle (a, b, c) to a mesh.
      *
-     * Winding order is preserved as given — callers are responsible
+     * Winding order is preserved as given - callers are responsible
      * for passing vertices in the correct order for their desired face normal.
      *
      * @param mesh The mesh to append to.
@@ -100,7 +100,7 @@ namespace geometry::algorithms::splitter
      * @details Algorithm overview
      * Every triangle clipped by the cutting plane contributes exactly one directed
      * edge that lies on that plane.  Chaining those edges end-to-start reconstructs
-     * the boundary polygon(s) of the cross-section — the same idea used in
+     * the boundary polygon(s) of the cross-section - the same idea used in
      * half-edge mesh data structures and Blender's Bisect operation.
      *
      * Once each closed loop is found, a **centroid fan** triangulates it:
@@ -113,8 +113,8 @@ namespace geometry::algorithms::splitter
      * @note For concave cross-sections the centroid fan may produce self-intersecting
      *       triangles.  A full ear-clipping triangulator would be needed for those cases.
      *
-     * @param above     The "above" half-mesh — cap triangles facing away from normal are added here.
-     * @param below     The "below" half-mesh — cap triangles facing toward normal are added here.
+     * @param above     The "above" half-mesh - cap triangles facing away from normal are added here.
+     * @param below     The "below" half-mesh - cap triangles facing toward normal are added here.
      * @param cutEdges  Directed edges collected during clipping (consumed by this function).
      * @param normal    The cut plane's outward normal.
      */
@@ -171,7 +171,7 @@ namespace geometry::algorithms::splitter
         // The two mesh halves always receive opposite windings so both are closed.
         for (const auto& loop : loops)
         {
-            // Centroid of the loop — the hub of the fan
+            // Centroid of the loop - the hub of the fan
             Vec3 centroid{0, 0, 0};
             for (const auto& v : loop)
             {
@@ -353,7 +353,7 @@ namespace geometry::algorithms::splitter
         addCap(above, below, cutEdges, normal);
 
         // splinter3D::utils::Logger::getInstance().clog(
-        //     "[MeshSplitter] Done — above: ", above.triangles.size(),
+        //     "[MeshSplitter] Done - above: ", above.triangles.size(),
         //     " below: ", below.triangles.size(), " triangles\n");
 
         return {above, below};

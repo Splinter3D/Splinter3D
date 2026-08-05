@@ -33,7 +33,7 @@ namespace geometry::algorithms::splitter
      *
      * @param mesh   The source mesh to split (not modified).
      * @param point  Any point lying on the cutting plane.
-     * @param normal The plane's outward normal — the "above" mesh is on this side.
+     * @param normal The plane's outward normal - the "above" mesh is on this side.
      *               Does not need to be normalized.
      * @return       A pair {above, below} of watertight meshes.
      */

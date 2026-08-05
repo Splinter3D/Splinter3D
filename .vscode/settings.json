@@ -1,9 +1,17 @@
 {
+  "search.exclude": {
+    "**/build": true,
+    "**/vcpkg": true,
+    "**/old_architecture": true,
+    "**/wx_example": true
+  },
   "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
   "C_Cpp.intelliSenseEngine": "default",
   "C_Cpp.codeAnalysis.exclude": {
     "${workspaceFolder}/build": true,
-    "${workspaceFolder}/vcpkg": true
+    "${workspaceFolder}/vcpkg": true,
+    "${workspaceFolder}/old_architecture": true,
+    "${workspaceFolder}/wx_example": true
   },
   "[cpp]": {
     "editor.defaultFormatter": null,

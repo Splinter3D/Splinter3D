@@ -1,7 +1,9 @@
 #include "main_window.hpp"
 
 #include "ui/framework/wx/ids/ids.hpp"
+#include "ui/menus/menu_registry.hpp"
 #include "ui/panels/panel_registry.hpp"
+#include "ui/toolbars/toolbar_registry.hpp"
 
 namespace ui::windows
 {
@@ -16,6 +18,19 @@ namespace ui::windows
         InitializeAll();
     }
 
+    void MainWindow::InitMenuBar()
+    {
+        using ui::menus::MenuRegistry;
+
+        auto* menuBar  = new wxMenuBar();
+        auto* fileMenu = MenuRegistry::getInstance().Create(ui::framework::wx::ids::menus::kExample);
+        if (fileMenu != nullptr)
+        {
+            menuBar->Append(fileMenu, "&File");
+        }
+        SetMenuBar(menuBar);
+    }
+
     void MainWindow::InitStatusBar()
     {
         CreateStatusBar();
@@ -24,10 +39,26 @@ namespace ui::windows
 
     void MainWindow::InitLayout()
     {
-        // Runs before InitPanels() (see BaseWindow's guaranteed order), so the
-        // sizer exists and is ready to receive whatever panels get created next.
+        // Runs before InitToolBars()/InitPanels() (see BaseWindow's
+        // guaranteed order), so the sizer exists and is ready to receive
+        // whatever gets created next.
         rootSizer_ = new wxBoxSizer(wxVERTICAL);
         SetSizer(rootSizer_);
+    }
+
+    void MainWindow::InitToolBars()
+    {
+        using ui::toolbars::ToolBarRegistry;
+
+        // MainWindow only asks for the toolbar ids it cares about - same
+        // "pick what you need" logic as InitPanels() below.
+        auto* toolbar = ToolBarRegistry::getInstance().Create(
+            ui::framework::wx::ids::toolbars::kExample, this);
+
+        if (toolbar != nullptr)
+        {
+            rootSizer_->Add(toolbar, 0, wxEXPAND);
+        }
     }
 
     void MainWindow::InitPanels()
