@@ -78,11 +78,6 @@ def _confirm_delete_mismatched_cache(build_dir: pathlib.Path, reason: str) -> bo
     answer = logger.input(f"Build cache is stale because {reason}. Delete build cache and reconfigure? (y/n) ")
     return answer.strip().lower() in {"y", "yes"}
 
-
-def _normalize_cache_path(path: str) -> str:
-    normalized = path.strip()
-    return normalized[:-1] if normalized.endswith("/") else normalized
-
 def _normalize_windows_path(path: str) -> str:
     if not path:
         return ""
@@ -91,10 +86,14 @@ def _normalize_windows_path(path: str) -> str:
         normalized = normalized[0].lower() + normalized[1:]
     return normalized
 
+def _normalize_cache_path(path: str) -> str:
+    normalized = path.strip()
+    return _normalize_windows_path(normalized[:-1] if normalized.endswith("/") else normalized)
+
 def _ensure_matching_cache_paths(build_dir: pathlib.Path, cache_entries: dict[str, str]):
     expected_build_dir = _normalize_cache_path(str(build_dir.resolve()))
     cached_build_dir = _normalize_cache_path(cache_entries.get("CMAKE_CACHEFILE_DIR", ""))
-    if cached_build_dir and (cached_build_dir != expected_build_dir and cached_build_dir != _normalize_windows_path(expected_build_dir)):
+    if cached_build_dir and cached_build_dir != expected_build_dir:
         reason = f"it targets build directory '{cached_build_dir}' instead of '{expected_build_dir}'"
         if not _confirm_delete_mismatched_cache(build_dir, reason):
             raise RuntimeError("Build cache points to a different build directory.")
@@ -105,7 +104,7 @@ def _ensure_matching_cache_paths(build_dir: pathlib.Path, cache_entries: dict[st
 
     expected_source_dir = _normalize_cache_path(str(build_dir.parent.resolve()))
     cached_source_dir = _normalize_cache_path(cache_entries.get("CMAKE_HOME_DIRECTORY", ""))
-    if cached_source_dir and (cached_source_dir != expected_source_dir and cached_source_dir != _normalize_windows_path(expected_source_dir)):
+    if cached_source_dir and cached_source_dir != expected_source_dir:
         reason = f"it targets source directory '{cached_source_dir}' instead of '{expected_source_dir}'"
         if not _confirm_delete_mismatched_cache(build_dir, reason):
             raise RuntimeError("Build cache points to a different source directory.")
