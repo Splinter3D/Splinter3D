@@ -3,38 +3,8 @@
 #include "ui/windows/demo_window/demo_window.hpp"
 #include "ui/windows/main_window/main_window.hpp"
 
-#include <memory>
-
 namespace app
 {
-    /**
-     * @brief Owns and manages the application's high-level lifecycle.
-     *
-     * App is the top-level orchestrator of Splinter3D. It does not create
-     * any business logic or draw anything itself - it simply owns the
-     * main window and drives its lifecycle (initialization, execution,
-     * shutdown).
-     *
-     * App is constructed by Bootstrap, which is responsible for wiring
-     * together all lower-level services (locale, logging, preferences,
-     * etc.) before the main window is created.
-     *
-     * ---
-     *
-     * Example:
-     *
-     * @code{.cpp}
-     * Bootstrap bootstrap;
-     * std::unique_ptr<App> app = bootstrap.build(argc, argv);
-     *
-     * if (app && app->init())
-     * {
-     *     // wx event loop takes over from here
-     * }
-     *
-     * app->shutdown();
-     * @endcode
-     */
     class App
     {
       public:
@@ -49,29 +19,26 @@ namespace app
         explicit App(std::unique_ptr<ui::windows::MainWindow> mainWindow,
                      std::unique_ptr<ui::windows::DemoWindow> demoWindow = nullptr);
 
-        /**
-         * @brief Destroys the application and releases owned resources.
-         */
-        ~App();
+        ~App() = default; // nothing to delete: wx owns and destroys the windows
 
-        /**
-         * @brief Initializes the application and shows the main window.
-         *
-         * @return true if initialization succeeded, false otherwise
-         * (e.g. if no main window was provided).
-         */
+        App(const App&)            = delete;
+        App& operator=(const App&) = delete;
+        App(App&&)                 = delete;
+        App& operator=(App&&)      = delete;
+
         bool init();
-
-        /**
-         * @brief Releases high-level services before the application exits.
-         *
-         * Called once the wx event loop has ended, right before the
-         * process terminates.
-         */
         void shutdown();
 
       private:
-        std::unique_ptr<ui::windows::MainWindow> mainWindow_;
-        std::unique_ptr<ui::windows::DemoWindow> demoWindow_;
+        // Non-owning: once Show()'d, wxWidgets takes ownership of every
+        // top-level window and deletes it itself as soon as the user
+        // closes it (Destroy(), deferred to the next idle cycle). App
+        // must NOT also own/delete these pointers - doing so causes a
+        // double free once the last window closes, which can silently
+        // hang or corrupt the process on shutdown instead of exiting
+        // cleanly (symptom: the executable stays locked even though
+        // every window appears closed).
+        ui::windows::MainWindow* main_window_ = nullptr;
+        ui::windows::DemoWindow* demo_window_ = nullptr;
     };
 } // namespace app
