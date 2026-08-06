@@ -1,6 +1,9 @@
 #pragma once
 
+#include "ui/layouts/base_layout/base_layout.hpp"
 #include "ui/windows/base_window/base_window.hpp"
+
+#include <memory>
 
 namespace ui::windows
 {
@@ -14,44 +17,19 @@ namespace ui::windows
     class MainWindow : public BaseWindow
     {
       public:
-        /**
-         * @brief Constructs the main application window.
-         */
         MainWindow();
 
       protected:
-        /**
-         * @brief Creates the menu bar.
-         */
         void InitMenuBar() override;
-
-        /**
-         * @brief Creates the status bar.
-         */
         void InitStatusBar() override;
-
-        /**
-         * @brief Creates the main layout.
-         */
         void InitLayout() override;
-
-        /**
-         * @brief Creates the toolbars.
-         */
         void InitToolBars() override;
-
-        /**
-         * @brief Creates the default panels.
-         */
         void InitPanels() override;
 
       private:
-        /**
-         * @brief Root layout of the window.
-         *
-         * Once assigned with SetSizer(), ownership is transferred to
-         * wxWidgets. The pointer is retained only for adding child panels.
-         */
-        wxBoxSizer* rootSizer_ = nullptr;
+        // Owns the spatial organization of the window. MainWindow never
+        // touches a wxSizer directly - it only asks layout_ where to put
+        // each widget it creates.
+        std::unique_ptr<ui::layouts::BaseLayout> layout_;
     };
 } // namespace ui::windows

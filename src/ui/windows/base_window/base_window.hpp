@@ -14,11 +14,15 @@ namespace ui::windows
      * The initialization order is guaranteed to be:
      *
      * 1. InitMenuBar()
-     * 2. InitToolBars()
-     * 3. InitStatusBar()
-     * 4. InitLayout()
+     * 2. InitStatusBar()
+     * 3. InitLayout()
+     * 4. InitToolBars()
      * 5. InitPanels()
      * 6. BindEvents()
+     *
+     * InitLayout() runs before InitToolBars() and InitPanels() so that the
+     * layout skeleton already exists when toolbars and panels need to be
+     * placed into it.
      *
      * Because virtual dispatch is disabled while constructing the base class,
      * the constructor does not invoke these hooks automatically.

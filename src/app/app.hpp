@@ -1,11 +1,9 @@
 #pragma once
 
-#include <memory>
+#include "ui/windows/demo_window/demo_window.hpp"
+#include "ui/windows/main_window/main_window.hpp"
 
-namespace ui::windows
-{
-    class MainWindow;
-}
+#include <memory>
 
 namespace app
 {
@@ -45,8 +43,11 @@ namespace app
          *
          * @param mainWindow The application's main window. App takes
          * ownership of it.
+         * @param demoWindow The application's demo window. Used to demonstrate the reusability of the ui
+         *
          */
-        explicit App(std::unique_ptr<ui::windows::MainWindow> mainWindow);
+        explicit App(std::unique_ptr<ui::windows::MainWindow> mainWindow,
+                     std::unique_ptr<ui::windows::DemoWindow> demoWindow = nullptr);
 
         /**
          * @brief Destroys the application and releases owned resources.
@@ -71,5 +72,6 @@ namespace app
 
       private:
         std::unique_ptr<ui::windows::MainWindow> mainWindow_;
+        std::unique_ptr<ui::windows::DemoWindow> demoWindow_;
     };
 } // namespace app

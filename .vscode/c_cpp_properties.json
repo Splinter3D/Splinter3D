@@ -29,7 +29,7 @@
         "wxUSE_GUI=1",
         "OCC_CONVERT_SIGNALS"
       ],
-      "compilerPath": "/usr/bin/g++",
+      "compilerPath": "cl.exe",
       "cppStandard": "c++23",
       "compileCommands": "${workspaceFolder}/build/compile_commands.json"
     }

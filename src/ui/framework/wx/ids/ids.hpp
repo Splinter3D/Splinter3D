@@ -190,7 +190,8 @@ namespace ui::framework::wx
          */
         namespace panels
         {
-            constexpr int kExample = app::kBase + 600;
+            constexpr int kExample         = app::kBase + 600;
+            constexpr int kWidgetsShowcase = app::kBase + 601;
 
         } // namespace panels
 
@@ -224,5 +225,19 @@ namespace ui::framework::wx
 
         } // namespace menus
 
+        /**
+         * @brief Layout identifiers.
+         *
+         * Used as keys into ui::layouts::LayoutRegistry (see
+         * ui/layouts/layout_registry.hpp) - NOT fired as wx command events. A
+         * window passes one of these to
+         * LayoutRegistry::getInstance().Create(id) to instantiate the
+         * corresponding wxLayout.
+         */
+        namespace layouts
+        {
+            constexpr int kMain      = app::kBase + 900;
+            constexpr int kTwoColumn = app::kBase + 901;
+        } // namespace layouts
     } // namespace ids
 } // namespace ui::framework::wx
