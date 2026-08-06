@@ -8,7 +8,12 @@ endif()
 
 ########################################
 
-add_executable(${SPLINTER3D_TARGET_NAME} ${SRC_SPLINTER3D})
+if(WIN32)
+    add_executable(${SPLINTER3D_TARGET_NAME} WIN32 ${SRC_SPLINTER3D})
+else()
+    add_executable(${SPLINTER3D_TARGET_NAME} ${SRC_SPLINTER3D})
+endif()
+
 target_include_directories(${SPLINTER3D_TARGET_NAME} PRIVATE ${INCLUDE_SPLINTER3D})
 
 if(DEFINED THIRD_PARTY_LIBS)

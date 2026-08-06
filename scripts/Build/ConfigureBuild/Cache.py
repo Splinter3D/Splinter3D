@@ -78,11 +78,17 @@ def _confirm_delete_mismatched_cache(build_dir: pathlib.Path, reason: str) -> bo
     answer = logger.input(f"Build cache is stale because {reason}. Delete build cache and reconfigure? (y/n) ")
     return answer.strip().lower() in {"y", "yes"}
 
+def _normalize_windows_path(path: str) -> str:
+    if not path:
+        return ""
+    normalized = path.strip().replace("\\", "/")
+    if re.match(r"^[A-Za-z]:/", normalized):
+        normalized = normalized[0].lower() + normalized[1:]
+    return normalized
 
 def _normalize_cache_path(path: str) -> str:
     normalized = path.strip()
-    return normalized[:-1] if normalized.endswith("/") else normalized
-
+    return _normalize_windows_path(normalized[:-1] if normalized.endswith("/") else normalized)
 
 def _ensure_matching_cache_paths(build_dir: pathlib.Path, cache_entries: dict[str, str]):
     expected_build_dir = _normalize_cache_path(str(build_dir.resolve()))

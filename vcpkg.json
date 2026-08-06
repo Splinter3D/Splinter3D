@@ -5,8 +5,16 @@
   "builtin-baseline": "fab1c6dc7a944372a90a1e19ab5e8e32cd658fc2",
   "dependencies": [
     {
-      "name": "raylib",
-      "version>=": "5.5"
+      "name": "glfw3",
+      "version>=": "3.4"
+    },
+    {
+      "name": "wxwidgets",
+      "version>=": "3.3.1#1"
+    },
+    {
+      "name": "opencascade",
+      "version>=": "8.0.0"
     },
     {
       "name": "nativefiledialog-extended",
@@ -15,12 +23,6 @@
     {
       "name": "nlohmann-json",
       "version>=": "3.12.0"
-    }
-  ],
-  "overrides": [
-    {
-      "name": "raylib",
-      "version": "5.5#1"
     }
   ]
 }

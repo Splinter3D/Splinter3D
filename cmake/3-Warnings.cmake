@@ -19,6 +19,8 @@ function(apply_compiler_warnings target)
                     /wd4100
                     /wd4996
                     /wd4456
+                    /wd4005
+                    /wd4101
             )
         endif()
     elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang")
