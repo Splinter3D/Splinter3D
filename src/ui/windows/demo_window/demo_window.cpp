@@ -1,4 +1,4 @@
-#include "main_window.hpp"
+#include "demo_window.hpp"
 
 #include "ui/framework/wx/ids/ids.hpp"
 #include "ui/layouts/layout_registry.hpp"
@@ -8,20 +8,20 @@
 
 namespace ui::windows
 {
-    MainWindow::MainWindow()
-        : BaseWindow(nullptr, wxID_ANY, "Splinter3D",
-                     wxDefaultPosition, wxSize(1270, 720))
+    DemoWindow::DemoWindow()
+        : BaseWindow(nullptr, wxID_ANY, "Splinter3D - Widgets Demo",
+                     wxDefaultPosition, wxSize(900, 600))
     {
         InitializeAll();
     }
 
-    void MainWindow::InitMenuBar()
+    void DemoWindow::InitMenuBar()
     {
         using ui::menus::MenuRegistry;
 
-        auto* menuBar = new wxMenuBar();
-        auto* fileMenu =
-            MenuRegistry::getInstance().Create(ui::framework::wx::ids::menus::kExample);
+        // Same registered menu as MainWindow - reused as-is.
+        auto* menuBar  = new wxMenuBar();
+        auto* fileMenu = MenuRegistry::getInstance().Create(ui::framework::wx::ids::menus::kExample);
         if (fileMenu != nullptr)
         {
             menuBar->Append(fileMenu, "&File");
@@ -29,40 +29,36 @@ namespace ui::windows
         SetMenuBar(menuBar);
     }
 
-    void MainWindow::InitStatusBar()
+    void DemoWindow::InitLayout()
     {
-        CreateStatusBar();
-        SetStatusText("Splinter3D - ready");
-    }
-
-    void MainWindow::InitLayout()
-    {
-        // Must run before InitToolBars()/InitPanels() so layout_ already
-        // exists when those hooks want to place something into it.
+        // Different layout id than MainWindow - this is the whole point:
+        // swapping layouts costs one line, nothing else changes.
         layout_ = std::unique_ptr<ui::layouts::BaseLayout>(
             ui::layouts::LayoutRegistry::getInstance()
-                .Create(ui::framework::wx::ids::layouts::kMain, this));
+                .Create(ui::framework::wx::ids::layouts::kTwoColumn, this));
     }
 
-    void MainWindow::InitToolBars()
+    void DemoWindow::InitToolBars()
     {
         using ui::toolbars::ToolBarRegistry;
 
+        // Same registered toolbar as MainWindow - reused as-is.
         auto* toolbar = ToolBarRegistry::getInstance().Create(
             ui::framework::wx::ids::toolbars::kExample, this);
 
+        // TwoColumnLayout doesn't override AddTop(), so this call safely
+        // resolves to BaseLayout's no-op - this layout simply has no top slot.
         if (toolbar != nullptr && layout_ != nullptr)
         {
             layout_->AddTop(toolbar);
         }
     }
 
-    void MainWindow::InitPanels()
+    void DemoWindow::InitPanels()
     {
         using ui::panels::PanelRegistry;
 
-        // MainWindow only asks the registry for the panel ids it cares about.
-        // Other windows will ask for different ids from their own InitPanels().
+        // Same registered panel as MainWindow's left slot - reused as-is.
         auto* widgets = PanelRegistry::getInstance().Create(
             ui::framework::wx::ids::panels::kWidgetsShowcase, this);
 
@@ -71,8 +67,7 @@ namespace ui::windows
             layout_->AddLeft(widgets);
         }
 
-        // Center intentionally left empty: reserved for the future
-        // OCCT/OpenGL viewer. Nothing is created or placed here yet.
+        // Right column left empty too, for symmetry with MainWindow's center.
 
         Layout();
     }

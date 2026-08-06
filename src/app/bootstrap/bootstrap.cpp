@@ -5,9 +5,11 @@
 #include "core/utils/os_compatibility.hpp"
 #include "platform/locale/locale_manager.hpp"
 #include "platform/logger/logger.hpp"
+#include "ui/layouts/layout_registration.hpp"
 #include "ui/menus/menu_registration.hpp"
 #include "ui/panels/panel_registration.hpp"
 #include "ui/toolbars/toolbar_registration.hpp"
+#include "ui/windows/demo_window/demo_window.hpp"
 #include "ui/windows/main_window/main_window.hpp"
 
 #include <filesystem>
@@ -58,14 +60,18 @@ namespace app
         core::utils::disableCtrlCEcho();
 
         // Populates every *Registry (PanelRegistry, ToolBarRegistry,
-        // MenuRegistry) with their factories. Must run before any window is
-        // created, since a window's InitMenuBar()/InitToolBars()/InitPanels()
-        // may query these registries as soon as it's constructed.
+        // MenuRegistry, LayoutRegistry) with their factories. Must run
+        // before any window is created, since a window's
+        // InitMenuBar()/InitToolBars()/InitLayout()/InitPanels() may query
+        // these registries as soon as it's constructed.
         platform::logger::clog("[bootstrap] registering menus");
         ui::menus::RegisterAllMenus();
 
         platform::logger::clog("[bootstrap] registering toolbars");
         ui::toolbars::RegisterAllToolBars();
+
+        platform::logger::clog("[bootstrap] registering layouts");
+        ui::layouts::RegisterAllLayouts();
 
         platform::logger::clog("[bootstrap] registering panels");
         ui::panels::RegisterAllPanels();
@@ -73,6 +79,9 @@ namespace app
         platform::logger::clog("[bootstrap] creating main window");
         auto mainWindow = std::make_unique<ui::windows::MainWindow>();
 
-        return std::make_unique<App>(std::move(mainWindow));
+        platform::logger::clog("[bootstrap] creating demo window");
+        auto demoWindow = std::make_unique<ui::windows::DemoWindow>();
+
+        return std::make_unique<App>(std::move(mainWindow), std::move(demoWindow));
     }
 } // namespace app
