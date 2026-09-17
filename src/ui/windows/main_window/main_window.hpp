@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ui/framework/occt/model_viewer_panel.hpp"
 #include "ui/layouts/base_layout/base_layout.hpp"
 #include "ui/windows/base_window/base_window.hpp"
 
@@ -25,11 +26,13 @@ namespace ui::windows
         void InitLayout() override;
         void InitToolBars() override;
         void InitPanels() override;
+        void BindEvents() override;
 
       private:
         // Owns the spatial organization of the window. MainWindow never
         // touches a wxSizer directly - it only asks layout_ where to put
         // each widget it creates.
         std::unique_ptr<ui::layouts::BaseLayout> layout_;
+        ui::framework::occt::ModelViewerPanel*   model_viewer_ = nullptr;
     };
 } // namespace ui::windows

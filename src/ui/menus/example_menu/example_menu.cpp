@@ -9,11 +9,11 @@ namespace ui::menus
         using ui::framework::wx::ids::file::kExit;
         using ui::framework::wx::ids::file::kNew;
         using ui::framework::wx::ids::file::kOpen;
+        using ui::framework::wx::ids::file::kSave;
 
-        // Temporary entries used only to validate menu creation and
-        // event binding during early development.
         Append(kNew, "&New\tCtrl+N");
         Append(kOpen, "&Open\tCtrl+O");
+        Append(kSave, "&Save\tCtrl+S");
 
         AppendSeparator();
 

@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <wx/app.h>
+#include <wx/splash.h>
 
 namespace app
 {
@@ -68,5 +69,6 @@ namespace app
 
       private:
         std::unique_ptr<App> application_;
+        wxSplashScreen*      splash_screen_ = nullptr;
     };
 } // namespace app
