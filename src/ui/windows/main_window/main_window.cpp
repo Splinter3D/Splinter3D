@@ -4,6 +4,7 @@
 #include "ui/layouts/layout_registry.hpp"
 #include "ui/menus/menu_registry.hpp"
 #include "ui/panels/panel_registry.hpp"
+#include "ui/toolbars/toolbar_registry.hpp"
 
 #include <filesystem>
 #include <vector>
@@ -96,6 +97,19 @@ namespace ui::windows
                 .Create(ui::framework::wx::ids::layouts::kMain, this));
     }
 
+    void MainWindow::InitToolBars()
+    {
+        using ui::toolbars::ToolBarRegistry;
+
+        auto* toolbar = ToolBarRegistry::getInstance().Create(
+            ui::framework::wx::ids::toolbars::kTransform, this);
+
+        if (toolbar != nullptr && layout_ != nullptr)
+        {
+            layout_->AddTop(toolbar);
+        }
+    }
+
     void MainWindow::InitPanels()
     {
         using ui::panels::PanelRegistry;
@@ -114,19 +128,23 @@ namespace ui::windows
 
     void MainWindow::BindEvents()
     {
-        Bind(wxEVT_MENU, [this](wxCommandEvent&) {
+        Bind(
+            wxEVT_MENU, [this](wxCommandEvent&) {
                  if (model_viewer_ != nullptr)
                      model_viewer_->newFile(); }, ui::framework::wx::ids::file::kNew);
 
-        Bind(wxEVT_MENU, [this](wxCommandEvent&) {
+        Bind(
+            wxEVT_MENU, [this](wxCommandEvent&) {
                  if (model_viewer_ != nullptr)
                      model_viewer_->openFile(); }, ui::framework::wx::ids::file::kOpen);
 
-        Bind(wxEVT_MENU, [this](wxCommandEvent&) {
+        Bind(
+            wxEVT_MENU, [this](wxCommandEvent&) {
                  if (model_viewer_ != nullptr)
                      model_viewer_->saveFile(); }, ui::framework::wx::ids::file::kSave);
 
-        Bind(wxEVT_MENU, [this](wxCommandEvent&) { Close(); }, ui::framework::wx::ids::file::kExit);
+        Bind(
+            wxEVT_MENU, [this](wxCommandEvent&) { Close(); }, ui::framework::wx::ids::file::kExit);
 
         Bind(wxEVT_CHAR_HOOK, [this](wxKeyEvent& event) {
             if (event.ControlDown())

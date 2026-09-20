@@ -207,6 +207,8 @@ namespace ui::framework::wx
          */
         namespace toolbars
         {
+            constexpr int kTransform = app::kBase + 700;
+
         } // namespace toolbars
 
         /**
@@ -238,5 +240,5 @@ namespace ui::framework::wx
             constexpr int kMain      = app::kBase + 900;
             constexpr int kTwoColumn = app::kBase + 901;
         } // namespace layouts
-    } // namespace ids
+    }     // namespace ids
 } // namespace ui::framework::wx

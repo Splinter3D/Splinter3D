@@ -1,0 +1,238 @@
+#include "transform_toolbar.hpp"
+
+#include <cmath>
+#include <memory>
+#include <wx/dcbuffer.h>
+#include <wx/graphics.h>
+
+namespace ui::toolbars
+{
+    namespace
+    {
+        constexpr int kIconSize   = 28;
+        constexpr int kButtonSide = 64;
+
+        // Draws a small filled triangle pointing away from (originX,
+        // originY) in the given direction, tip located at (originX,
+        // originY) + direction * length.
+        void DrawArrowhead(wxGraphicsContext& gc,
+                           double             tipX,
+                           double             tipY,
+                           double             angle,
+                           double             length,
+                           double             width)
+        {
+            const double halfWidth = width / 2.0;
+            const double backX     = tipX - length * std::cos(angle);
+            const double backY     = tipY - length * std::sin(angle);
+            const double perpX     = -std::sin(angle);
+            const double perpY     = std::cos(angle);
+
+            wxGraphicsPath path = gc.CreatePath();
+            path.MoveToPoint(tipX, tipY);
+            path.AddLineToPoint(backX + halfWidth * perpX, backY + halfWidth * perpY);
+            path.AddLineToPoint(backX - halfWidth * perpX, backY - halfWidth * perpY);
+            path.CloseSubpath();
+            gc.FillPath(path);
+        }
+
+        // Four-way arrow cross, used to represent "move / translate".
+        wxBitmap MakeMoveIcon(const wxColour& colour)
+        {
+            wxBitmap bitmap(kIconSize, kIconSize, 32);
+            bitmap.UseAlpha();
+
+            wxMemoryDC dc(bitmap);
+            dc.SetBackground(wxBrush(wxColour(0, 0, 0, 0)));
+            dc.Clear();
+
+            std::unique_ptr<wxGraphicsContext> gc(wxGraphicsContext::Create(dc));
+            if (gc)
+            {
+                const double centre     = kIconSize / 2.0;
+                const double tip        = kIconSize / 2.0 - 1.0;
+                const double headLength = 7.0;
+                const double headWidth  = 7.0;
+                const double shaftStart = 3.5; // gap at the centre, arrows only
+
+                gc->SetPen(wxPen(colour, 3));
+                gc->SetBrush(wxBrush(colour));
+
+                // Four independent shafts (not a single cross through the
+                // centre) so the middle stays open and reads as a "move"
+                // glyph rather than a plain plus sign.
+                gc->StrokeLine(centre + shaftStart, centre, centre + tip - headLength, centre);
+                gc->StrokeLine(centre - shaftStart, centre, centre - tip + headLength, centre);
+                gc->StrokeLine(centre, centre + shaftStart, centre, centre + tip - headLength);
+                gc->StrokeLine(centre, centre - shaftStart, centre, centre - tip + headLength);
+
+                DrawArrowhead(*gc, centre + tip, centre, 0.0, headLength, headWidth);
+                DrawArrowhead(*gc, centre - tip, centre, M_PI, headLength, headWidth);
+                DrawArrowhead(*gc, centre, centre + tip, M_PI_2, headLength, headWidth);
+                DrawArrowhead(*gc, centre, centre - tip, -M_PI_2, headLength, headWidth);
+            }
+
+            dc.SelectObject(wxNullBitmap);
+            return bitmap;
+        }
+
+        // Circular arrow (three-quarter ring with an arrowhead), used to
+        // represent "rotate".
+        wxBitmap MakeRotateIcon(const wxColour& colour)
+        {
+            wxBitmap bitmap(kIconSize, kIconSize, 32);
+            bitmap.UseAlpha();
+
+            wxMemoryDC dc(bitmap);
+            dc.SetBackground(wxBrush(wxColour(0, 0, 0, 0)));
+            dc.Clear();
+
+            std::unique_ptr<wxGraphicsContext> gc(wxGraphicsContext::Create(dc));
+            if (gc)
+            {
+                const double centre = kIconSize / 2.0;
+                const double radius = kIconSize / 2.0 - 5.0;
+
+                // Leaves a clear quarter-circle gap so the shape reads as
+                // an open arc, not a closed ring.
+                constexpr double kStartAngle = -M_PI_2;
+                constexpr double kEndAngle   = M_PI_2 * 3.0 - 0.55;
+
+                gc->SetPen(wxPen(colour, 3));
+                gc->SetBrush(wxBrush(colour));
+
+                wxGraphicsPath path = gc->CreatePath();
+                path.AddArc(centre, centre, radius, kStartAngle, kEndAngle, true);
+                gc->StrokePath(path);
+
+                const double tipAngle = kEndAngle + M_PI_2; // tangent direction
+                DrawArrowhead(*gc,
+                              centre + radius * std::cos(kEndAngle),
+                              centre + radius * std::sin(kEndAngle),
+                              tipAngle,
+                              8.0,
+                              8.0);
+            }
+
+            dc.SelectObject(wxNullBitmap);
+            return bitmap;
+        }
+
+        // Popup that resets its owning toggle button whenever it gets
+        // dismissed (e.g. the user clicks elsewhere), so the button's
+        // pressed state always matches whether its popup is open.
+        class FieldsPopup : public wxPopupTransientWindow
+        {
+          public:
+            FieldsPopup(wxWindow* parent, wxToggleButton* owner)
+                : wxPopupTransientWindow(parent, wxBORDER_SIMPLE), owner_(owner)
+            {
+            }
+
+          protected:
+            void OnDismiss() override
+            {
+                wxPopupTransientWindow::OnDismiss();
+                if (owner_ != nullptr)
+                    owner_->SetValue(false);
+            }
+
+          private:
+            wxToggleButton* owner_;
+        };
+    } // namespace
+
+    TransformToolbar::TransformToolbar(wxWindow* parent)
+        : wxPanel(parent, wxID_ANY)
+    {
+        auto* sizer = new wxBoxSizer(wxHORIZONTAL);
+        SetSizer(sizer);
+
+        const wxColour iconColour = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT);
+
+        move_button_ = MakeToggle(MakeMoveIcon(iconColour), "Move");
+        sizer->Add(move_button_, 0, wxALIGN_CENTER_VERTICAL | wxALL, 6);
+
+        rotate_button_ = MakeToggle(MakeRotateIcon(iconColour), "Rotate");
+        sizer->Add(rotate_button_, 0, wxALIGN_CENTER_VERTICAL | wxALL, 6);
+
+        move_popup_ = MakePopup(move_button_, "mm", -100000.0, 100000.0, 0.5, 2,
+                                move_x_, move_y_, move_z_);
+
+        rotate_popup_ = MakePopup(rotate_button_, "°", -360.0, 360.0, 1.0, 1,
+                                  rotate_x_, rotate_y_, rotate_z_);
+
+        move_button_->Bind(wxEVT_TOGGLEBUTTON, [this](wxCommandEvent&) {
+            if (move_button_->GetValue())
+                ShowPopupBelow(move_popup_, move_button_);
+            else
+                move_popup_->Dismiss();
+        });
+
+        rotate_button_->Bind(wxEVT_TOGGLEBUTTON, [this](wxCommandEvent&) {
+            if (rotate_button_->GetValue())
+                ShowPopupBelow(rotate_popup_, rotate_button_);
+            else
+                rotate_popup_->Dismiss();
+        });
+    }
+
+    wxToggleButton* TransformToolbar::MakeToggle(const wxBitmap& icon, const wxString& label)
+    {
+        auto* button = new wxToggleButton(this, wxID_ANY, label, wxDefaultPosition,
+                                          wxSize(kButtonSide, kButtonSide));
+        button->SetBitmap(icon, wxTOP);
+        return button;
+    }
+
+    wxPopupTransientWindow* TransformToolbar::MakePopup(wxToggleButton*    owner,
+                                                        const wxString&    unit,
+                                                        double             min_range,
+                                                        double             max_range,
+                                                        double             increment,
+                                                        int                digits,
+                                                        wxSpinCtrlDouble*& outX,
+                                                        wxSpinCtrlDouble*& outY,
+                                                        wxSpinCtrlDouble*& outZ)
+    {
+        auto* popup = new FieldsPopup(this, owner);
+
+        auto*        fieldsSizer = new wxBoxSizer(wxHORIZONTAL);
+        const wxSize spinSize(80, 28);
+
+        auto addAxis = [&](const wxString& axisLabel, wxSpinCtrlDouble*& out) {
+            fieldsSizer->Add(new wxStaticText(popup, wxID_ANY, axisLabel), 0,
+                             wxALIGN_CENTER_VERTICAL | wxRIGHT, 4);
+
+            out = new wxSpinCtrlDouble(popup, wxID_ANY, wxString::Format("%.*f", digits, 0.0),
+                                       wxDefaultPosition, spinSize, wxSP_ARROW_KEYS,
+                                       min_range, max_range, 0.0, increment);
+            out->SetDigits(static_cast<unsigned int>(digits));
+            fieldsSizer->Add(out, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
+        };
+
+        addAxis("X", outX);
+        addAxis("Y", outY);
+        addAxis("Z", outZ);
+
+        fieldsSizer->Add(new wxStaticText(popup, wxID_ANY, unit), 0, wxALIGN_CENTER_VERTICAL);
+
+        auto* outerSizer = new wxBoxSizer(wxVERTICAL);
+        outerSizer->Add(fieldsSizer, 0, wxALL, 10);
+        popup->SetSizerAndFit(outerSizer);
+
+        return popup;
+    }
+
+    void TransformToolbar::ShowPopupBelow(wxPopupTransientWindow* popup, wxWindow* button)
+    {
+        // Explicit screen position (button's bottom-left corner) rather
+        // than wxPopupWindow::Position(), which offsets by the full anchor
+        // size on both axes and ends up diagonally offset instead of
+        // directly underneath the button.
+        const wxPoint pos = button->ClientToScreen(wxPoint(0, button->GetSize().GetHeight()));
+        popup->SetPosition(pos);
+        popup->Popup();
+    }
+
+} // namespace ui::toolbars
