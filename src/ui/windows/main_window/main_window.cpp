@@ -60,17 +60,25 @@ namespace ui::windows
         InitializeAll();
     }
 
+    void MainWindow::InitMenuBarEntry(wxMenuBar* menuBar, const int menuId, const wxString& title)
+    {
+        using ui::menus::MenuRegistry;
+
+        auto* menu = MenuRegistry::getInstance().Create(menuId);
+        if (menu != nullptr)
+        {
+            menuBar->Append(menu, title);
+        }
+    }
+
     void MainWindow::InitMenuBar()
     {
         using ui::menus::MenuRegistry;
 
         auto* menuBar = new wxMenuBar();
-        auto* fileMenu =
-            MenuRegistry::getInstance().Create(ui::framework::wx::ids::menus::kExample);
-        if (fileMenu != nullptr)
-        {
-            menuBar->Append(fileMenu, "&File");
-        }
+
+        InitMenuBarEntry(menuBar, ui::framework::wx::ids::menus::kObject, "&Object");
+        InitMenuBarEntry(menuBar, ui::framework::wx::ids::menus::kSettings, "&Settings");
 
         SetMenuBar(menuBar);
     }
@@ -95,7 +103,7 @@ namespace ui::windows
         using ui::toolbars::ToolBarRegistry;
 
         auto* toolbar = ToolBarRegistry::getInstance().Create(
-            ui::framework::wx::ids::toolbars::kExample, this);
+            ui::framework::wx::ids::toolbars::kObject, this);
 
         if (toolbar != nullptr && layout_ != nullptr)
         {

@@ -1,6 +1,6 @@
 #include "toolbar_registration.hpp"
 
-#include "example_toolbar/example_toolbar.hpp"
+#include "toolbar_object/toolbar_object.hpp"
 #include "toolbar_registry.hpp"
 #include "ui/framework/wx/ids/ids.hpp"
 
@@ -19,9 +19,9 @@ namespace ui::toolbars
         // factory capable of constructing a fresh wxToolBar instance
         // whenever a window requests it.
         registry.Register(
-            ui::framework::wx::ids::toolbars::kExample,
+            ui::framework::wx::ids::toolbars::kObject,
             [](wxWindow* parent) {
-                return new ExampleToolBar(parent);
+                return new ToolBarObject(parent);
             });
     }
 

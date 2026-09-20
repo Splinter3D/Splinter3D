@@ -18,7 +18,7 @@ namespace ui::toolbars
      * Once real application toolbars are implemented, this class can safely
      * be removed along with its registration.
      */
-    class ExampleToolBar : public wxToolBar
+    class ToolBarObject : public wxToolBar
     {
       public:
         /**
@@ -29,7 +29,7 @@ namespace ui::toolbars
          * Populates the toolbar with a few placeholder tools using stock
          * wxWidgets icons.
          */
-        explicit ExampleToolBar(wxWindow* parent);
+        explicit ToolBarObject(wxWindow* parent);
     };
 
 } // namespace ui::toolbars

@@ -1,4 +1,4 @@
-#include "example_toolbar.hpp"
+#include "toolbar_object.hpp"
 
 #include "ui/framework/wx/ids/ids.hpp"
 
@@ -6,7 +6,7 @@
 
 namespace ui::toolbars
 {
-    ExampleToolBar::ExampleToolBar(wxWindow* parent)
+    ToolBarObject::ToolBarObject(wxWindow* parent)
         : wxToolBar(parent,
                     wxID_ANY,
                     wxDefaultPosition,

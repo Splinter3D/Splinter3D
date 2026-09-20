@@ -1,10 +1,10 @@
-#include "example_menu.hpp"
+#include "menu_settings.hpp"
 
 #include "ui/framework/wx/ids/ids.hpp"
 
 namespace ui::menus
 {
-    ExampleMenu::ExampleMenu()
+    MenuSettings::MenuSettings()
     {
         using ui::framework::wx::ids::file::kExit;
         using ui::framework::wx::ids::file::kNew;

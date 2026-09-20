@@ -34,5 +34,8 @@ namespace ui::windows
         // each widget it creates.
         std::unique_ptr<ui::layouts::BaseLayout> layout_;
         ui::framework::occt::ModelViewerPanel*   model_viewer_ = nullptr;
+
+        // Helper function to initialize a menu bar entry and add it to the menu bar.
+        void InitMenuBarEntry(wxMenuBar* menuBar, int menuId, const wxString& title);
     };
 } // namespace ui::windows
