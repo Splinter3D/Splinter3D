@@ -12,8 +12,8 @@ namespace ui::windows
      * @brief Main application window.
      *
      * MainWindow is the primary window displayed by the application.
-     * It is responsible for creating the menu bar, the toolbars, the main
-     * layout, the status bar, and the initial workspace panels.
+     * It is responsible for creating the menu bar, the main layout, the
+     * status bar, and the initial workspace panels.
      */
     class MainWindow : public BaseWindow
     {
@@ -24,7 +24,6 @@ namespace ui::windows
         void InitMenuBar() override;
         void InitStatusBar() override;
         void InitLayout() override;
-        void InitToolBars() override;
         void InitPanels() override;
         void BindEvents() override;
 

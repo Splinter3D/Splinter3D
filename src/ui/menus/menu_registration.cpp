@@ -1,8 +1,7 @@
 #include "menu_registration.hpp"
 
-#include "menu_object/menu_object.hpp"
+#include "menu_file/menu_file.hpp"
 #include "menu_registry.hpp"
-#include "menu_settings/menu_settings.hpp"
 #include "ui/framework/wx/ids/ids.hpp"
 
 // Add one include + one Register(...) line per real menu as they get built.
@@ -18,13 +17,9 @@ namespace ui::menus
         // Each menu is identified by a unique id and associated with a
         // factory capable of constructing a fresh wxMenu instance whenever
         // a window requests it.
-        registry.Register(ui::framework::wx::ids::menus::kObject,
+        registry.Register(ui::framework::wx::ids::menus::kFile,
                           []() {
-                              return new MenuObject();
-                          });
-        registry.Register(ui::framework::wx::ids::menus::kSettings,
-                          []() {
-                              return new MenuSettings();
+                              return new MenuFile();
                           });
     }
 

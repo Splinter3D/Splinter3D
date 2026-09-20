@@ -4,7 +4,6 @@
 #include "ui/layouts/layout_registry.hpp"
 #include "ui/menus/menu_registry.hpp"
 #include "ui/panels/panel_registry.hpp"
-#include "ui/toolbars/toolbar_registry.hpp"
 
 #include <filesystem>
 #include <vector>
@@ -77,8 +76,7 @@ namespace ui::windows
 
         auto* menuBar = new wxMenuBar();
 
-        InitMenuBarEntry(menuBar, ui::framework::wx::ids::menus::kObject, "&Object");
-        InitMenuBarEntry(menuBar, ui::framework::wx::ids::menus::kSettings, "&Settings");
+        InitMenuBarEntry(menuBar, ui::framework::wx::ids::menus::kFile, "&File");
 
         SetMenuBar(menuBar);
     }
@@ -96,19 +94,6 @@ namespace ui::windows
         layout_ = std::unique_ptr<ui::layouts::BaseLayout>(
             ui::layouts::LayoutRegistry::getInstance()
                 .Create(ui::framework::wx::ids::layouts::kMain, this));
-    }
-
-    void MainWindow::InitToolBars()
-    {
-        using ui::toolbars::ToolBarRegistry;
-
-        auto* toolbar = ToolBarRegistry::getInstance().Create(
-            ui::framework::wx::ids::toolbars::kObject, this);
-
-        if (toolbar != nullptr && layout_ != nullptr)
-        {
-            layout_->AddTop(toolbar);
-        }
     }
 
     void MainWindow::InitPanels()

@@ -207,8 +207,6 @@ namespace ui::framework::wx
          */
         namespace toolbars
         {
-            constexpr int kObject = app::kBase + 700;
-
         } // namespace toolbars
 
         /**
@@ -222,8 +220,7 @@ namespace ui::framework::wx
          */
         namespace menus
         {
-            constexpr int kObject   = app::kBase + 800;
-            constexpr int kSettings = app::kBase + 801;
+            constexpr int kFile = app::kBase + 800;
 
         } // namespace menus
 

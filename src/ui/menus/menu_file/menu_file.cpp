@@ -1,10 +1,10 @@
-#include "menu_settings.hpp"
+#include "menu_file.hpp"
 
 #include "ui/framework/wx/ids/ids.hpp"
 
 namespace ui::menus
 {
-    MenuSettings::MenuSettings()
+    MenuFile::MenuFile()
     {
         using ui::framework::wx::ids::file::kExit;
         using ui::framework::wx::ids::file::kNew;
@@ -14,6 +14,11 @@ namespace ui::menus
         Append(kNew, "&New\tCtrl+N");
         Append(kOpen, "&Open\tCtrl+O");
         Append(kSave, "&Save\tCtrl+S");
+
+        AppendSeparator();
+
+        Append(kOpen, "&Import...");
+        Append(kSave, "&Export...");
 
         AppendSeparator();
 
