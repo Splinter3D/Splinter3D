@@ -9,9 +9,13 @@
 #include <Aspect_DisplayConnection.hxx>
 #include <OpenGl_GraphicDriver.hxx>
 #include <StlAPI_Writer.hxx>
+#if defined(_WIN32)
+#include <WNT_Window.hxx>
+#else
+#include <Xw_Window.hxx>
+#endif
 #include <V3d_View.hxx>
 #include <V3d_Viewer.hxx>
-#include <WNT_Window.hxx>
 #include <algorithm>
 #include <filesystem>
 #include <stdexcept>
@@ -34,9 +38,15 @@ namespace ui::framework::occt
             viewer_->SetDefaultLights();
             viewer_->SetLightOn();
 
-            view_             = viewer_->CreateView();
+            view_ = viewer_->CreateView();
+#if defined(_WIN32)
             auto nativeWindow = new WNT_Window(
                 reinterpret_cast<Aspect_Handle>(window->GetHandle()));
+#else
+            auto nativeWindow = new Xw_Window(
+                displayConnection,
+                reinterpret_cast<Aspect_Drawable>(window->GetHandle()));
+#endif
             view_->SetWindow(nativeWindow);
             view_->SetBackgroundColor(Quantity_NOC_DARKSLATEBLUE);
 
