@@ -24,13 +24,16 @@
 #include <wx/log.h>
 #include <wx/sizer.h>
 #include <wx/stdpaths.h>
+#if defined(__WXGTK__)
+#include <wx/gtk/glcanvas.h>
+#endif
 
 namespace ui::framework::occt
 {
     class ModelViewerPanel::Viewer
     {
       public:
-        explicit Viewer(wxWindow* window)
+        explicit Viewer(wxGLCanvas* canvas)
         {
             auto displayConnection = new Aspect_DisplayConnection();
             auto graphicDriver     = new OpenGl_GraphicDriver(displayConnection);
@@ -41,11 +44,19 @@ namespace ui::framework::occt
             view_ = viewer_->CreateView();
 #if defined(_WIN32)
             auto nativeWindow = new WNT_Window(
-                reinterpret_cast<Aspect_Handle>(window->GetHandle()));
+                reinterpret_cast<Aspect_Handle>(canvas->GetHandle()));
+#elif defined(wxUSE_GLCANVAS_EGL) && wxUSE_GLCANVAS_EGL
+            auto nativeWindow = new Xw_Window(
+                displayConnection,
+                static_cast<Aspect_Drawable>(canvas->GetXWindow()),
+                reinterpret_cast<Aspect_FBConfig>(canvas->GetEGLConfig()));
 #else
             auto nativeWindow = new Xw_Window(
                 displayConnection,
-                reinterpret_cast<Aspect_Drawable>(window->GetHandle()));
+                static_cast<Aspect_Drawable>(canvas->GetXWindow()),
+                static_cast<wxGLCanvasImpl*>(canvas)->GetGLXFBConfig() != nullptr
+                    ? static_cast<wxGLCanvasImpl*>(canvas)->GetGLXFBConfig()[0]
+                    : nullptr);
 #endif
             view_->SetWindow(nativeWindow);
             view_->SetBackgroundColor(Quantity_NOC_DARKSLATEBLUE);
@@ -131,7 +142,7 @@ namespace ui::framework::occt
         : wxPanel(parent, wxID_ANY)
     {
         wxGLAttributes attributes;
-        attributes.RGBA().DoubleBuffer().Depth(24).EndList();
+        attributes.PlatformDefaults().RGBA().DoubleBuffer().Depth(24).Stencil(8).EndList();
 
         canvas_  = new wxGLCanvas(this, attributes, wxID_ANY, wxDefaultPosition,
                                   wxDefaultSize, wxFULL_REPAINT_ON_RESIZE);
