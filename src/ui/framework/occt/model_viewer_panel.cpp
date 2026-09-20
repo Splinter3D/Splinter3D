@@ -17,6 +17,7 @@
 #include <stdexcept>
 #include <vector>
 #include <wx/dcclient.h>
+#include <wx/log.h>
 #include <wx/sizer.h>
 #include <wx/stdpaths.h>
 
@@ -48,32 +49,31 @@ namespace ui::framework::occt
             const auto shape        = geometry::occt::Shape::fromSTL(path);
             auto       presentation = new AIS_Shape(shape.value());
 
-            if (!presentation_.IsNull())
-                context_->Remove(presentation_, false);
-
-            presentation_ = presentation;
-            shape_        = shape.value();
-            context_->Display(presentation_, true);
-            context_->SetDisplayMode(presentation_, AIS_Shaded, true);
+            shapes_.push_back(shape.value());
+            presentations_.push_back(presentation);
+            context_->Display(presentation, false);
+            context_->SetDisplayMode(presentation, AIS_Shaded, false);
+            context_->UpdateCurrentViewer();
             view_->FitAll(0.1, true);
         }
 
         void clear()
         {
             context_->RemoveAll(false);
-            presentation_.Nullify();
-            shape_.Nullify();
+            presentations_.clear();
+            shapes_.clear();
             view_->Redraw();
         }
 
         bool save(const std::filesystem::path& path) const
         {
-            if (shape_.IsNull())
+            if (shapes_.empty())
                 return false;
 
             const std::string filename = path.string();
             StlAPI_Writer     writer;
-            return writer.Write(shape_, filename.c_str());
+            // TODO: Save all the shapes in the vector instead of just the first one.
+            return writer.Write(shapes_.front(), filename.c_str());
         }
 
         void resize()
@@ -112,8 +112,8 @@ namespace ui::framework::occt
         occ::handle<V3d_Viewer>             viewer_;
         occ::handle<V3d_View>               view_;
         occ::handle<AIS_InteractiveContext> context_;
-        occ::handle<AIS_Shape>              presentation_;
-        TopoDS_Shape                        shape_;
+        std::vector<occ::handle<AIS_Shape>> presentations_;
+        std::vector<TopoDS_Shape>           shapes_;
         double                              scale_ = 1.0;
     };
 
