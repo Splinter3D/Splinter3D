@@ -107,6 +107,7 @@ namespace ui::windows
         if (toolbar != nullptr && layout_ != nullptr)
         {
             layout_->AddTop(toolbar);
+            transform_toolbar_ = dynamic_cast<ui::toolbars::TransformToolbar*>(toolbar);
         }
     }
 
@@ -171,5 +172,40 @@ namespace ui::windows
 
             event.Skip();
         });
+
+        if (model_viewer_ != nullptr && transform_toolbar_ != nullptr)
+        {
+            model_viewer_->SetOnModelStateChanged([this](bool hasModel) {
+                transform_toolbar_->ResetValues();
+                transform_toolbar_->SetEnabled(hasModel);
+            });
+
+            const auto bindAxis = [this](wxSpinCtrlDouble* spin) {
+                spin->Bind(wxEVT_SPINCTRLDOUBLE, [this](wxSpinDoubleEvent&) {
+                    ApplyTransform();
+                });
+            };
+
+            bindAxis(transform_toolbar_->GetMoveX());
+            bindAxis(transform_toolbar_->GetMoveY());
+            bindAxis(transform_toolbar_->GetMoveZ());
+            bindAxis(transform_toolbar_->GetRotateX());
+            bindAxis(transform_toolbar_->GetRotateY());
+            bindAxis(transform_toolbar_->GetRotateZ());
+        }
+    }
+
+    void MainWindow::ApplyTransform()
+    {
+        if (model_viewer_ == nullptr || transform_toolbar_ == nullptr)
+            return;
+
+        model_viewer_->setTransform(
+            transform_toolbar_->GetMoveX()->GetValue(),
+            transform_toolbar_->GetMoveY()->GetValue(),
+            transform_toolbar_->GetMoveZ()->GetValue(),
+            transform_toolbar_->GetRotateX()->GetValue(),
+            transform_toolbar_->GetRotateY()->GetValue(),
+            transform_toolbar_->GetRotateZ()->GetValue());
     }
 } // namespace ui::windows

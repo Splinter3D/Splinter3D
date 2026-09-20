@@ -175,6 +175,32 @@ namespace ui::toolbars
             else
                 rotate_popup_->Dismiss();
         });
+
+        SetEnabled(false);
+    }
+
+    void TransformToolbar::SetEnabled(bool enabled)
+    {
+        if (!enabled)
+        {
+            move_button_->SetValue(false);
+            rotate_button_->SetValue(false);
+            move_popup_->Dismiss();
+            rotate_popup_->Dismiss();
+        }
+
+        move_button_->Enable(enabled);
+        rotate_button_->Enable(enabled);
+    }
+
+    void TransformToolbar::ResetValues()
+    {
+        move_x_->SetValue(0.0);
+        move_y_->SetValue(0.0);
+        move_z_->SetValue(0.0);
+        rotate_x_->SetValue(0.0);
+        rotate_y_->SetValue(0.0);
+        rotate_z_->SetValue(0.0);
     }
 
     wxToggleButton* TransformToolbar::MakeToggle(const wxBitmap& icon, const wxString& label)

@@ -14,10 +14,17 @@
 #else
 #include <Xw_Window.hxx>
 #endif
+#include <TopLoc_Location.hxx>
 #include <V3d_View.hxx>
 #include <V3d_Viewer.hxx>
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
+#include <gp_Ax1.hxx>
+#include <gp_Dir.hxx>
+#include <gp_Pnt.hxx>
+#include <gp_Trsf.hxx>
+#include <gp_Vec.hxx>
 #include <stdexcept>
 #include <vector>
 #include <wx/dcclient.h>
@@ -129,6 +136,44 @@ namespace ui::framework::occt
             view_->SetScale(scale_);
         }
 
+        [[nodiscard]] bool hasShape() const noexcept
+        {
+            return !presentations_.empty();
+        }
+
+        // Applies an absolute move (millimeters) and rotation (degrees,
+        // around the origin) to every currently loaded shape, replacing
+        // whatever transform was previously applied.
+        void setTransform(double moveX,
+                          double moveY,
+                          double moveZ,
+                          double rotXDeg,
+                          double rotYDeg,
+                          double rotZDeg)
+        {
+            if (presentations_.empty())
+                return;
+
+            constexpr double kDegToRad = M_PI / 180.0;
+
+            gp_Trsf rotationX;
+            rotationX.SetRotation(gp_Ax1(gp_Pnt(0, 0, 0), gp_Dir(1, 0, 0)), rotXDeg * kDegToRad);
+            gp_Trsf rotationY;
+            rotationY.SetRotation(gp_Ax1(gp_Pnt(0, 0, 0), gp_Dir(0, 1, 0)), rotYDeg * kDegToRad);
+            gp_Trsf rotationZ;
+            rotationZ.SetRotation(gp_Ax1(gp_Pnt(0, 0, 0), gp_Dir(0, 0, 1)), rotZDeg * kDegToRad);
+
+            gp_Trsf translation;
+            translation.SetTranslation(gp_Vec(moveX, moveY, moveZ));
+
+            const TopLoc_Location location(translation * rotationZ * rotationY * rotationX);
+
+            for (const auto& presentation : presentations_)
+                context_->SetLocation(presentation, location);
+
+            view_->Redraw();
+        }
+
       private:
         occ::handle<V3d_Viewer>             viewer_;
         occ::handle<V3d_View>               view_;
@@ -173,6 +218,7 @@ namespace ui::framework::occt
             canvas_->SetCurrent(*context_);
             viewer_->clear();
             canvas_->SwapBuffers();
+            notifyModelStateChanged();
         }
         catch (const std::exception& error)
         {
@@ -194,6 +240,7 @@ namespace ui::framework::occt
             viewer_->load(std::filesystem::path(path->ToStdString()));
             viewer_->paint();
             canvas_->SwapBuffers();
+            notifyModelStateChanged();
         }
         catch (const std::exception& error)
         {
@@ -233,6 +280,37 @@ namespace ui::framework::occt
         canvas_->SetCurrent(*context_);
         viewer_      = std::make_unique<Viewer>(canvas_);
         initialized_ = true;
+    }
+
+    bool ModelViewerPanel::hasModel() const
+    {
+        return initialized_ && viewer_ != nullptr && viewer_->hasShape();
+    }
+
+    void ModelViewerPanel::setTransform(double moveXmm,
+                                        double moveYmm,
+                                        double moveZmm,
+                                        double rotateXdeg,
+                                        double rotateYdeg,
+                                        double rotateZdeg)
+    {
+        if (!initialized_ || viewer_ == nullptr)
+            return;
+
+        canvas_->SetCurrent(*context_);
+        viewer_->setTransform(moveXmm, moveYmm, moveZmm, rotateXdeg, rotateYdeg, rotateZdeg);
+        canvas_->SwapBuffers();
+    }
+
+    void ModelViewerPanel::SetOnModelStateChanged(std::function<void(bool)> callback)
+    {
+        on_model_state_changed_ = std::move(callback);
+    }
+
+    void ModelViewerPanel::notifyModelStateChanged()
+    {
+        if (on_model_state_changed_)
+            on_model_state_changed_(hasModel());
     }
 
     void ModelViewerPanel::onPaint(wxPaintEvent& event)

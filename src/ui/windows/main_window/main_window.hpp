@@ -2,6 +2,7 @@
 
 #include "ui/framework/occt/model_viewer_panel.hpp"
 #include "ui/layouts/base_layout/base_layout.hpp"
+#include "ui/toolbars/transform_toolbar/transform_toolbar.hpp"
 #include "ui/windows/base_window/base_window.hpp"
 
 #include <memory>
@@ -33,9 +34,13 @@ namespace ui::windows
         // touches a wxSizer directly - it only asks layout_ where to put
         // each widget it creates.
         std::unique_ptr<ui::layouts::BaseLayout> layout_;
-        ui::framework::occt::ModelViewerPanel*   model_viewer_ = nullptr;
+        ui::framework::occt::ModelViewerPanel*   model_viewer_      = nullptr;
+        ui::toolbars::TransformToolbar*          transform_toolbar_ = nullptr;
 
         // Helper function to initialize a menu bar entry and add it to the menu bar.
         void InitMenuBarEntry(wxMenuBar* menuBar, int menuId, const wxString& title);
+
+        // Reads the toolbar's current fields and applies them to the model viewer.
+        void ApplyTransform();
     };
 } // namespace ui::windows
