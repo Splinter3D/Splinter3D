@@ -2,14 +2,28 @@
 
 #include <functional>
 #include <memory>
+#include <vector>
 #include <wx/glcanvas.h>
 #include <wx/panel.h>
+#include <wx/string.h>
 
 namespace ui::framework::occt
 {
     class ModelViewerPanel final : public wxPanel
     {
       public:
+        // Move (millimeters) and rotate (degrees, around the origin) values
+        // currently applied to a given target. See setTransform().
+        struct TransformValues
+        {
+            double moveX   = 0.0;
+            double moveY   = 0.0;
+            double moveZ   = 0.0;
+            double rotateX = 0.0;
+            double rotateY = 0.0;
+            double rotateZ = 0.0;
+        };
+
         explicit ModelViewerPanel(wxWindow* parent);
         ~ModelViewerPanel() override;
 
@@ -20,14 +34,28 @@ namespace ui::framework::occt
         // True as soon as a shape is loaded in the viewer.
         [[nodiscard]] bool hasModel() const;
 
-        // Moves (millimeters) and rotates (degrees, around the origin) the
-        // currently loaded model. Does nothing if no model is loaded.
-        void setTransform(double moveXmm,
+        // Display names of every currently loaded model, in load order.
+        // Index i matches setTransform()/GetTransform()'s targetIndex.
+        [[nodiscard]] std::vector<wxString> GetModelNames() const;
+
+        // Moves (millimeters) and rotates (degrees, around the origin) a
+        // model, replacing whatever transform was previously applied to it.
+        // targetIndex selects which one: -1 applies the same absolute
+        // transform to every loaded model, otherwise it is an index into
+        // GetModelNames(). Does nothing if no model is loaded or the index
+        // is out of range.
+        void setTransform(int    targetIndex,
+                          double moveXmm,
                           double moveYmm,
                           double moveZmm,
                           double rotateXdeg,
                           double rotateYdeg,
                           double rotateZdeg);
+
+        // Returns the move/rotate values currently applied to a target
+        // (same indexing as setTransform). All-zero if targetIndex is -1
+        // or out of range.
+        [[nodiscard]] TransformValues GetTransform(int targetIndex) const;
 
         // Invoked with hasModel() every time a model is loaded or cleared,
         // so other widgets (e.g. the transform toolbar) can react.

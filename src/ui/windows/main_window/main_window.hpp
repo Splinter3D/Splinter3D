@@ -42,5 +42,9 @@ namespace ui::windows
 
         // Reads the toolbar's current fields and applies them to the model viewer.
         void ApplyTransform();
+
+        // Refreshes the toolbar's spin fields to reflect the transform
+        // currently applied to its selected target.
+        void SyncTransformFields();
     };
 } // namespace ui::windows

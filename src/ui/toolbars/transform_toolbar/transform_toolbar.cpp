@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <memory>
+#include <utility>
 #include <wx/dcbuffer.h>
 #include <wx/graphics.h>
 
@@ -11,6 +12,8 @@ namespace ui::toolbars
     {
         constexpr int kIconSize   = 28;
         constexpr int kButtonSide = 64;
+
+        const wxString kAllModelsLabel = "All models";
 
         // Draws a small filled triangle pointing away from (originX,
         // originY) in the given direction, tip located at (originX,
@@ -157,10 +160,17 @@ namespace ui::toolbars
         sizer->Add(rotate_button_, 0, wxALIGN_CENTER_VERTICAL | wxALL, 6);
 
         move_popup_ = MakePopup(move_button_, "mm", -100000.0, 100000.0, 0.5, 2,
-                                move_x_, move_y_, move_z_);
+                                move_target_combo_, move_x_, move_y_, move_z_);
 
         rotate_popup_ = MakePopup(rotate_button_, "°", -360.0, 360.0, 1.0, 1,
-                                  rotate_x_, rotate_y_, rotate_z_);
+                                  rotate_target_combo_, rotate_x_, rotate_y_, rotate_z_);
+
+        move_target_combo_->Bind(wxEVT_COMBOBOX, [this](wxCommandEvent&) {
+            OnTargetComboChanged(move_target_combo_);
+        });
+        rotate_target_combo_->Bind(wxEVT_COMBOBOX, [this](wxCommandEvent&) {
+            OnTargetComboChanged(rotate_target_combo_);
+        });
 
         move_button_->Bind(wxEVT_TOGGLEBUTTON, [this](wxCommandEvent&) {
             if (move_button_->GetValue())
@@ -191,6 +201,8 @@ namespace ui::toolbars
 
         move_button_->Enable(enabled);
         rotate_button_->Enable(enabled);
+        move_target_combo_->Enable(enabled);
+        rotate_target_combo_->Enable(enabled);
     }
 
     void TransformToolbar::ResetValues()
@@ -201,6 +213,41 @@ namespace ui::toolbars
         rotate_x_->SetValue(0.0);
         rotate_y_->SetValue(0.0);
         rotate_z_->SetValue(0.0);
+    }
+
+    void TransformToolbar::SetTargets(const wxArrayString& modelNames)
+    {
+        const wxString previous = move_target_combo_->GetStringSelection();
+
+        for (wxComboBox* combo : {move_target_combo_, rotate_target_combo_})
+        {
+            combo->Clear();
+            combo->Append(kAllModelsLabel);
+            combo->Append(modelNames);
+
+            const int previousIndex = combo->FindString(previous);
+            combo->SetSelection(previousIndex != wxNOT_FOUND ? previousIndex : 0);
+        }
+    }
+
+    int TransformToolbar::GetTargetIndex() const
+    {
+        const int selection = move_target_combo_->GetSelection();
+        return selection <= 0 ? -1 : selection - 1;
+    }
+
+    void TransformToolbar::SetOnTargetChanged(std::function<void(int)> callback)
+    {
+        on_target_changed_ = std::move(callback);
+    }
+
+    void TransformToolbar::OnTargetComboChanged(wxComboBox* source)
+    {
+        wxComboBox* other = source == move_target_combo_ ? rotate_target_combo_ : move_target_combo_;
+        other->SetSelection(source->GetSelection());
+
+        if (on_target_changed_)
+            on_target_changed_(GetTargetIndex());
     }
 
     wxToggleButton* TransformToolbar::MakeToggle(const wxBitmap& icon, const wxString& label)
@@ -217,11 +264,17 @@ namespace ui::toolbars
                                                         double             max_range,
                                                         double             increment,
                                                         int                digits,
+                                                        wxComboBox*&       outTarget,
                                                         wxSpinCtrlDouble*& outX,
                                                         wxSpinCtrlDouble*& outY,
                                                         wxSpinCtrlDouble*& outZ)
     {
         auto* popup = new FieldsPopup(this, owner);
+
+        outTarget = new wxComboBox(popup, wxID_ANY, kAllModelsLabel, wxDefaultPosition,
+                                   wxSize(160, -1), 0, nullptr, wxCB_READONLY);
+        outTarget->Append(kAllModelsLabel);
+        outTarget->SetSelection(0);
 
         auto*        fieldsSizer = new wxBoxSizer(wxHORIZONTAL);
         const wxSize spinSize(80, 28);
@@ -244,6 +297,7 @@ namespace ui::toolbars
         fieldsSizer->Add(new wxStaticText(popup, wxID_ANY, unit), 0, wxALIGN_CENTER_VERTICAL);
 
         auto* outerSizer = new wxBoxSizer(wxVERTICAL);
+        outerSizer->Add(outTarget, 0, wxLEFT | wxRIGHT | wxTOP | wxEXPAND, 10);
         outerSizer->Add(fieldsSizer, 0, wxALL, 10);
         popup->SetSizerAndFit(outerSizer);
 

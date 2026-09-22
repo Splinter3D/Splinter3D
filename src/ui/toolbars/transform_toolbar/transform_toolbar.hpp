@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+#include <wx/combobox.h>
 #include <wx/popupwin.h>
 #include <wx/spinctrl.h>
 #include <wx/tglbtn.h>
@@ -46,6 +48,28 @@ namespace ui::toolbars
          */
         void ResetValues();
 
+        /**
+         * @brief Sets the list of loaded model names shown in the target
+         * dropdown of both popups. "All models" is always prepended and
+         * kept selected if it already was, or if the previously selected
+         * name is no longer present in `modelNames`.
+         */
+        void SetTargets(const wxArrayString& modelNames);
+
+        /**
+         * @brief Currently selected target (shared by both popups): -1
+         * means "All models", otherwise a 0-based index into the names
+         * passed to the last SetTargets() call.
+         */
+        [[nodiscard]] int GetTargetIndex() const;
+
+        /**
+         * @brief Invoked whenever the user picks a different target in
+         * either popup's dropdown, with the same value GetTargetIndex()
+         * would then return.
+         */
+        void SetOnTargetChanged(std::function<void(int)> callback);
+
         // Position spin controls, in millimeters.
         [[nodiscard]] wxSpinCtrlDouble* GetMoveX() const
         {
@@ -83,8 +107,9 @@ namespace ui::toolbars
         // group's popup ("Move" / "Rotate").
         wxToggleButton* MakeToggle(const wxBitmap& icon, const wxString& label);
 
-        // Builds the popup with the "X/Y/Z fields + unit" revealed below
-        // the corresponding toggle button. outX/outY/outZ receive the
+        // Builds the popup with the "target" dropdown and the "X/Y/Z
+        // fields + unit" revealed below the corresponding toggle button.
+        // outTarget receives the created target combo, outX/outY/outZ the
         // created spin controls. The popup resets `owner`'s toggle state
         // whenever it gets dismissed (e.g. by clicking elsewhere).
         wxPopupTransientWindow* MakePopup(wxToggleButton*    owner,
@@ -93,12 +118,21 @@ namespace ui::toolbars
                                           double             max_range,
                                           double             increment,
                                           int                digits,
+                                          wxComboBox*&       outTarget,
                                           wxSpinCtrlDouble*& outX,
                                           wxSpinCtrlDouble*& outY,
                                           wxSpinCtrlDouble*& outZ);
 
+        // Keeps both popups' target dropdowns in sync with `source`, then
+        // notifies on_target_changed_.
+        void OnTargetComboChanged(wxComboBox* source);
+
         // Opens `popup` right below `button`, sized to fit its content.
         static void ShowPopupBelow(wxPopupTransientWindow* popup, wxWindow* button);
+
+        wxComboBox*               move_target_combo_   = nullptr;
+        wxComboBox*               rotate_target_combo_ = nullptr;
+        std::function<void(int)> on_target_changed_;
 
         wxToggleButton* move_button_   = nullptr;
         wxToggleButton* rotate_button_ = nullptr;

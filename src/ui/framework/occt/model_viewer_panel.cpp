@@ -77,8 +77,12 @@ namespace ui::framework::occt
             const auto shape        = geometry::occt::Shape::fromSTL(path);
             auto       presentation = new AIS_Shape(shape.value());
 
-            shapes_.push_back(shape.value());
-            presentations_.push_back(presentation);
+            ModelEntry entry;
+            entry.name         = uniqueName(path.filename().string());
+            entry.presentation = presentation;
+            entry.shape        = shape.value();
+            models_.push_back(entry);
+
             context_->Display(presentation, false);
             context_->SetDisplayMode(presentation, AIS_Shaded, false);
             context_->UpdateCurrentViewer();
@@ -88,20 +92,19 @@ namespace ui::framework::occt
         void clear()
         {
             context_->RemoveAll(false);
-            presentations_.clear();
-            shapes_.clear();
+            models_.clear();
             view_->Redraw();
         }
 
         bool save(const std::filesystem::path& path) const
         {
-            if (shapes_.empty())
+            if (models_.empty())
                 return false;
 
             const std::string filename = path.string();
             StlAPI_Writer     writer;
             // TODO: Save all the shapes in the vector instead of just the first one.
-            return writer.Write(shapes_.front(), filename.c_str());
+            return writer.Write(models_.front().shape, filename.c_str());
         }
 
         void resize()
@@ -138,20 +141,44 @@ namespace ui::framework::occt
 
         [[nodiscard]] bool hasShape() const noexcept
         {
-            return !presentations_.empty();
+            return !models_.empty();
+        }
+
+        // Display names of every currently loaded model, in load order.
+        [[nodiscard]] std::vector<wxString> modelNames() const
+        {
+            std::vector<wxString> names;
+            names.reserve(models_.size());
+            for (const auto& entry : models_)
+                names.push_back(entry.name);
+            return names;
+        }
+
+        // Returns the move/rotate values currently applied to a target.
+        // All-zero if targetIndex is -1 or out of range.
+        [[nodiscard]] ModelViewerPanel::TransformValues transformFor(int targetIndex) const
+        {
+            if (targetIndex < 0 || static_cast<std::size_t>(targetIndex) >= models_.size())
+                return {};
+
+            const auto& entry = models_[static_cast<std::size_t>(targetIndex)];
+            return {entry.moveX, entry.moveY, entry.moveZ, entry.rotateX, entry.rotateY, entry.rotateZ};
         }
 
         // Applies an absolute move (millimeters) and rotation (degrees,
-        // around the origin) to every currently loaded shape, replacing
-        // whatever transform was previously applied.
-        void setTransform(double moveX,
+        // around the origin) to a target, replacing whatever transform was
+        // previously applied to it. targetIndex selects which one: -1
+        // applies the same absolute transform to every loaded model,
+        // otherwise it is an index into models_.
+        void setTransform(int    targetIndex,
+                          double moveX,
                           double moveY,
                           double moveZ,
                           double rotXDeg,
                           double rotYDeg,
                           double rotZDeg)
         {
-            if (presentations_.empty())
+            if (models_.empty())
                 return;
 
             constexpr double kDegToRad = M_PI / 180.0;
@@ -168,18 +195,60 @@ namespace ui::framework::occt
 
             const TopLoc_Location location(translation * rotationZ * rotationY * rotationX);
 
-            for (const auto& presentation : presentations_)
-                context_->SetLocation(presentation, location);
+            const auto apply = [&](ModelEntry& entry) {
+                entry.moveX   = moveX;
+                entry.moveY   = moveY;
+                entry.moveZ   = moveZ;
+                entry.rotateX = rotXDeg;
+                entry.rotateY = rotYDeg;
+                entry.rotateZ = rotZDeg;
+                context_->SetLocation(entry.presentation, location);
+            };
+
+            if (targetIndex < 0)
+            {
+                for (auto& entry : models_)
+                    apply(entry);
+            }
+            else if (static_cast<std::size_t>(targetIndex) < models_.size())
+            {
+                apply(models_[static_cast<std::size_t>(targetIndex)]);
+            }
 
             view_->Redraw();
         }
 
       private:
+        struct ModelEntry
+        {
+            wxString               name;
+            occ::handle<AIS_Shape> presentation;
+            TopoDS_Shape           shape;
+            double                 moveX   = 0.0;
+            double                 moveY   = 0.0;
+            double                 moveZ   = 0.0;
+            double                 rotateX = 0.0;
+            double                 rotateY = 0.0;
+            double                 rotateZ = 0.0;
+        };
+
+        // Disambiguates two models loaded from files with the same name
+        // (e.g. imported from different folders) so the target dropdown
+        // never shows duplicate entries.
+        [[nodiscard]] wxString uniqueName(const wxString& base) const
+        {
+            wxString candidate = base;
+            for (int suffix = 2; std::any_of(models_.begin(), models_.end(),
+                                             [&](const ModelEntry& entry) { return entry.name == candidate; });
+                ++suffix)
+                candidate = wxString::Format("%s (%d)", base, suffix);
+            return candidate;
+        }
+
         occ::handle<V3d_Viewer>             viewer_;
         occ::handle<V3d_View>               view_;
         occ::handle<AIS_InteractiveContext> context_;
-        std::vector<occ::handle<AIS_Shape>> presentations_;
-        std::vector<TopoDS_Shape>           shapes_;
+        std::vector<ModelEntry>             models_;
         double                              scale_ = 1.0;
     };
 
@@ -287,7 +356,15 @@ namespace ui::framework::occt
         return initialized_ && viewer_ != nullptr && viewer_->hasShape();
     }
 
-    void ModelViewerPanel::setTransform(double moveXmm,
+    std::vector<wxString> ModelViewerPanel::GetModelNames() const
+    {
+        if (!initialized_ || viewer_ == nullptr)
+            return {};
+        return viewer_->modelNames();
+    }
+
+    void ModelViewerPanel::setTransform(int    targetIndex,
+                                        double moveXmm,
                                         double moveYmm,
                                         double moveZmm,
                                         double rotateXdeg,
@@ -298,8 +375,16 @@ namespace ui::framework::occt
             return;
 
         canvas_->SetCurrent(*context_);
-        viewer_->setTransform(moveXmm, moveYmm, moveZmm, rotateXdeg, rotateYdeg, rotateZdeg);
+        viewer_->setTransform(
+            targetIndex, moveXmm, moveYmm, moveZmm, rotateXdeg, rotateYdeg, rotateZdeg);
         canvas_->SwapBuffers();
+    }
+
+    ModelViewerPanel::TransformValues ModelViewerPanel::GetTransform(int targetIndex) const
+    {
+        if (!initialized_ || viewer_ == nullptr)
+            return {};
+        return viewer_->transformFor(targetIndex);
     }
 
     void ModelViewerPanel::SetOnModelStateChanged(std::function<void(bool)> callback)

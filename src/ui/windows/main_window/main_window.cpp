@@ -176,9 +176,15 @@ namespace ui::windows
         if (model_viewer_ != nullptr && transform_toolbar_ != nullptr)
         {
             model_viewer_->SetOnModelStateChanged([this](bool hasModel) {
-                transform_toolbar_->ResetValues();
+                wxArrayString names;
+                for (const auto& name : model_viewer_->GetModelNames())
+                    names.Add(name);
+                transform_toolbar_->SetTargets(names);
                 transform_toolbar_->SetEnabled(hasModel);
+                SyncTransformFields();
             });
+
+            transform_toolbar_->SetOnTargetChanged([this](int) { SyncTransformFields(); });
 
             const auto bindAxis = [this](wxSpinCtrlDouble* spin) {
                 spin->Bind(wxEVT_SPINCTRLDOUBLE, [this](wxSpinDoubleEvent&) {
@@ -201,11 +207,26 @@ namespace ui::windows
             return;
 
         model_viewer_->setTransform(
+            transform_toolbar_->GetTargetIndex(),
             transform_toolbar_->GetMoveX()->GetValue(),
             transform_toolbar_->GetMoveY()->GetValue(),
             transform_toolbar_->GetMoveZ()->GetValue(),
             transform_toolbar_->GetRotateX()->GetValue(),
             transform_toolbar_->GetRotateY()->GetValue(),
             transform_toolbar_->GetRotateZ()->GetValue());
+    }
+
+    void MainWindow::SyncTransformFields()
+    {
+        if (model_viewer_ == nullptr || transform_toolbar_ == nullptr)
+            return;
+
+        const auto transform = model_viewer_->GetTransform(transform_toolbar_->GetTargetIndex());
+        transform_toolbar_->GetMoveX()->SetValue(transform.moveX);
+        transform_toolbar_->GetMoveY()->SetValue(transform.moveY);
+        transform_toolbar_->GetMoveZ()->SetValue(transform.moveZ);
+        transform_toolbar_->GetRotateX()->SetValue(transform.rotateX);
+        transform_toolbar_->GetRotateY()->SetValue(transform.rotateY);
+        transform_toolbar_->GetRotateZ()->SetValue(transform.rotateZ);
     }
 } // namespace ui::windows
