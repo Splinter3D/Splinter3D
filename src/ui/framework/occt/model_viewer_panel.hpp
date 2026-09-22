@@ -57,6 +57,24 @@ namespace ui::framework::occt
         // or out of range.
         [[nodiscard]] TransformValues GetTransform(int targetIndex) const;
 
+        // Which interactive 3D gizmo (if any) should be shown in the
+        // viewport, mirroring the toolbar's active tool.
+        enum class GizmoTool
+        {
+            None,
+            Move,
+            Rotate
+        };
+
+        // Shows/hides/repositions the interactive gizmo. `targetIndex` uses
+        // the same indexing as setTransform(), but -1 ("all models") always
+        // hides the gizmo since there is no single meaningful pivot for it.
+        void SetGizmoState(int targetIndex, GizmoTool tool);
+
+        // Invoked whenever a gizmo drag changes a model's transform, so
+        // callers (e.g. the numeric fields) can refresh from GetTransform().
+        void SetOnGizmoChanged(std::function<void()> callback);
+
         // Invoked with hasModel() every time a model is loaded or cleared,
         // so other widgets (e.g. the transform toolbar) can react.
         void SetOnModelStateChanged(std::function<void(bool)> callback);
@@ -76,10 +94,12 @@ namespace ui::framework::occt
         wxGLCanvas*                  canvas_ = nullptr;
         class Viewer;
         std::unique_ptr<Viewer>   viewer_;
-        bool                      initialized_ = false;
-        bool                      rotating_    = false;
-        bool                      panning_     = false;
+        bool                      initialized_    = false;
+        bool                      rotating_       = false;
+        bool                      panning_        = false;
+        bool                      gizmo_dragging_ = false;
         wxPoint                   last_mouse_position_;
         std::function<void(bool)> on_model_state_changed_;
+        std::function<void()>     on_gizmo_changed_;
     };
 } // namespace ui::framework::occt

@@ -46,5 +46,9 @@ namespace ui::windows
         // Refreshes the toolbar's spin fields to reflect the transform
         // currently applied to its selected target.
         void SyncTransformFields();
+
+        // Shows/hides/repositions the viewport's gizmo to match the
+        // toolbar's current target and active tool.
+        void UpdateGizmoState();
     };
 } // namespace ui::windows

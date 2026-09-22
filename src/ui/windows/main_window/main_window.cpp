@@ -182,9 +182,18 @@ namespace ui::windows
                 transform_toolbar_->SetTargets(names);
                 transform_toolbar_->SetEnabled(hasModel);
                 SyncTransformFields();
+                UpdateGizmoState();
             });
 
-            transform_toolbar_->SetOnTargetChanged([this](int) { SyncTransformFields(); });
+            transform_toolbar_->SetOnTargetChanged([this](int) {
+                SyncTransformFields();
+                UpdateGizmoState();
+            });
+
+            transform_toolbar_->SetOnActiveToolChanged(
+                [this](ui::toolbars::TransformToolbar::ActiveTool) { UpdateGizmoState(); });
+
+            model_viewer_->SetOnGizmoChanged([this] { SyncTransformFields(); });
 
             const auto bindAxis = [this](wxSpinCtrlDouble* spin) {
                 spin->Bind(wxEVT_SPINCTRLDOUBLE, [this](wxSpinDoubleEvent&) {
@@ -228,5 +237,30 @@ namespace ui::windows
         transform_toolbar_->GetRotateX()->SetValue(transform.rotateX);
         transform_toolbar_->GetRotateY()->SetValue(transform.rotateY);
         transform_toolbar_->GetRotateZ()->SetValue(transform.rotateZ);
+    }
+
+    void MainWindow::UpdateGizmoState()
+    {
+        if (model_viewer_ == nullptr || transform_toolbar_ == nullptr)
+            return;
+
+        using ui::framework::occt::ModelViewerPanel;
+        using ui::toolbars::TransformToolbar;
+
+        ModelViewerPanel::GizmoTool tool = ModelViewerPanel::GizmoTool::None;
+        switch (transform_toolbar_->GetActiveTool())
+        {
+            case TransformToolbar::ActiveTool::Move:
+                tool = ModelViewerPanel::GizmoTool::Move;
+                break;
+            case TransformToolbar::ActiveTool::Rotate:
+                tool = ModelViewerPanel::GizmoTool::Rotate;
+                break;
+            case TransformToolbar::ActiveTool::None:
+            default:
+                break;
+        }
+
+        model_viewer_->SetGizmoState(transform_toolbar_->GetTargetIndex(), tool);
     }
 } // namespace ui::windows

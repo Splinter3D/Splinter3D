@@ -120,50 +120,35 @@ namespace ui::toolbars
             dc.SelectObject(wxNullBitmap);
             return bitmap;
         }
-
-        // Popup that resets its owning toggle button whenever it gets
-        // dismissed (e.g. the user clicks elsewhere), so the button's
-        // pressed state always matches whether its popup is open.
-        class FieldsPopup : public wxPopupTransientWindow
-        {
-          public:
-            FieldsPopup(wxWindow* parent, wxToggleButton* owner)
-                : wxPopupTransientWindow(parent, wxBORDER_SIMPLE), owner_(owner)
-            {
-            }
-
-          protected:
-            void OnDismiss() override
-            {
-                wxPopupTransientWindow::OnDismiss();
-                if (owner_ != nullptr)
-                    owner_->SetValue(false);
-            }
-
-          private:
-            wxToggleButton* owner_;
-        };
     } // namespace
 
     TransformToolbar::TransformToolbar(wxWindow* parent)
         : wxPanel(parent, wxID_ANY)
     {
-        auto* sizer = new wxBoxSizer(wxHORIZONTAL);
-        SetSizer(sizer);
+        auto* outerSizer = new wxBoxSizer(wxVERTICAL);
+        SetSizer(outerSizer);
+
+        auto* buttonsRow = new wxBoxSizer(wxHORIZONTAL);
+        outerSizer->Add(buttonsRow, 0, wxEXPAND);
 
         const wxColour iconColour = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT);
 
         move_button_ = MakeToggle(MakeMoveIcon(iconColour), "Move");
-        sizer->Add(move_button_, 0, wxALIGN_CENTER_VERTICAL | wxALL, 6);
+        buttonsRow->Add(move_button_, 0, wxALIGN_CENTER_VERTICAL | wxALL, 6);
 
         rotate_button_ = MakeToggle(MakeRotateIcon(iconColour), "Rotate");
-        sizer->Add(rotate_button_, 0, wxALIGN_CENTER_VERTICAL | wxALL, 6);
+        buttonsRow->Add(rotate_button_, 0, wxALIGN_CENTER_VERTICAL | wxALL, 6);
 
-        move_popup_ = MakePopup(move_button_, "mm", -100000.0, 100000.0, 0.5, 2,
-                                move_target_combo_, move_x_, move_y_, move_z_);
+        move_panel_ = MakeFieldsPanel("mm", -100000.0, 100000.0, 0.5, 2,
+                                     move_target_combo_, move_x_, move_y_, move_z_);
+        outerSizer->Add(move_panel_, 0, wxEXPAND);
 
-        rotate_popup_ = MakePopup(rotate_button_, "°", -360.0, 360.0, 1.0, 1,
-                                  rotate_target_combo_, rotate_x_, rotate_y_, rotate_z_);
+        rotate_panel_ = MakeFieldsPanel("°", -360.0, 360.0, 1.0, 1,
+                                       rotate_target_combo_, rotate_x_, rotate_y_, rotate_z_);
+        outerSizer->Add(rotate_panel_, 0, wxEXPAND);
+
+        move_panel_->Hide();
+        rotate_panel_->Hide();
 
         move_target_combo_->Bind(wxEVT_COMBOBOX, [this](wxCommandEvent&) {
             OnTargetComboChanged(move_target_combo_);
@@ -172,18 +157,28 @@ namespace ui::toolbars
             OnTargetComboChanged(rotate_target_combo_);
         });
 
+        // The two panels are mutually exclusive so "the active tool" is
+        // always well-defined for the gizmo.
         move_button_->Bind(wxEVT_TOGGLEBUTTON, [this](wxCommandEvent&) {
             if (move_button_->GetValue())
-                ShowPopupBelow(move_popup_, move_button_);
+            {
+                rotate_button_->SetValue(false);
+                ShowFieldsPanel(move_panel_);
+            }
             else
-                move_popup_->Dismiss();
+                HideFieldsPanels();
+            NotifyActiveToolChanged();
         });
 
         rotate_button_->Bind(wxEVT_TOGGLEBUTTON, [this](wxCommandEvent&) {
             if (rotate_button_->GetValue())
-                ShowPopupBelow(rotate_popup_, rotate_button_);
+            {
+                move_button_->SetValue(false);
+                ShowFieldsPanel(rotate_panel_);
+            }
             else
-                rotate_popup_->Dismiss();
+                HideFieldsPanels();
+            NotifyActiveToolChanged();
         });
 
         SetEnabled(false);
@@ -195,14 +190,14 @@ namespace ui::toolbars
         {
             move_button_->SetValue(false);
             rotate_button_->SetValue(false);
-            move_popup_->Dismiss();
-            rotate_popup_->Dismiss();
+            HideFieldsPanels();
         }
 
         move_button_->Enable(enabled);
         rotate_button_->Enable(enabled);
         move_target_combo_->Enable(enabled);
         rotate_target_combo_->Enable(enabled);
+        NotifyActiveToolChanged();
     }
 
     void TransformToolbar::ResetValues()
@@ -241,6 +236,26 @@ namespace ui::toolbars
         on_target_changed_ = std::move(callback);
     }
 
+    TransformToolbar::ActiveTool TransformToolbar::GetActiveTool() const
+    {
+        if (move_button_->GetValue())
+            return ActiveTool::Move;
+        if (rotate_button_->GetValue())
+            return ActiveTool::Rotate;
+        return ActiveTool::None;
+    }
+
+    void TransformToolbar::SetOnActiveToolChanged(std::function<void(ActiveTool)> callback)
+    {
+        on_active_tool_changed_ = std::move(callback);
+    }
+
+    void TransformToolbar::NotifyActiveToolChanged()
+    {
+        if (on_active_tool_changed_)
+            on_active_tool_changed_(GetActiveTool());
+    }
+
     void TransformToolbar::OnTargetComboChanged(wxComboBox* source)
     {
         wxComboBox* other = source == move_target_combo_ ? rotate_target_combo_ : move_target_combo_;
@@ -258,20 +273,20 @@ namespace ui::toolbars
         return button;
     }
 
-    wxPopupTransientWindow* TransformToolbar::MakePopup(wxToggleButton*    owner,
-                                                        const wxString&    unit,
-                                                        double             min_range,
-                                                        double             max_range,
-                                                        double             increment,
-                                                        int                digits,
-                                                        wxComboBox*&       outTarget,
-                                                        wxSpinCtrlDouble*& outX,
-                                                        wxSpinCtrlDouble*& outY,
-                                                        wxSpinCtrlDouble*& outZ)
+    wxPanel* TransformToolbar::MakeFieldsPanel(const wxString&    unit,
+                                               double             min_range,
+                                               double             max_range,
+                                               double             increment,
+                                               int                digits,
+                                               wxComboBox*&       outTarget,
+                                               wxSpinCtrlDouble*& outX,
+                                               wxSpinCtrlDouble*& outY,
+                                               wxSpinCtrlDouble*& outZ)
     {
-        auto* popup = new FieldsPopup(this, owner);
+        auto* panel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+                                  wxBORDER_SIMPLE);
 
-        outTarget = new wxComboBox(popup, wxID_ANY, kAllModelsLabel, wxDefaultPosition,
+        outTarget = new wxComboBox(panel, wxID_ANY, kAllModelsLabel, wxDefaultPosition,
                                    wxSize(160, -1), 0, nullptr, wxCB_READONLY);
         outTarget->Append(kAllModelsLabel);
         outTarget->SetSelection(0);
@@ -280,10 +295,10 @@ namespace ui::toolbars
         const wxSize spinSize(80, 28);
 
         auto addAxis = [&](const wxString& axisLabel, wxSpinCtrlDouble*& out) {
-            fieldsSizer->Add(new wxStaticText(popup, wxID_ANY, axisLabel), 0,
+            fieldsSizer->Add(new wxStaticText(panel, wxID_ANY, axisLabel), 0,
                              wxALIGN_CENTER_VERTICAL | wxRIGHT, 4);
 
-            out = new wxSpinCtrlDouble(popup, wxID_ANY, wxString::Format("%.*f", digits, 0.0),
+            out = new wxSpinCtrlDouble(panel, wxID_ANY, wxString::Format("%.*f", digits, 0.0),
                                        wxDefaultPosition, spinSize, wxSP_ARROW_KEYS,
                                        min_range, max_range, 0.0, increment);
             out->SetDigits(static_cast<unsigned int>(digits));
@@ -294,25 +309,32 @@ namespace ui::toolbars
         addAxis("Y", outY);
         addAxis("Z", outZ);
 
-        fieldsSizer->Add(new wxStaticText(popup, wxID_ANY, unit), 0, wxALIGN_CENTER_VERTICAL);
+        fieldsSizer->Add(new wxStaticText(panel, wxID_ANY, unit), 0, wxALIGN_CENTER_VERTICAL);
 
         auto* outerSizer = new wxBoxSizer(wxVERTICAL);
         outerSizer->Add(outTarget, 0, wxLEFT | wxRIGHT | wxTOP | wxEXPAND, 10);
         outerSizer->Add(fieldsSizer, 0, wxALL, 10);
-        popup->SetSizerAndFit(outerSizer);
+        panel->SetSizer(outerSizer);
 
-        return popup;
+        return panel;
     }
 
-    void TransformToolbar::ShowPopupBelow(wxPopupTransientWindow* popup, wxWindow* button)
+    void TransformToolbar::ShowFieldsPanel(wxPanel* panel)
     {
-        // Explicit screen position (button's bottom-left corner) rather
-        // than wxPopupWindow::Position(), which offsets by the full anchor
-        // size on both axes and ends up diagonally offset instead of
-        // directly underneath the button.
-        const wxPoint pos = button->ClientToScreen(wxPoint(0, button->GetSize().GetHeight()));
-        popup->SetPosition(pos);
-        popup->Popup();
+        move_panel_->Show(panel == move_panel_);
+        rotate_panel_->Show(panel == rotate_panel_);
+        Layout();
+        if (GetParent() != nullptr)
+            GetParent()->Layout();
+    }
+
+    void TransformToolbar::HideFieldsPanels()
+    {
+        move_panel_->Hide();
+        rotate_panel_->Hide();
+        Layout();
+        if (GetParent() != nullptr)
+            GetParent()->Layout();
     }
 
 } // namespace ui::toolbars
