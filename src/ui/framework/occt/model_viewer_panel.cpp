@@ -19,7 +19,10 @@
 #else
 #include <Xw_Window.hxx>
 #endif
+#include <Quantity_Color.hxx>
 #include <TopLoc_Location.hxx>
+#include <V3d_AmbientLight.hxx>
+#include <V3d_DirectionalLight.hxx>
 #include <V3d_View.hxx>
 #include <V3d_Viewer.hxx>
 #include <algorithm>
@@ -50,8 +53,20 @@ namespace ui::framework::occt
         {
             auto displayConnection = new Aspect_DisplayConnection();
             auto graphicDriver     = new OpenGl_GraphicDriver(displayConnection);
-            viewer_                = new V3d_Viewer(graphicDriver);
-            viewer_->SetDefaultLights();
+            viewer_ = new V3d_Viewer(graphicDriver);
+
+            // A headlight (theIsHeadlight = true) always shines from the
+            // camera towards whatever it is looking at, so orbiting the
+            // camera never turns a face away from the light - the default
+            // fixed, world-space light (SetDefaultLights()) left faces
+            // dark whenever they turned away from it, which looked like
+            // flickering when rotating a shape with only a handful of
+            // flat faces (e.g. a cube). The ambient light keeps faces the
+            // headlight doesn't directly face from going fully black.
+            occ::handle<V3d_DirectionalLight> headlight =
+                new V3d_DirectionalLight(V3d_Zneg, Quantity_NOC_WHITE, true);
+            viewer_->AddLight(headlight);
+            viewer_->AddLight(new V3d_AmbientLight(Quantity_NOC_WHITE));
             viewer_->SetLightOn();
 
             view_ = viewer_->CreateView();
@@ -477,6 +492,15 @@ namespace ui::framework::occt
         canvas_->Bind(wxEVT_MIDDLE_UP, &ModelViewerPanel::onMouseUp, this);
         canvas_->Bind(wxEVT_MOTION, &ModelViewerPanel::onMouseMove, this);
         canvas_->Bind(wxEVT_MOUSEWHEEL, &ModelViewerPanel::onMouseWheel, this);
+
+        // wxBG_STYLE_PAINT must be set on the canvas itself, not just the
+        // wrapping panel: it is canvas_ that OpenGL paints into. Without
+        // this (and the no-op erase handler below), GTK still erases the
+        // canvas to its default background colour between GL frames during
+        // rapid interactive repaint (dragging to orbit/pan), which showed
+        // up as the view flickering as if its brightness were changing.
+        canvas_->SetBackgroundStyle(wxBG_STYLE_PAINT);
+        canvas_->Bind(wxEVT_ERASE_BACKGROUND, [](wxEraseEvent&) {});
         SetBackgroundStyle(wxBG_STYLE_PAINT);
     }
 
@@ -487,9 +511,7 @@ namespace ui::framework::occt
         try
         {
             initializeViewer();
-            canvas_->SetCurrent(*context_);
             viewer_->clear();
-            canvas_->SwapBuffers();
             notifyModelStateChanged();
         }
         catch (const std::exception& error)
@@ -508,10 +530,8 @@ namespace ui::framework::occt
         try
         {
             initializeViewer();
-            canvas_->SetCurrent(*context_);
             viewer_->load(std::filesystem::path(path->ToStdString()));
             viewer_->paint();
-            canvas_->SwapBuffers();
             notifyModelStateChanged();
         }
         catch (const std::exception& error)
@@ -549,6 +569,14 @@ namespace ui::framework::occt
         if (initialized_)
             return;
 
+        // The only place that binds wx's own GL context. From here on,
+        // OpenGl_GraphicDriver (created inside Viewer) manages and binds
+        // its own separate GL context internally on every View::Redraw().
+        // Re-binding wx's context before each redraw/swap - as this used
+        // to do everywhere below - made rendering alternate between two
+        // independently configured contexts (only one of which ever had
+        // OCCT's lighting set up), which showed up as the view randomly
+        // going dark and flickering during interaction.
         canvas_->SetCurrent(*context_);
         viewer_      = std::make_unique<Viewer>(canvas_);
         initialized_ = true;
@@ -577,10 +605,8 @@ namespace ui::framework::occt
         if (!initialized_ || viewer_ == nullptr)
             return;
 
-        canvas_->SetCurrent(*context_);
         viewer_->setTransform(
             targetIndex, moveXmm, moveYmm, moveZmm, rotateXdeg, rotateYdeg, rotateZdeg);
-        canvas_->SwapBuffers();
     }
 
     ModelViewerPanel::TransformValues ModelViewerPanel::GetTransform(int targetIndex) const
@@ -595,9 +621,7 @@ namespace ui::framework::occt
         if (!initialized_ || viewer_ == nullptr)
             return;
 
-        canvas_->SetCurrent(*context_);
         viewer_->setGizmoTarget(targetIndex, tool);
-        canvas_->SwapBuffers();
     }
 
     void ModelViewerPanel::SetOnGizmoChanged(std::function<void()> callback)
@@ -624,9 +648,7 @@ namespace ui::framework::occt
         try
         {
             initializeViewer();
-            canvas_->SetCurrent(*context_);
             viewer_->paint();
-            canvas_->SwapBuffers();
         }
         catch (const std::exception& error)
         {
@@ -637,10 +659,7 @@ namespace ui::framework::occt
     void ModelViewerPanel::onSize(wxSizeEvent& event)
     {
         if (initialized_)
-        {
-            canvas_->SetCurrent(*context_);
             viewer_->resize();
-        }
         event.Skip();
     }
 
@@ -649,8 +668,6 @@ namespace ui::framework::occt
         last_mouse_position_ = event.GetPosition();
         if (event.LeftDown() && initialized_)
         {
-            canvas_->SetCurrent(*context_);
-
             if (viewer_->startGizmoDragIfHit(last_mouse_position_))
             {
                 gizmo_dragging_ = true;
@@ -671,10 +688,7 @@ namespace ui::framework::occt
         if (event.LeftUp())
         {
             if (gizmo_dragging_ && initialized_)
-            {
-                canvas_->SetCurrent(*context_);
                 viewer_->stopGizmoDrag();
-            }
             gizmo_dragging_ = false;
             rotating_       = false;
         }
@@ -694,18 +708,16 @@ namespace ui::framework::occt
         // Note: this deliberately does no gizmo hit-testing while just
         // hovering (no button down). Continuously calling into OCCT's
         // AIS_InteractiveContext::MoveTo() on every pixel of mouse motion
-        // caused a visible flicker (it appears to trigger an internal
-        // redraw of its own, independent of - and out of sync with - our
-        // own paint()/SwapBuffers() calls). Detection is instead redone
-        // fresh at the moment of each click (see startGizmoDragIfHit()),
-        // which is all that is needed for dragging to work; the only
-        // thing lost is highlighting a handle before it is clicked.
+        // appeared to trigger an internal redraw of its own. Detection is
+        // instead redone fresh at the moment of each click (see
+        // startGizmoDragIfHit()), which is all that is needed for dragging
+        // to work; the only thing lost is highlighting a handle before it
+        // is clicked.
         if (gizmo_dragging_)
         {
-            canvas_->SetCurrent(*context_);
+            // updateGizmoDrag() already redraws (via setTransform()) when
+            // it successfully applies a delta; no need to redraw again.
             viewer_->updateGizmoDrag(position);
-            viewer_->paint();
-            canvas_->SwapBuffers();
             last_mouse_position_ = position;
             if (on_gizmo_changed_)
                 on_gizmo_changed_();
@@ -717,7 +729,6 @@ namespace ui::framework::occt
 
         const int dx = position.x - last_mouse_position_.x;
         const int dy = position.y - last_mouse_position_.y;
-        canvas_->SetCurrent(*context_);
 
         if (rotating_)
             viewer_->rotate(position);
@@ -725,7 +736,6 @@ namespace ui::framework::occt
             viewer_->pan(dx, dy);
 
         viewer_->paint();
-        canvas_->SwapBuffers();
         last_mouse_position_ = position;
     }
 
@@ -733,9 +743,7 @@ namespace ui::framework::occt
     {
         if (!initialized_)
             return;
-        canvas_->SetCurrent(*context_);
         viewer_->zoom(event.GetWheelRotation() / 100);
         viewer_->paint();
-        canvas_->SwapBuffers();
     }
 } // namespace ui::framework::occt
