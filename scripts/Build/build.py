@@ -1,3 +1,9 @@
+"""Build script entry point (invoked as `scripts/build.sh`/`scripts/build.ps1`).
+
+Dispatches clean/configure/build/test actions based on the parsed CLI flags; see
+ParseArgs/ParseArgs.py for the full flag list.
+"""
+
 import os
 import sys
 
@@ -27,11 +33,12 @@ def main():
     logger.info("Starting build process...")
 
     if args.clean or args.fclean or args.rebuild or args.reinstall_dependencies:
-        clean()
+        clean()  # remove the build/ directory
 
     if args.fclean or args.rebuild:
-        fclean()
+        fclean()  # also remove build artifacts left in the repo root
 
+    # --clean/--fclean alone stop here; --rebuild and --tests fall through to configure below.
     if args.clean and not args.rebuild and not args.tests:
         logger.info("Build process completed successfully.")
         return
@@ -41,6 +48,7 @@ def main():
         return
 
     if args.skip_configure:
+        # Rebuild an already-configured tree without re-running CMake configure.
         build_existing_target("splinter3D_unit_tests" if args.tests else "splinter3D")
         if args.tests and not args.skip_build:
             run_tests()

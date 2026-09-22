@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Computes the next release tag from git tags and commitizen.
+# `stable` -> next vX.Y.Z (after discarding pending RC tags for that version).
+# `rc`     -> next vX.Y.Z-rc.N for the upcoming version.
+# Used by .github/workflows/prepare-release-pr.yml.
 set -euo pipefail
 
 MODE="${1:-}"
@@ -24,6 +28,8 @@ latest_stable_tag="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-version:refn
 base_version="$DEFAULT_VERSION"
 
 if [[ -n "$latest_stable_tag" ]]; then
+  # Delete local RC tags first so `cz bump --get-next` computes the next version from the
+  # latest stable tag and commit history, not from a leftover pre-release tag.
   while IFS= read -r rc_tag; do
     [[ -n "$rc_tag" ]] || continue
     git tag -d "$rc_tag" >/dev/null

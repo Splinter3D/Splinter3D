@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Compares vcpkg.json's "version-semver" against the SCM version (an explicit TAG argument,
+# or the latest vX.Y.Z git tag otherwise) and, with --fix, rewrites vcpkg.json to match.
+# Used by .github/workflows/prepare-release-pr.yml to keep the manifest in sync with releases.
 set -euo pipefail
 
 FIX=false

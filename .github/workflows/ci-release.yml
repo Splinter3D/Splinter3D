@@ -1,3 +1,6 @@
+# Builds, packages, signs/notarizes, and releases splinter3D for every supported OS/arch
+# from a version tag (pushed by tag-on-merge.yml, or supplied manually), then publishes
+# multi-arch Docker images and a GitHub Release with all packages attached.
 name: CI Release (matrix)
 
 on:
@@ -77,6 +80,8 @@ jobs:
         env:
           RELEASE_TAG: ${{ steps.release_tag.outputs.tag }}
         run: |
+          # Gate the GitHub "production"/"dev" Environments (and their protection rules)
+          # on which branch the tagged commit is actually reachable from.
           git fetch origin main dev --depth=1
 
           remote_branches="$(git branch -r --contains "${RELEASE_TAG}^{commit}" | sed 's/^[*[:space:]]*//')"
