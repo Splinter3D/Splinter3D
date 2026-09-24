@@ -41,7 +41,7 @@ namespace ui::framework::wx
         {
             frame_->Bind(
                 wxEVT_CLOSE_WINDOW,
-                [this](wxCloseEvent& event) {
+                [this](wxCloseEvent&) {
                     frame_->Destroy();
                 });
         }

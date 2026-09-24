@@ -1,17 +1,14 @@
 #include "app.hpp"
 
-#include "ui/windows/demo_window/demo_window.hpp"
 #include "ui/windows/main_window/main_window.hpp"
 
 namespace app
 {
-    App::App(std::unique_ptr<ui::windows::MainWindow> mainWindow,
-             std::unique_ptr<ui::windows::DemoWindow> demoWindow)
+    App::App(std::unique_ptr<ui::windows::MainWindow> mainWindow)
         // Release ownership immediately: from here on, wxWidgets is the
         // sole owner of these objects. App only keeps a non-owning
         // pointer to call Show() on them.
         : main_window_(mainWindow.release())
-        , demo_window_(demoWindow.release())
     {
     }
 
@@ -21,14 +18,6 @@ namespace app
             return false;
 
         main_window_->Show(true);
-        // Optional second window, purely to demonstrate that the same
-        // menu/toolbar/panel factories can be reassembled with a different
-        // layout with zero duplicated logic. Safe to remove once the point
-        // is made.
-        if (demo_window_)
-        {
-            demo_window_->Show(true);
-        }
 
         return true;
     }

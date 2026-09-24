@@ -2,6 +2,11 @@
 
 #include "../event_binder.hpp"
 
+#include <functional>
+#include <utility>
+#include <vector>
+#include <wx/spinctrl.h>
+
 namespace ui::framework::wx
 {
     namespace events
@@ -15,7 +20,12 @@ namespace ui::framework::wx
         class WidgetEvents final : public EventBinder
         {
           public:
-            using EventBinder::EventBinder;
+            WidgetEvents(wxFrame*                       frame,
+                         std::vector<wxSpinCtrlDouble*> transform_controls,
+                         std::function<void()>          on_transform_changed)
+                : EventBinder(frame), transform_controls_(std::move(transform_controls)), on_transform_changed_(std::move(on_transform_changed))
+            {
+            }
 
             /**
              * @brief Registers widget related events.
@@ -27,6 +37,10 @@ namespace ui::framework::wx
              * @brief Handles generic widget updates.
              */
             void bindWidgetUpdates();
+            void bindTransformControls();
+
+            std::vector<wxSpinCtrlDouble*> transform_controls_;
+            std::function<void()>          on_transform_changed_;
         };
 
     } // namespace events

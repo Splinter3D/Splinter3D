@@ -7,17 +7,24 @@
 #include "widget_events/widget_events.hpp"
 #include "window_events/window_events.hpp"
 
+#include <utility>
+
 namespace ui::framework::wx
 {
     namespace events
     {
-        EventManager::EventManager(wxFrame* frame)
+        EventManager::EventManager(wxFrame* frame, Callbacks callbacks)
         {
             if (!frame)
                 return;
 
             binders_.emplace_back(
-                std::make_unique<MenuEvents>(frame));
+                std::make_unique<MenuEvents>(
+                    frame,
+                    std::move(callbacks.onNew),
+                    std::move(callbacks.onOpen),
+                    std::move(callbacks.onSave),
+                    std::move(callbacks.onExit)));
 
             binders_.emplace_back(
                 std::make_unique<ThemeEvents>(frame));
@@ -29,7 +36,10 @@ namespace ui::framework::wx
                 std::make_unique<ShortcutEvents>(frame));
 
             binders_.emplace_back(
-                std::make_unique<WidgetEvents>(frame));
+                std::make_unique<WidgetEvents>(
+                    frame,
+                    std::move(callbacks.transformControls),
+                    std::move(callbacks.onTransformChanged)));
 
             binders_.emplace_back(
                 std::make_unique<WindowEvents>(frame));

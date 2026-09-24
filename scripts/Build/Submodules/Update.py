@@ -1,3 +1,5 @@
+"""Keeps git submodules in sync before configuring the build."""
+
 import subprocess
 from Logger import logger
 from ParseArgs import args

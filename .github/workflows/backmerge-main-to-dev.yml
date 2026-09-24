@@ -1,3 +1,5 @@
+# After a hotfix/* branch is merged into main, opens a PR merging main back into dev so
+# the hotfix isn't lost the next time dev is released.
 name: backmerge-main-to-dev
 
 on:

@@ -1,3 +1,7 @@
+# Validates that a release PR into main (from dev or hotfix/*, i.e. one opened by
+# prepare-release-pr.yml) still compiles on every supported OS/arch before it can be merged.
+# Mirrors ci-release.yml's build matrix but skips signing/notarization/artifact upload
+# (build_only) and doesn't push the Docker image it builds.
 name: Compile on PR onto main (matrix)
 
 on:

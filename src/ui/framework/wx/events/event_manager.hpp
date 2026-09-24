@@ -2,8 +2,10 @@
 
 #include "event_binder.hpp"
 
+#include <functional>
 #include <memory>
 #include <vector>
+#include <wx/spinctrl.h>
 
 namespace ui::framework::wx
 {
@@ -34,12 +36,22 @@ namespace ui::framework::wx
         class EventManager
         {
           public:
+            struct Callbacks
+            {
+                std::function<void()>          onNew;
+                std::function<void()>          onOpen;
+                std::function<void()>          onSave;
+                std::function<void()>          onExit;
+                std::function<void()>          onTransformChanged;
+                std::vector<wxSpinCtrlDouble*> transformControls;
+            };
+
             /**
              * @brief Creates an event manager for a frame.
              *
              * @param frame Window receiving the wxWidgets events.
              */
-            explicit EventManager(wxFrame* frame);
+            explicit EventManager(wxFrame* frame, Callbacks callbacks = {});
 
             /**
              * @brief Registers all application events.

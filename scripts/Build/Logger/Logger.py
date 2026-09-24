@@ -7,6 +7,13 @@ from datetime import datetime
 __all__ = ["logger"]
 
 class Logger:
+    """Leveled, colored console logger used across the build scripts.
+
+    DEBUG messages only print once `Config.debug` is enabled (via `--debug` or
+    `set_debug`); INFO/WARN/ERROR always print. In debug mode, each line is also
+    tagged with the timestamp and the call site (file:line) of the log call.
+    """
+
     @dataclass
     class Config:
         debug: bool = False
@@ -28,6 +35,8 @@ class Logger:
 
     @classmethod
     def get_frame_info(cls):
+        # Walk two frames up: frame is this method, f_back is the debug/info/warn/error/input
+        # wrapper that called it, and f_back.f_back is the actual call site we want to report.
         frame = inspect.currentframe()
         if frame is not None and frame.f_back is not None and frame.f_back.f_back is not None:
             return frame.f_back.f_back.f_code.co_filename, frame.f_back.f_back.f_lineno

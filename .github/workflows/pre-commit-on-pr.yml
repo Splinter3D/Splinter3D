@@ -1,3 +1,5 @@
+# Runs the same checks as `scripts/bootstrap-pre-commit.sh` / .pre-commit-config.yaml
+# against every PR into dev or main, so formatting/lint issues are caught before merge.
 name: Pre-commit on PR
 
 on:

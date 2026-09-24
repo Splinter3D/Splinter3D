@@ -1,3 +1,6 @@
+"""clean()/fclean() implement --clean/--fclean/--rebuild: removing the build/ directory
+and, for a full clean, build artifacts left in the repository root."""
+
 import glob
 import os
 import pathlib
@@ -8,6 +11,8 @@ from ParseArgs import args
 
 __all__ = ["clean", "fclean"]
 
+# Artifacts fclean() removes from the repository root (as opposed to clean(), which only
+# clears build/): compiled binaries/libraries and leftover coverage/profiling output.
 _FCLEAN_ARTIFACTS = (
     "*.so",
     "*.dylib",
@@ -33,6 +38,8 @@ _FCLEAN_ARTIFACTS = (
 
 
 def clean():
+    # Keep build/bin and build/lib: only CMake's cache/config state is cleared, not the
+    # binaries already built into them.
     ignore_patterns = ["bin", "lib"]
     build_glob = glob.glob("build/*", recursive=True) + glob.glob("build/.*", recursive=True)
     build_glob = [path for path in build_glob if not any(pattern in path for pattern in ignore_patterns)]

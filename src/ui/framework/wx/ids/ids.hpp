@@ -192,6 +192,7 @@ namespace ui::framework::wx
         {
             constexpr int kExample         = app::kBase + 600;
             constexpr int kWidgetsShowcase = app::kBase + 601;
+            constexpr int kModelViewer     = app::kBase + 602;
 
         } // namespace panels
 
@@ -206,7 +207,7 @@ namespace ui::framework::wx
          */
         namespace toolbars
         {
-            constexpr int kExample = app::kBase + 700;
+            constexpr int kTransform = app::kBase + 700;
 
         } // namespace toolbars
 
@@ -221,7 +222,7 @@ namespace ui::framework::wx
          */
         namespace menus
         {
-            constexpr int kExample = app::kBase + 800;
+            constexpr int kFile = app::kBase + 800;
 
         } // namespace menus
 
@@ -239,5 +240,5 @@ namespace ui::framework::wx
             constexpr int kMain      = app::kBase + 900;
             constexpr int kTwoColumn = app::kBase + 901;
         } // namespace layouts
-    } // namespace ids
+    }     // namespace ids
 } // namespace ui::framework::wx

@@ -1,3 +1,6 @@
+"""Command-line interface for the build script. Run `python3 scripts/Build/build.py --help`
+for the rendered version of the flags declared below."""
+
 import argparse
 
 __all__ = ["args"]

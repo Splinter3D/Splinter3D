@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+"""Verify that every locale/*.json file exposes the same message keys and {placeholder}
+patterns as the reference (first, alphabetically) locale file. Exits non-zero on any
+missing/extra key, type mismatch, or placeholder mismatch."""
 
 from __future__ import annotations
 
@@ -10,10 +13,12 @@ from typing import Any
 
 
 LOCALE_DIR = Path("locale")
+# Matches both {{name}} and {name} placeholder forms used across locale strings.
 PLACEHOLDER_RE = re.compile(r"\{\{([^{}]+)\}\}|\{([^{}]*)\}")
 
 
 def flatten_messages(node: Any, prefix: str = "") -> dict[str, Any]:
+    """Flatten nested locale JSON objects into dotted keys, e.g. {"a": {"b": 1}} -> {"a.b": 1}."""
     if not isinstance(node, dict):
         return {prefix: node} if prefix else {}
 
@@ -28,6 +33,7 @@ def flatten_messages(node: Any, prefix: str = "") -> dict[str, Any]:
 
 
 def extract_placeholders(value: str) -> list[str]:
+    """Return every {placeholder} (or {{placeholder}}) found in a message string, in order."""
     placeholders: list[str] = []
     for match in PLACEHOLDER_RE.finditer(value):
         escaped_name = match.group(1)
@@ -72,6 +78,7 @@ def main() -> int:
         print("\n".join(errors), file=sys.stderr)
         return 1
 
+    # locale_files is sorted, so the reference is deterministic across runs/platforms.
     reference_path = locale_files[0]
     reference_messages = file_messages[reference_path]
     reference_keys = set(reference_messages)

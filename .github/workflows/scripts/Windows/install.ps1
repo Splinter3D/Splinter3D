@@ -1,3 +1,7 @@
+# Installs build dependencies for Windows CI/local builds: bootstraps vcpkg into
+# $ProjectRoot, ensures Chocolatey (plus any .choco-dependencies packages) and CMake are
+# available (falling back to winget), imports the MSVC environment, then runs
+# `vcpkg install` in manifest mode against vcpkg.json.
 param(
   [string]$ProjectRoot = "",
   [string]$Triplet = "x64-windows",
@@ -83,6 +87,7 @@ function Import-VcvarsEnvironment([string]$Arch = 'x64') {
 function Run-As-Administrator {
   $current = [Security.Principal.WindowsIdentity]::GetCurrent()
   $principal = New-Object Security.Principal.WindowsPrincipal($current)
+  # CI runners are already suitably privileged and have no interactive session to elevate.
   if ($env:GITHUB_ACTIONS -eq 'true' -or $env:CI -eq 'true') { Write-Host 'CI detected; skipping elevation'; return }
   if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')) {
     Log-Action 'Relaunching elevated to acquire Administrator privileges...'
@@ -164,7 +169,8 @@ function Ensure-Chocolatey() {
     if (-not $script) { Log-Warn 'Failed to download Chocolatey install script'; return $false }
     Invoke-Expression $script
     Start-Sleep -Seconds 2
-    # Reload PATH from system and user environment so the current session can see newly-installed programs
+    # The Chocolatey installer updates the machine/user PATH, but this process's own $env:Path
+    # snapshot is stale until it is reloaded from the environment.
     try {
       $machinePath = [System.Environment]::GetEnvironmentVariable('Path','Machine')
       $userPath = [System.Environment]::GetEnvironmentVariable('Path','User')
