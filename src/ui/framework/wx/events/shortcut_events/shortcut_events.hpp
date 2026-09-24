@@ -2,6 +2,8 @@
 
 #include "../event_binder.hpp"
 
+#include <functional>
+
 namespace ui::framework::wx
 {
     namespace events
@@ -18,7 +20,10 @@ namespace ui::framework::wx
         class ShortcutEvents final : public EventBinder
         {
           public:
-            using EventBinder::EventBinder;
+            ShortcutEvents(wxFrame* frame, std::function<void()> onModelManagement)
+                : EventBinder(frame), on_model_management_(std::move(onModelManagement))
+            {
+            }
 
             /**
              * @brief Registers all keyboard shortcuts.
@@ -35,6 +40,8 @@ namespace ui::framework::wx
              * @brief Handles fullscreen shortcut.
              */
             void bindFullscreenShortcut();
+
+            std::function<void()> on_model_management_;
         };
 
     } // namespace events
