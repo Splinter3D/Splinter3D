@@ -38,6 +38,11 @@ namespace ui::framework::occt
         // Index i matches setTransform()/GetTransform()'s targetIndex.
         [[nodiscard]] std::vector<wxString> GetModelNames() const;
 
+        [[nodiscard]] std::vector<bool> GetModelVisibility() const;
+        void                            SetModelVisibility(int modelIndex, bool visible);
+        void                            RemoveModel(int modelIndex);
+        void                            FocusModel(int modelIndex);
+
         // Moves (millimeters) and rotates (degrees, around the origin) a
         // model, replacing whatever transform was previously applied to it.
         // targetIndex selects which one: -1 applies the same absolute

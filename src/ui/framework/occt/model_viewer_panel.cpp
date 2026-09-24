@@ -55,7 +55,7 @@ namespace ui::framework::occt
         {
             auto displayConnection = new Aspect_DisplayConnection();
             auto graphicDriver     = new OpenGl_GraphicDriver(displayConnection);
-            viewer_ = new V3d_Viewer(graphicDriver);
+            viewer_                = new V3d_Viewer(graphicDriver);
 
             // A headlight (theIsHeadlight = true) always shines from the
             // camera towards whatever it is looking at, so orbiting the
@@ -193,6 +193,69 @@ namespace ui::framework::occt
             for (const auto& entry : models_)
                 names.push_back(entry.name);
             return names;
+        }
+
+        [[nodiscard]] std::vector<bool> modelVisibility() const
+        {
+            std::vector<bool> visibility;
+            visibility.reserve(models_.size());
+            for (const auto& entry : models_)
+                visibility.push_back(entry.visible);
+            return visibility;
+        }
+
+        void setModelVisibility(int modelIndex, bool visible)
+        {
+            if (modelIndex < 0 || static_cast<std::size_t>(modelIndex) >= models_.size())
+                return;
+
+            auto& entry   = models_[static_cast<std::size_t>(modelIndex)];
+            entry.visible = visible;
+            if (visible)
+                context_->Display(entry.presentation, false);
+            else
+                context_->Erase(entry.presentation, false);
+            view_->Redraw();
+        }
+
+        void removeModel(int modelIndex)
+        {
+            if (modelIndex < 0 || static_cast<std::size_t>(modelIndex) >= models_.size())
+                return;
+
+            if (gizmoTargetIndex_ == modelIndex)
+                setGizmoTarget(-1, ModelViewerPanel::GizmoTool::None);
+
+            auto iterator = models_.begin() + modelIndex;
+            context_->Remove(iterator->presentation, false);
+            models_.erase(iterator);
+            if (gizmoTargetIndex_ > modelIndex)
+                --gizmoTargetIndex_;
+            view_->Redraw();
+        }
+
+        void focusModel(int modelIndex)
+        {
+            if (modelIndex < 0 || static_cast<std::size_t>(modelIndex) >= models_.size())
+                return;
+
+            const auto target     = static_cast<std::size_t>(modelIndex);
+            const auto visibility = modelVisibility();
+            for (std::size_t index = 0; index < models_.size(); ++index)
+                if (visibility[index])
+                    context_->Erase(models_[index].presentation, false);
+
+            context_->Display(models_[target].presentation, false);
+            view_->FitAll(0.1, true);
+
+            for (std::size_t index = 0; index < models_.size(); ++index)
+            {
+                if (visibility[index])
+                    context_->Display(models_[index].presentation, false);
+                else
+                    context_->Erase(models_[index].presentation, false);
+            }
+            view_->Redraw();
         }
 
         // Returns the move/rotate values currently applied to a target.
@@ -336,13 +399,13 @@ namespace ui::framework::occt
             if (!manipulator_->HasActiveMode())
                 return false;
 
-            const auto start   = transformFor(gizmoTargetIndex_);
-            dragStartMoveX_    = start.moveX;
-            dragStartMoveY_    = start.moveY;
-            dragStartMoveZ_    = start.moveZ;
-            dragStartRotateX_  = start.rotateX;
-            dragStartRotateY_  = start.rotateY;
-            dragStartRotateZ_  = start.rotateZ;
+            const auto start  = transformFor(gizmoTargetIndex_);
+            dragStartMoveX_   = start.moveX;
+            dragStartMoveY_   = start.moveY;
+            dragStartMoveZ_   = start.moveZ;
+            dragStartRotateX_ = start.rotateX;
+            dragStartRotateY_ = start.rotateY;
+            dragStartRotateZ_ = start.rotateZ;
 
             manipulator_->StartTransform(point.x, point.y, view_);
             gizmoDragging_ = true;
@@ -379,12 +442,12 @@ namespace ui::framework::occt
                 double angleRad = 0.0;
                 if (delta.GetRotation(axis, angleRad))
                 {
-                    const int     axisIndex = manipulator_->ActiveAxisIndex();
-                    const gp_Dir  expected  = axisIndex == 0   ? gp::DX()
+                    const int    axisIndex = manipulator_->ActiveAxisIndex();
+                    const gp_Dir expected  = axisIndex == 0   ? gp::DX()
                                              : axisIndex == 1 ? gp::DY()
-                                                                : gp::DZ();
-                    const double  sign      = axis.Dot(expected.XYZ()) >= 0.0 ? 1.0 : -1.0;
-                    const double  deltaDeg  = angleRad * (180.0 / M_PI) * sign;
+                                                              : gp::DZ();
+                    const double sign      = axis.Dot(expected.XYZ()) >= 0.0 ? 1.0 : -1.0;
+                    const double deltaDeg  = angleRad * (180.0 / M_PI) * sign;
 
                     if (axisIndex == 0)
                         rotateX += deltaDeg;
@@ -435,6 +498,7 @@ namespace ui::framework::occt
             wxString               name;
             occ::handle<AIS_Shape> presentation;
             TopoDS_Shape           shape;
+            bool                   visible = true;
             double                 moveX   = 0.0;
             double                 moveY   = 0.0;
             double                 moveZ   = 0.0;
@@ -451,7 +515,7 @@ namespace ui::framework::occt
             wxString candidate = base;
             for (int suffix = 2; std::any_of(models_.begin(), models_.end(),
                                              [&](const ModelEntry& entry) { return entry.name == candidate; });
-                ++suffix)
+                 ++suffix)
                 candidate = wxString::Format("%s (%d)", base, suffix);
             return candidate;
         }
@@ -505,7 +569,7 @@ namespace ui::framework::occt
         // rapid interactive repaint (dragging to orbit/pan), which showed
         // up as the view flickering as if its brightness were changing.
         canvas_->SetBackgroundStyle(wxBG_STYLE_PAINT);
-        canvas_->Bind(wxEVT_ERASE_BACKGROUND, [](wxEraseEvent&) {});
+        canvas_->Bind(wxEVT_ERASE_BACKGROUND, [](wxEraseEvent&) { });
         SetBackgroundStyle(wxBG_STYLE_PAINT);
     }
 
@@ -597,6 +661,35 @@ namespace ui::framework::occt
         if (!initialized_ || viewer_ == nullptr)
             return {};
         return viewer_->modelNames();
+    }
+
+    std::vector<bool> ModelViewerPanel::GetModelVisibility() const
+    {
+        if (!initialized_ || viewer_ == nullptr)
+            return {};
+        return viewer_->modelVisibility();
+    }
+
+    void ModelViewerPanel::SetModelVisibility(int modelIndex, bool visible)
+    {
+        if (!initialized_ || viewer_ == nullptr)
+            return;
+        viewer_->setModelVisibility(modelIndex, visible);
+    }
+
+    void ModelViewerPanel::RemoveModel(int modelIndex)
+    {
+        if (!initialized_ || viewer_ == nullptr)
+            return;
+        viewer_->removeModel(modelIndex);
+        notifyModelStateChanged();
+    }
+
+    void ModelViewerPanel::FocusModel(int modelIndex)
+    {
+        if (!initialized_ || viewer_ == nullptr)
+            return;
+        viewer_->focusModel(modelIndex);
     }
 
     void ModelViewerPanel::setTransform(int    targetIndex,

@@ -33,7 +33,7 @@ namespace ui::framework::wx
                 std::make_unique<LocaleEvents>(frame));
 
             binders_.emplace_back(
-                std::make_unique<ShortcutEvents>(frame));
+                std::make_unique<ShortcutEvents>(frame, std::move(callbacks.onModelManagement)));
 
             binders_.emplace_back(
                 std::make_unique<WidgetEvents>(
