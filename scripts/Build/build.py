@@ -1,9 +1,26 @@
+import os
+import sys
+
 from Logger import logger
 from ParseArgs import args
 from Actions import build_existing_target, clean, fclean, generate_coverage, run_tests
 from ConfigureBuild import configure_build
 
+
+def sanitize_macos_build_environment():
+    if sys.platform != "darwin":
+        return
+
+    # Apple Clang searches paths from these variables before vcpkg's include
+    # and library paths. Homebrew headers can then be mixed with vcpkg
+    # packages (for example pnglibconf.h from Homebrew with zlib from vcpkg).
+    for variable in ("CPATH", "C_INCLUDE_PATH", "CPLUS_INCLUDE_PATH", "LIBRARY_PATH"):
+        os.environ.pop(variable, None)
+
+
 def main():
+    sanitize_macos_build_environment()
+
     if args.debug:
         logger.set_debug(True)
 

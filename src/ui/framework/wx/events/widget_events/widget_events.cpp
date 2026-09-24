@@ -30,7 +30,7 @@ namespace ui::framework::wx
         {
             frame_->Bind(
                 wxEVT_UPDATE_UI,
-                [this](wxUpdateUIEvent& event) {
+                [](wxUpdateUIEvent& event) {
                     /*
                      * Global UI update handling.
                      *
