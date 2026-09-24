@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <memory>
+#include <numbers>
 #include <utility>
 #include <wx/dcbuffer.h>
 #include <wx/graphics.h>
@@ -71,8 +72,10 @@ namespace ui::toolbars
 
                 DrawArrowhead(*gc, centre + tip, centre, 0.0, headLength, headWidth);
                 DrawArrowhead(*gc, centre - tip, centre, M_PI, headLength, headWidth);
-                DrawArrowhead(*gc, centre, centre + tip, M_PI_2, headLength, headWidth);
-                DrawArrowhead(*gc, centre, centre - tip, -M_PI_2, headLength, headWidth);
+                DrawArrowhead(*gc, centre, centre + tip, std::numbers::pi / 2.0, headLength,
+                              headWidth);
+                DrawArrowhead(*gc, centre, centre - tip, -std::numbers::pi / 2.0, headLength,
+                              headWidth);
             }
 
             dc.SelectObject(wxNullBitmap);
@@ -98,8 +101,8 @@ namespace ui::toolbars
 
                 // Leaves a clear quarter-circle gap so the shape reads as
                 // an open arc, not a closed ring.
-                constexpr double kStartAngle = -M_PI_2;
-                constexpr double kEndAngle   = M_PI_2 * 3.0 - 0.55;
+                constexpr double kStartAngle = -std::numbers::pi / 2.0;
+                constexpr double kEndAngle   = std::numbers::pi / 2.0 * 3.0 - 0.55;
 
                 gc->SetPen(wxPen(colour, 3));
                 gc->SetBrush(wxBrush(colour));
@@ -108,7 +111,7 @@ namespace ui::toolbars
                 path.AddArc(centre, centre, radius, kStartAngle, kEndAngle, true);
                 gc->StrokePath(path);
 
-                const double tipAngle = kEndAngle + M_PI_2; // tangent direction
+                const double tipAngle = kEndAngle + std::numbers::pi / 2.0; // tangent direction
                 DrawArrowhead(*gc,
                               centre + radius * std::cos(kEndAngle),
                               centre + radius * std::sin(kEndAngle),
@@ -140,11 +143,11 @@ namespace ui::toolbars
         buttonsRow->Add(rotate_button_, 0, wxALIGN_CENTER_VERTICAL | wxALL, 6);
 
         move_panel_ = MakeFieldsPanel("mm", -100000.0, 100000.0, 0.5, 2,
-                                     move_target_combo_, move_x_, move_y_, move_z_);
+                                      move_target_combo_, move_x_, move_y_, move_z_);
         outerSizer->Add(move_panel_, 0, wxEXPAND);
 
         rotate_panel_ = MakeFieldsPanel("°", -360.0, 360.0, 1.0, 1,
-                                       rotate_target_combo_, rotate_x_, rotate_y_, rotate_z_);
+                                        rotate_target_combo_, rotate_x_, rotate_y_, rotate_z_);
         outerSizer->Add(rotate_panel_, 0, wxEXPAND);
 
         move_panel_->Hide();
