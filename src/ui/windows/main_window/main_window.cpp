@@ -129,50 +129,6 @@ namespace ui::windows
 
     void MainWindow::BindEvents()
     {
-        Bind(
-            wxEVT_MENU, [this](wxCommandEvent&) {
-                 if (model_viewer_ != nullptr)
-                     model_viewer_->newFile(); }, ui::framework::wx::ids::file::kNew);
-
-        Bind(
-            wxEVT_MENU, [this](wxCommandEvent&) {
-                 if (model_viewer_ != nullptr)
-                     model_viewer_->openFile(); }, ui::framework::wx::ids::file::kOpen);
-
-        Bind(
-            wxEVT_MENU, [this](wxCommandEvent&) {
-                 if (model_viewer_ != nullptr)
-                     model_viewer_->saveFile(); }, ui::framework::wx::ids::file::kSave);
-
-        Bind(
-            wxEVT_MENU, [this](wxCommandEvent&) { Close(); }, ui::framework::wx::ids::file::kExit);
-
-        Bind(wxEVT_CHAR_HOOK, [this](wxKeyEvent& event) {
-            if (event.ControlDown())
-            {
-                const int key       = event.GetKeyCode();
-                const int commandId = key == 'N'   ? ui::framework::wx::ids::file::kNew
-                                      : key == 'O' ? ui::framework::wx::ids::file::kOpen
-                                      : key == 'S' ? ui::framework::wx::ids::file::kSave
-                                      : key == 'Q' ? ui::framework::wx::ids::file::kExit
-                                                   : wxID_NONE;
-                if (commandId != wxID_NONE)
-                {
-                    wxCommandEvent command(wxEVT_MENU, commandId);
-                    ProcessWindowEvent(command);
-                    return;
-                }
-            }
-
-            if (event.GetKeyCode() == WXK_F11)
-            {
-                ShowFullScreen(!IsFullScreen());
-                return;
-            }
-
-            event.Skip();
-        });
-
         if (model_viewer_ != nullptr && transform_toolbar_ != nullptr)
         {
             model_viewer_->SetOnModelStateChanged([this](bool hasModel) {
@@ -194,20 +150,39 @@ namespace ui::windows
                 [this](ui::toolbars::TransformToolbar::ActiveTool) { UpdateGizmoState(); });
 
             model_viewer_->SetOnGizmoChanged([this] { SyncTransformFields(); });
-
-            const auto bindAxis = [this](wxSpinCtrlDouble* spin) {
-                spin->Bind(wxEVT_SPINCTRLDOUBLE, [this](wxSpinDoubleEvent&) {
-                    ApplyTransform();
-                });
-            };
-
-            bindAxis(transform_toolbar_->GetMoveX());
-            bindAxis(transform_toolbar_->GetMoveY());
-            bindAxis(transform_toolbar_->GetMoveZ());
-            bindAxis(transform_toolbar_->GetRotateX());
-            bindAxis(transform_toolbar_->GetRotateY());
-            bindAxis(transform_toolbar_->GetRotateZ());
         }
+
+        ui::framework::wx::events::EventManager::Callbacks callbacks;
+        callbacks.onNew = [this] {
+            if (model_viewer_ != nullptr)
+                model_viewer_->newFile();
+        };
+        callbacks.onOpen = [this] {
+            if (model_viewer_ != nullptr)
+                model_viewer_->openFile();
+        };
+        callbacks.onSave = [this] {
+            if (model_viewer_ != nullptr)
+                model_viewer_->saveFile();
+        };
+        callbacks.onExit             = [this] { Close(); };
+        callbacks.onTransformChanged = [this] { ApplyTransform(); };
+
+        if (transform_toolbar_ != nullptr)
+        {
+            callbacks.transformControls = {
+                transform_toolbar_->GetMoveX(),
+                transform_toolbar_->GetMoveY(),
+                transform_toolbar_->GetMoveZ(),
+                transform_toolbar_->GetRotateX(),
+                transform_toolbar_->GetRotateY(),
+                transform_toolbar_->GetRotateZ()};
+        }
+
+        event_manager_ = std::make_unique<ui::framework::wx::events::EventManager>(
+            this,
+            std::move(callbacks));
+        event_manager_->bindAll();
     }
 
     void MainWindow::ApplyTransform()

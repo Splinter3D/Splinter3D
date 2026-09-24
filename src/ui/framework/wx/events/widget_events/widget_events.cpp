@@ -7,6 +7,23 @@ namespace ui::framework::wx
         void WidgetEvents::bind()
         {
             bindWidgetUpdates();
+            bindTransformControls();
+        }
+
+        void WidgetEvents::bindTransformControls()
+        {
+            for (auto* control : transform_controls_)
+            {
+                if (control == nullptr)
+                    continue;
+
+                control->Bind(
+                    wxEVT_SPINCTRLDOUBLE,
+                    [this](wxSpinDoubleEvent&) {
+                        if (on_transform_changed_)
+                            on_transform_changed_();
+                    });
+            }
         }
 
         void WidgetEvents::bindWidgetUpdates()
