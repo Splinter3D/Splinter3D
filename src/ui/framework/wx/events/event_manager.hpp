@@ -42,6 +42,7 @@ namespace ui::framework::wx
                 std::function<void()>          onOpen;
                 std::function<void()>          onSave;
                 std::function<void()>          onExit;
+                std::function<void()>          onModelManagement;
                 std::function<void()>          onTransformChanged;
                 std::vector<wxSpinCtrlDouble*> transformControls;
             };

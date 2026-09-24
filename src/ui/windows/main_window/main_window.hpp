@@ -8,6 +8,11 @@
 
 #include <memory>
 
+namespace ui::dialogs
+{
+    class ModelManagementDialog;
+}
+
 namespace ui::windows
 {
     /**
@@ -38,6 +43,7 @@ namespace ui::windows
         ui::framework::occt::ModelViewerPanel*                   model_viewer_      = nullptr;
         ui::toolbars::TransformToolbar*                          transform_toolbar_ = nullptr;
         std::unique_ptr<ui::framework::wx::events::EventManager> event_manager_;
+        std::unique_ptr<ui::dialogs::ModelManagementDialog>      model_management_menu_;
 
         // Helper function to initialize a menu bar entry and add it to the menu bar.
         void InitMenuBarEntry(wxMenuBar* menuBar, int menuId, const wxString& title);
@@ -52,5 +58,7 @@ namespace ui::windows
         // Shows/hides/repositions the viewport's gizmo to match the
         // toolbar's current target and active tool.
         void UpdateGizmoState();
+
+        void ShowModelManagement();
     };
 } // namespace ui::windows

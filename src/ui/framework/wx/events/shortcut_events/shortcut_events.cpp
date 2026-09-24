@@ -2,6 +2,8 @@
 
 #include "ui/framework/wx/ids/ids.hpp"
 
+#include <utility>
+
 namespace ui::framework::wx
 {
     namespace events
@@ -33,6 +35,13 @@ namespace ui::framework::wx
                     // Ctrl + O
                     if (event.ControlDown() && key == 'O')
                     {
+                        if (event.ShiftDown())
+                        {
+                            if (on_model_management_)
+                                on_model_management_();
+                            return;
+                        }
+
                         wxCommandEvent openEvent(
                             wxEVT_MENU,
                             ids::file::kOpen);
