@@ -1,3 +1,6 @@
+"""Chooses a CMake generator (Ninja, Unix Makefiles, or a Visual Studio version) and runs
+the actual `cmake --build` invocation."""
+
 import os
 import pathlib
 import shutil
@@ -48,6 +51,9 @@ def _parse_visual_studio_generator(generator: str) -> BuildSystem:
     return BuildSystem.VISUAL_STUDIO
 
 def choose_build_system() -> BuildSystem:
+    """Pick a generator by precedence: explicit --generator, then CMAKE_GENERATOR env var,
+    then a platform default (prefer Ninja if present, else Visual Studio on Windows or
+    Make on Unix)."""
     logger.info("Choosing build system...")
     if args.generator:
         normalized_generator = args.generator.strip().lower()
@@ -91,6 +97,9 @@ def choose_build_system() -> BuildSystem:
     raise RuntimeError("No suitable build system found. Please install Ninja or Make.")
 
 def _is_multi_config(build_system: BuildSystem) -> bool:
+    # Visual Studio generators build all configurations (Debug/Release/...) from one cache,
+    # so the desired configuration must be passed to `cmake --build --config` at build time
+    # rather than baked in at configure time via CMAKE_BUILD_TYPE (unlike Ninja/Make).
     return build_system == BuildSystem.VISUAL_STUDIO or build_system == BuildSystem.VISUAL_STUDIO_18
 
 def _detect_build_system_from_cache(build_dir: pathlib.Path) -> BuildSystem:

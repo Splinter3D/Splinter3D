@@ -14,7 +14,9 @@
 #include <Precision.hxx>
 #include <StlAPI_Writer.hxx>
 #include <TopoDS_Vertex.hxx>
-#if defined(_WIN32)
+#if defined(__APPLE__)
+#include <Cocoa_Window.hxx>
+#elif defined(_WIN32)
 #include <WNT_Window.hxx>
 #else
 #include <Xw_Window.hxx>
@@ -70,7 +72,10 @@ namespace ui::framework::occt
             viewer_->SetLightOn();
 
             view_ = viewer_->CreateView();
-#if defined(_WIN32)
+#if defined(__APPLE__)
+            auto nativeWindow = new Cocoa_Window(
+                reinterpret_cast<NSView*>(canvas->GetHandle()));
+#elif defined(_WIN32)
             auto nativeWindow = new WNT_Window(
                 reinterpret_cast<Aspect_Handle>(canvas->GetHandle()));
 #elif defined(wxUSE_GLCANVAS_EGL) && wxUSE_GLCANVAS_EGL

@@ -1,3 +1,6 @@
+"""Detects the current CPU architecture (`Arch`), used for vcpkg triplets and
+Visual Studio/MSVC target selection."""
+
 import platform
 from enum import Enum, auto
 from Logger import logger
@@ -20,12 +23,14 @@ ARCH_TO_STRING = {
 }
 
 def get_arch() -> Arch:
+    # Cached after first detection: platform.machine() can't change mid-run.
     global _cur_arch
     if _cur_arch is not None:
         return _cur_arch
     logger.info("Detecting architecture...")
     arch_str = platform.machine().lower()
     logger.debug(f"Platform machine string: {arch_str}")
+    # Normalize the various aliases each OS/libc reports for the same architecture.
     if arch_str in ["x86", "i386", "i686"]:
         _cur_arch = Arch.X86
     elif arch_str in ["x86_64", "amd64"]:

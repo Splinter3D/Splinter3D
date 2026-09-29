@@ -1,3 +1,7 @@
+# Packages a Windows build for distribution: finds the built splinter3D.exe (and its DLLs)
+# under $BuildDirName, stages it with locale/assets/docs, then zips it into
+# $OutDirName/splinter3D-<version>-windows-<arch>.zip alongside a .sha256 file.
+# Version is auto-detected from `git describe --tags`.
 param(
   [string]$ProjectRoot = (Get-Location).Path,
   [string]$BuildDirName = 'build',
