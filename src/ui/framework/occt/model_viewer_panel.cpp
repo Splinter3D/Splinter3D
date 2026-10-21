@@ -1,6 +1,6 @@
 #include "model_viewer_panel.hpp"
 
-#include "geometry/occt/shape.hpp"
+#include "geometry/occt/transform.hpp"
 #include "ui/dialogs/dialogs.hpp"
 
 #include <AIS_DisplayMode.hxx>
@@ -12,7 +12,6 @@
 #include <BRep_Builder.hxx>
 #include <OpenGl_GraphicDriver.hxx>
 #include <Precision.hxx>
-#include <StlAPI_Writer.hxx>
 #include <TopoDS_Vertex.hxx>
 #if defined(__APPLE__)
 #include <Cocoa_Window.hxx>
@@ -28,15 +27,10 @@
 #include <V3d_View.hxx>
 #include <V3d_Viewer.hxx>
 #include <algorithm>
-#include <cmath>
 #include <filesystem>
-#include <gp_Ax1.hxx>
 #include <gp_Ax2.hxx>
-#include <gp_Dir.hxx>
 #include <gp_Pnt.hxx>
 #include <gp_Trsf.hxx>
-#include <gp_Vec.hxx>
-#include <stdexcept>
 #include <vector>
 #include <wx/dcclient.h>
 #include <wx/log.h>
@@ -48,14 +42,26 @@
 
 namespace ui::framework::occt
 {
+    namespace
+    {
+        // wxString -> path without going through the narrow locale encoding
+        // (ToStdString()), which loses non-ASCII characters on Windows.
+        std::filesystem::path toPath(const wxString& value)
+        {
+            const std::string utf8 = value.utf8_string();
+            return std::filesystem::path(std::u8string(utf8.begin(), utf8.end()));
+        }
+    } // namespace
+
     class ModelViewerPanel::Viewer
     {
       public:
-        explicit Viewer(wxGLCanvas* canvas)
+        Viewer(wxGLCanvas* canvas, application::service::SceneService& scene)
+            : scene_(scene)
         {
             auto displayConnection = new Aspect_DisplayConnection();
             auto graphicDriver     = new OpenGl_GraphicDriver(displayConnection);
-            viewer_ = new V3d_Viewer(graphicDriver);
+            viewer_                = new V3d_Viewer(graphicDriver);
 
             // A headlight (theIsHeadlight = true) always shines from the
             // camera towards whatever it is looking at, so orbiting the
@@ -102,9 +108,9 @@ namespace ui::framework::occt
             // never displayed or transformed: it only exists to satisfy
             // that requirement. The manipulator itself is used purely as a
             // visual + drag-math helper (ObjectTransformation()) - the
-            // resulting delta is applied to our own ModelEntry fields
-            // through setTransform(), which stays the single source of
-            // truth for every model's transform. setGizmoTarget() attaches
+            // resulting delta is applied to the SceneService through
+            // setTransform(); the scene stays the single source of truth for
+            // every model's transform. setGizmoTarget() attaches
             // a fresh AIS_Manipulator to this same proxy every time the
             // active tool changes; see its comment for why.
             TopoDS_Vertex dummyVertex;
@@ -115,14 +121,9 @@ namespace ui::framework::occt
 
         void load(const std::filesystem::path& path)
         {
-            const auto shape        = geometry::occt::Shape::fromSTL(path);
-            auto       presentation = new AIS_Shape(shape.value());
-
-            ModelEntry entry;
-            entry.name         = uniqueName(path.filename().string());
-            entry.presentation = presentation;
-            entry.shape        = shape.value();
-            models_.push_back(entry);
+            const std::size_t index        = scene_.load(path);
+            auto              presentation = new AIS_Shape(scene_.models()[index].shape.value());
+            presentations_.push_back(presentation);
 
             context_->Display(presentation, false);
             context_->SetDisplayMode(presentation, AIS_Shaded, false);
@@ -133,19 +134,14 @@ namespace ui::framework::occt
         void clear()
         {
             context_->RemoveAll(false);
-            models_.clear();
+            presentations_.clear();
+            scene_.clear();
             view_->Redraw();
         }
 
         bool save(const std::filesystem::path& path) const
         {
-            if (models_.empty())
-                return false;
-
-            const std::string filename = path.string();
-            StlAPI_Writer     writer;
-            // TODO: Save all the shapes in the vector instead of just the first one.
-            return writer.Write(models_.front().shape, filename.c_str());
+            return scene_.saveSTL(path);
         }
 
         void resize()
@@ -180,80 +176,23 @@ namespace ui::framework::occt
             view_->SetScale(scale_);
         }
 
-        [[nodiscard]] bool hasShape() const noexcept
+        // Applies an absolute transform to a target in the scene (see
+        // SceneService::setTransform()) and mirrors it on the matching
+        // presentations.
+        void setTransform(int targetIndex, const geometry::occt::Transform& transform)
         {
-            return !models_.empty();
-        }
-
-        // Display names of every currently loaded model, in load order.
-        [[nodiscard]] std::vector<wxString> modelNames() const
-        {
-            std::vector<wxString> names;
-            names.reserve(models_.size());
-            for (const auto& entry : models_)
-                names.push_back(entry.name);
-            return names;
-        }
-
-        // Returns the move/rotate values currently applied to a target.
-        // All-zero if targetIndex is -1 or out of range.
-        [[nodiscard]] ModelViewerPanel::TransformValues transformFor(int targetIndex) const
-        {
-            if (targetIndex < 0 || static_cast<std::size_t>(targetIndex) >= models_.size())
-                return {};
-
-            const auto& entry = models_[static_cast<std::size_t>(targetIndex)];
-            return {entry.moveX, entry.moveY, entry.moveZ, entry.rotateX, entry.rotateY, entry.rotateZ};
-        }
-
-        // Applies an absolute move (millimeters) and rotation (degrees,
-        // around the origin) to a target, replacing whatever transform was
-        // previously applied to it. targetIndex selects which one: -1
-        // applies the same absolute transform to every loaded model,
-        // otherwise it is an index into models_.
-        void setTransform(int    targetIndex,
-                          double moveX,
-                          double moveY,
-                          double moveZ,
-                          double rotXDeg,
-                          double rotYDeg,
-                          double rotZDeg)
-        {
-            if (models_.empty())
+            if (!scene_.setTransform(targetIndex, transform))
                 return;
 
-            constexpr double kDegToRad = M_PI / 180.0;
-
-            gp_Trsf rotationX;
-            rotationX.SetRotation(gp_Ax1(gp_Pnt(0, 0, 0), gp_Dir(1, 0, 0)), rotXDeg * kDegToRad);
-            gp_Trsf rotationY;
-            rotationY.SetRotation(gp_Ax1(gp_Pnt(0, 0, 0), gp_Dir(0, 1, 0)), rotYDeg * kDegToRad);
-            gp_Trsf rotationZ;
-            rotationZ.SetRotation(gp_Ax1(gp_Pnt(0, 0, 0), gp_Dir(0, 0, 1)), rotZDeg * kDegToRad);
-
-            gp_Trsf translation;
-            translation.SetTranslation(gp_Vec(moveX, moveY, moveZ));
-
-            const TopLoc_Location location(translation * rotationZ * rotationY * rotationX);
-
-            const auto apply = [&](ModelEntry& entry) {
-                entry.moveX   = moveX;
-                entry.moveY   = moveY;
-                entry.moveZ   = moveZ;
-                entry.rotateX = rotXDeg;
-                entry.rotateY = rotYDeg;
-                entry.rotateZ = rotZDeg;
-                context_->SetLocation(entry.presentation, location);
-            };
-
-            if (targetIndex < 0)
+            const TopLoc_Location location(geometry::occt::toTrsf(transform));
+            if (targetIndex == application::service::SceneService::kAllModels)
             {
-                for (auto& entry : models_)
-                    apply(entry);
+                for (const auto& presentation : presentations_)
+                    context_->SetLocation(presentation, location);
             }
-            else if (static_cast<std::size_t>(targetIndex) < models_.size())
+            else
             {
-                apply(models_[static_cast<std::size_t>(targetIndex)]);
+                context_->SetLocation(presentations_[static_cast<std::size_t>(targetIndex)], location);
             }
 
             repositionGizmoIfVisible();
@@ -275,7 +214,7 @@ namespace ui::framework::occt
             }
 
             const bool show = tool != ModelViewerPanel::GizmoTool::None && targetIndex >= 0 &&
-                              static_cast<std::size_t>(targetIndex) < models_.size();
+                              static_cast<std::size_t>(targetIndex) < scene_.size();
 
             if (!show)
             {
@@ -336,13 +275,7 @@ namespace ui::framework::occt
             if (!manipulator_->HasActiveMode())
                 return false;
 
-            const auto start   = transformFor(gizmoTargetIndex_);
-            dragStartMoveX_    = start.moveX;
-            dragStartMoveY_    = start.moveY;
-            dragStartMoveZ_    = start.moveZ;
-            dragStartRotateX_  = start.rotateX;
-            dragStartRotateY_  = start.rotateY;
-            dragStartRotateZ_  = start.rotateZ;
+            dragStart_ = scene_.transform(gizmoTargetIndex_);
 
             manipulator_->StartTransform(point.x, point.y, view_);
             gizmoDragging_ = true;
@@ -350,8 +283,9 @@ namespace ui::framework::occt
         }
 
         // Applies the drag delta accumulated since StartTransform() to the
-        // target's stored move/rotate values via setTransform(), keeping
-        // it the single source of truth. No-op if no drag is in progress.
+        // target's transform at drag start, through setTransform() so the
+        // scene stays the single source of truth. No-op if no drag is in
+        // progress.
         void updateGizmoDrag(const wxPoint& point)
         {
             if (!gizmoDragging_)
@@ -361,41 +295,15 @@ namespace ui::framework::occt
             if (!manipulator_->ObjectTransformation(point.x, point.y, view_, delta))
                 return;
 
-            double moveX = dragStartMoveX_, moveY = dragStartMoveY_, moveZ = dragStartMoveZ_;
-            double rotateX = dragStartRotateX_, rotateY = dragStartRotateY_,
-                   rotateZ = dragStartRotateZ_;
+            geometry::occt::Transform transform = dragStart_;
 
             const AIS_ManipulatorMode mode = manipulator_->ActiveMode();
             if (mode == AIS_MM_Translation || mode == AIS_MM_TranslationPlane)
-            {
-                const gp_XYZ translation = delta.TranslationPart();
-                moveX += translation.X();
-                moveY += translation.Y();
-                moveZ += translation.Z();
-            }
+                transform = geometry::occt::withTranslationDelta(dragStart_, delta.TranslationPart());
             else if (mode == AIS_MM_Rotation)
-            {
-                gp_XYZ axis;
-                double angleRad = 0.0;
-                if (delta.GetRotation(axis, angleRad))
-                {
-                    const int     axisIndex = manipulator_->ActiveAxisIndex();
-                    const gp_Dir  expected  = axisIndex == 0   ? gp::DX()
-                                             : axisIndex == 1 ? gp::DY()
-                                                                : gp::DZ();
-                    const double  sign      = axis.Dot(expected.XYZ()) >= 0.0 ? 1.0 : -1.0;
-                    const double  deltaDeg  = angleRad * (180.0 / M_PI) * sign;
+                transform = geometry::occt::withRotationDelta(dragStart_, manipulator_->ActiveAxisIndex(), delta);
 
-                    if (axisIndex == 0)
-                        rotateX += deltaDeg;
-                    else if (axisIndex == 1)
-                        rotateY += deltaDeg;
-                    else
-                        rotateZ += deltaDeg;
-                }
-            }
-
-            setTransform(gizmoTargetIndex_, moveX, moveY, moveZ, rotateX, rotateY, rotateZ);
+            setTransform(gizmoTargetIndex_, transform);
         }
 
         // Ends the current gizmo drag, if any.
@@ -414,7 +322,7 @@ namespace ui::framework::occt
 
       private:
         // Moves the gizmo to the current target's pivot - which is always
-        // exactly (moveX, moveY, moveZ), since setTransform() rotates each
+        // exactly (moveX, moveY, moveZ), since a Transform rotates each
         // model around its own local origin before translating it there.
         // World-aligned axes only for now (gp::DZ()/gp::DX()); a future
         // "local" orientation mode would build this gp_Ax2 from the
@@ -422,44 +330,21 @@ namespace ui::framework::occt
         void repositionGizmoIfVisible()
         {
             if (gizmoTool_ == ModelViewerPanel::GizmoTool::None || gizmoTargetIndex_ < 0 ||
-                static_cast<std::size_t>(gizmoTargetIndex_) >= models_.size())
+                static_cast<std::size_t>(gizmoTargetIndex_) >= scene_.size())
                 return;
 
-            const auto& entry = models_[static_cast<std::size_t>(gizmoTargetIndex_)];
-            manipulator_->SetPosition(gp_Ax2(gp_Pnt(entry.moveX, entry.moveY, entry.moveZ),
-                                             gp::DZ(), gp::DX()));
+            const auto transform = scene_.transform(gizmoTargetIndex_);
+            manipulator_->SetPosition(
+                gp_Ax2(gp_Pnt(transform.moveX, transform.moveY, transform.moveZ), gp::DZ(), gp::DX()));
         }
 
-        struct ModelEntry
-        {
-            wxString               name;
-            occ::handle<AIS_Shape> presentation;
-            TopoDS_Shape           shape;
-            double                 moveX   = 0.0;
-            double                 moveY   = 0.0;
-            double                 moveZ   = 0.0;
-            double                 rotateX = 0.0;
-            double                 rotateY = 0.0;
-            double                 rotateZ = 0.0;
-        };
-
-        // Disambiguates two models loaded from files with the same name
-        // (e.g. imported from different folders) so the target dropdown
-        // never shows duplicate entries.
-        [[nodiscard]] wxString uniqueName(const wxString& base) const
-        {
-            wxString candidate = base;
-            for (int suffix = 2; std::any_of(models_.begin(), models_.end(),
-                                             [&](const ModelEntry& entry) { return entry.name == candidate; });
-                ++suffix)
-                candidate = wxString::Format("%s (%d)", base, suffix);
-            return candidate;
-        }
+        application::service::SceneService& scene_;
 
         occ::handle<V3d_Viewer>             viewer_;
         occ::handle<V3d_View>               view_;
         occ::handle<AIS_InteractiveContext> context_;
-        std::vector<ModelEntry>             models_;
+        // One presentation per scene model, at the same index.
+        std::vector<occ::handle<AIS_Shape>> presentations_;
         double                              scale_ = 1.0;
 
         occ::handle<AIS_Manipulator> manipulator_;
@@ -467,12 +352,7 @@ namespace ui::framework::occt
         int                          gizmoTargetIndex_ = -1;
         ModelViewerPanel::GizmoTool  gizmoTool_        = ModelViewerPanel::GizmoTool::None;
         bool                         gizmoDragging_    = false;
-        double                       dragStartMoveX_   = 0.0;
-        double                       dragStartMoveY_   = 0.0;
-        double                       dragStartMoveZ_   = 0.0;
-        double                       dragStartRotateX_ = 0.0;
-        double                       dragStartRotateY_ = 0.0;
-        double                       dragStartRotateZ_ = 0.0;
+        geometry::occt::Transform    dragStart_;
     };
 
     ModelViewerPanel::ModelViewerPanel(wxWindow* parent)
@@ -505,7 +385,7 @@ namespace ui::framework::occt
         // rapid interactive repaint (dragging to orbit/pan), which showed
         // up as the view flickering as if its brightness were changing.
         canvas_->SetBackgroundStyle(wxBG_STYLE_PAINT);
-        canvas_->Bind(wxEVT_ERASE_BACKGROUND, [](wxEraseEvent&) {});
+        canvas_->Bind(wxEVT_ERASE_BACKGROUND, [](wxEraseEvent&) { });
         SetBackgroundStyle(wxBG_STYLE_PAINT);
     }
 
@@ -532,17 +412,7 @@ namespace ui::framework::occt
         if (!path)
             return;
 
-        try
-        {
-            initializeViewer();
-            viewer_->load(std::filesystem::path(path->ToStdString()));
-            viewer_->paint();
-            notifyModelStateChanged();
-        }
-        catch (const std::exception& error)
-        {
-            wxLogError("Unable to import the model: %s", error.what());
-        }
+        loadFile(toPath(*path));
     }
 
     void ModelViewerPanel::saveFile()
@@ -557,16 +427,40 @@ namespace ui::framework::occt
         if (dialog.ShowModal() != wxID_OK)
             return;
 
+        exportFile(toPath(dialog.GetPath()));
+    }
+
+    bool ModelViewerPanel::loadFile(const std::filesystem::path& path)
+    {
         try
         {
             initializeViewer();
-            if (!viewer_->save(std::filesystem::path(dialog.GetPath().ToStdString())))
-                wxLogError("Unable to export the model.");
+            viewer_->load(path);
+            viewer_->paint();
+            notifyModelStateChanged();
+            return true;
+        }
+        catch (const std::exception& error)
+        {
+            wxLogError("Unable to import the model: %s", error.what());
+            return false;
+        }
+    }
+
+    bool ModelViewerPanel::exportFile(const std::filesystem::path& path)
+    {
+        try
+        {
+            initializeViewer();
+            if (viewer_->save(path))
+                return true;
+            wxLogError("Unable to export the model.");
         }
         catch (const std::exception& error)
         {
             wxLogError("Unable to export the model: %s", error.what());
         }
+        return false;
     }
 
     void ModelViewerPanel::initializeViewer()
@@ -583,20 +477,22 @@ namespace ui::framework::occt
         // OCCT's lighting set up), which showed up as the view randomly
         // going dark and flickering during interaction.
         canvas_->SetCurrent(*context_);
-        viewer_      = std::make_unique<Viewer>(canvas_);
+        viewer_      = std::make_unique<Viewer>(canvas_, scene_);
         initialized_ = true;
     }
 
     bool ModelViewerPanel::hasModel() const
     {
-        return initialized_ && viewer_ != nullptr && viewer_->hasShape();
+        return !scene_.empty();
     }
 
     std::vector<wxString> ModelViewerPanel::GetModelNames() const
     {
-        if (!initialized_ || viewer_ == nullptr)
-            return {};
-        return viewer_->modelNames();
+        std::vector<wxString> names;
+        names.reserve(scene_.size());
+        for (const auto& name : scene_.names())
+            names.push_back(wxString::FromUTF8(name));
+        return names;
     }
 
     void ModelViewerPanel::setTransform(int    targetIndex,
@@ -610,15 +506,12 @@ namespace ui::framework::occt
         if (!initialized_ || viewer_ == nullptr)
             return;
 
-        viewer_->setTransform(
-            targetIndex, moveXmm, moveYmm, moveZmm, rotateXdeg, rotateYdeg, rotateZdeg);
+        viewer_->setTransform(targetIndex, {moveXmm, moveYmm, moveZmm, rotateXdeg, rotateYdeg, rotateZdeg});
     }
 
     ModelViewerPanel::TransformValues ModelViewerPanel::GetTransform(int targetIndex) const
     {
-        if (!initialized_ || viewer_ == nullptr)
-            return {};
-        return viewer_->transformFor(targetIndex);
+        return scene_.transform(targetIndex);
     }
 
     void ModelViewerPanel::SetGizmoState(int targetIndex, GizmoTool tool)

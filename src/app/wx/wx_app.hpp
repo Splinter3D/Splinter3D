@@ -3,6 +3,7 @@
 #include <memory>
 #include <wx/app.h>
 #include <wx/splash.h>
+#include <wx/timer.h>
 
 namespace app
 {
@@ -68,7 +69,12 @@ namespace app
         int OnExit() override;
 
       private:
+        // Quits gracefully once Ctrl+C / SIGTERM was received (see
+        // core::utils::InstallSignalHandlers(), which only sets a flag).
+        void onSignalPoll(wxTimerEvent& event);
+
         std::unique_ptr<App> application_;
+        wxTimer              signal_timer_;
         wxSplashScreen*      splash_screen_ = nullptr;
     };
 } // namespace app

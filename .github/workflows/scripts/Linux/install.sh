@@ -20,6 +20,9 @@ sudo apt-get install -y \
     autoconf-archive \
     automake \
     libtool \
-    libltdl-dev
+    libltdl-dev \
+    xvfb \
+    xauth \
+    libgl1-mesa-dri
 
 echo "[install.sh] ✓ System dependencies installed"

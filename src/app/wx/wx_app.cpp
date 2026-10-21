@@ -2,6 +2,7 @@
 
 #include "app/app.hpp"
 #include "app/bootstrap/bootstrap.hpp"
+#include "core/utils/os_compatibility.hpp"
 
 #include <filesystem>
 #include <vector>
@@ -30,6 +31,11 @@ namespace app
             }
             return {};
         }
+    } // namespace
+
+    namespace
+    {
+        constexpr int kSignalPollMs = 100;
     } // namespace
 
     WxApp::WxApp()  = default;
@@ -75,7 +81,28 @@ namespace app
             splash_screen_->Destroy();
             splash_screen_ = nullptr;
         }
+
+        // Signal handlers can't safely touch wx, so they only set a flag
+        // (core::utils::InstallSignalHandlers(), called by Bootstrap); poll it
+        // from the GUI thread.
+        signal_timer_.Bind(wxEVT_TIMER, &WxApp::onSignalPoll, this);
+        signal_timer_.Start(kSignalPollMs);
         return initialized;
+    }
+
+    void WxApp::onSignalPoll(wxTimerEvent&)
+    {
+        if (!core::utils::SignalReceived())
+            return;
+        core::utils::ClearSignal();
+        signal_timer_.Stop();
+
+        // Close every window as if the user did (copy: closing edits the list),
+        // then leave the main loop so OnExit() runs and the process exits normally.
+        const std::vector<wxWindow*> windows(wxTopLevelWindows.begin(), wxTopLevelWindows.end());
+        for (wxWindow* window : windows)
+            window->Close(true);
+        ExitMainLoop();
     }
 
     int WxApp::OnExit()

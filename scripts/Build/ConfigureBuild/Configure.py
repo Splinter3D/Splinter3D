@@ -75,10 +75,17 @@ def configure_build(enable_tests: bool = False):
         # time (`cmake --build --config`), not baked into the cache via CMAKE_BUILD_TYPE.
         if build_system_runtime != BuildSystem.VISUAL_STUDIO and build_system_runtime != BuildSystem.VISUAL_STUDIO_18:
             cmake_command.append(f"-DCMAKE_BUILD_TYPE={build_type}")
-        if debug_build and not enable_tests:
-            cmake_command.append("-DENABLE_DEBUG=ON")
-        if enable_tests:
-            cmake_command.append("-DENABLE_TESTS=ON")
+        # Always passed explicitly (ON or OFF): CMake caches options, so a release build
+        # run after a debug or test build in the same build/ would otherwise silently keep
+        # SPLINTER3D_DEBUG or the test-only flags (SPLINTER3D_TESTING, coverage
+        # instrumentation, Catch2).
+        # The "tests" manifest feature makes vcpkg install the test framework (Catch2).
+        cmake_command.extend([
+            f"-DENABLE_DEBUG={'ON' if debug_build and not enable_tests else 'OFF'}",
+            f"-DENABLE_TESTS={'ON' if enable_tests else 'OFF'}",
+            f"-DENABLE_COVERAGE={'ON' if enable_tests and args.coverage else 'OFF'}",
+            f"-DVCPKG_MANIFEST_FEATURES={'tests' if enable_tests else ''}",
+        ])
         cmake_command.extend(vcpkg_targets)
         logger.info(f"Configuring CMake with {build_system_str}...")
         if args.dry_run:
@@ -112,7 +119,7 @@ def configure_build(enable_tests: bool = False):
         if args.skip_build:
             logger.info("Skipping build step as per the provided argument.")
             return
-        target = "splinter3D_unit_tests" if enable_tests else "splinter3D"
+        target = "splinter3D_tests" if enable_tests else "splinter3D"
         logger.info(f"Building target {target} with {build_system_str}...")
         run_build_tool(build_system_runtime, target, build_type)
     finally:

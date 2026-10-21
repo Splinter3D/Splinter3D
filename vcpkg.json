@@ -25,6 +25,17 @@
       "version>=": "3.12.0"
     }
   ],
+  "features": {
+    "tests": {
+      "description": "Test frameworks, installed only when building tests",
+      "dependencies": [
+        {
+          "name": "catch2",
+          "version>=": "3.8.0"
+        }
+      ]
+    }
+  },
   "overrides": [
     {
       "name": "zlib",

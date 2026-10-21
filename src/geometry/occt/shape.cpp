@@ -1,4 +1,5 @@
 #include <StlAPI_Reader.hxx>
+#include <geometry/occt/path.hpp>
 #include <geometry/occt/shape.hpp>
 #include <stdexcept>
 #include <string>
@@ -8,7 +9,7 @@ namespace geometry::occt
 {
     Shape Shape::fromSTL(const std::filesystem::path& path)
     {
-        const std::string filename = path.string();
+        const std::string filename = toUtf8(path);
         if (filename.empty())
             throw std::invalid_argument("Cannot import an STL shape from an empty path");
 

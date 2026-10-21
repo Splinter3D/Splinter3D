@@ -3,6 +3,7 @@
 #include "core/utils/singleton.hpp"
 #include "platform/logger/logger.hpp"
 
+#include <cstddef>
 #include <functional>
 #include <source_location>
 #include <typeindex>
@@ -89,6 +90,34 @@ namespace core::event_bus
                 for (auto& h : it->second)
                     h(&event);
         }
+
+#if defined(SPLINTER3D_TESTING)
+        /**
+         * @brief Removes every subscribed handler, for all event types.
+         *
+         * Test-only: tests share this process-wide instance and must not
+         * leak handlers into each other (see
+         * tests/support/reset_globals_listener.cpp).
+         */
+        void clear() noexcept
+        {
+            _handlers.clear();
+        }
+
+        /**
+         * @brief Returns how many handlers are subscribed to an event type.
+         *
+         * Test-only.
+         *
+         * @tparam Event The event type to inspect.
+         */
+        template <typename Event>
+        [[nodiscard]] std::size_t subscriberCount() const
+        {
+            auto it = _handlers.find(typeid(Event));
+            return it == _handlers.end() ? 0 : it->second.size();
+        }
+#endif
 
       protected:
         EventBus()           = default;

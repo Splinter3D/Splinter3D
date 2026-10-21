@@ -1,5 +1,9 @@
 #pragma once
 
+#include "application/service/scene_service.hpp"
+#include "geometry/occt/transform.hpp"
+
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <vector>
@@ -14,22 +18,23 @@ namespace ui::framework::occt
       public:
         // Move (millimeters) and rotate (degrees, around the origin) values
         // currently applied to a given target. See setTransform().
-        struct TransformValues
-        {
-            double moveX   = 0.0;
-            double moveY   = 0.0;
-            double moveZ   = 0.0;
-            double rotateX = 0.0;
-            double rotateY = 0.0;
-            double rotateZ = 0.0;
-        };
+        using TransformValues = geometry::occt::Transform;
 
         explicit ModelViewerPanel(wxWindow* parent);
         ~ModelViewerPanel() override;
 
         void newFile();
+        // Asks for an STL file with a dialog, then loadFile()s it.
         void openFile();
+        // Asks for a destination with a dialog, then exportFile()s to it.
         void saveFile();
+
+        // Imports an STL file into the scene and displays it. Logs and
+        // returns false if it could not be imported (the scene is unchanged).
+        bool loadFile(const std::filesystem::path& path);
+
+        // Writes the scene to an STL file. Logs and returns false on failure.
+        bool exportFile(const std::filesystem::path& path);
 
         // True as soon as a shape is loaded in the viewer.
         [[nodiscard]] bool hasModel() const;
@@ -90,8 +95,10 @@ namespace ui::framework::occt
         void onMouseWheel(wxMouseEvent& event);
         void initializeViewer();
 
-        std::unique_ptr<wxGLContext> context_;
-        wxGLCanvas*                  canvas_ = nullptr;
+        // Declared before viewer_, which holds a reference to it.
+        application::service::SceneService scene_;
+        std::unique_ptr<wxGLContext>       context_;
+        wxGLCanvas*                        canvas_ = nullptr;
         class Viewer;
         std::unique_ptr<Viewer>   viewer_;
         bool                      initialized_    = false;
