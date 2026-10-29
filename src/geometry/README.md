@@ -9,4 +9,3 @@ The domain layer: everything that handles the 3D data itself, regardless of how 
 ## Dependency rule
 
 `geometry/` depends only on itself and potentially on `core/` (for shared interfaces like `IRenderable`). It must never include `ui/`, `rendering/`, or `application/`-otherwise, it would be impossible to test a mesh split without instantiating a renderer.
-
