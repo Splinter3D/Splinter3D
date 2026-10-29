@@ -1,3 +1,6 @@
+"""The core configure/build pipeline: check requirements, sync submodules, resolve vcpkg,
+invoke `cmake` to configure the build/ directory, then build the requested target."""
+
 import os
 import pathlib
 import shutil
@@ -15,6 +18,7 @@ from .BuildSystem import BuildSystem, choose_build_system, BUILD_SYSTEM_TO_STRIN
 
 __all__ = ["configure_build"]
 
+# CMake's -A architecture flag uses its own spelling for Visual Studio generators.
 _VISUAL_STUDIO_ARCH = {
     Arch.X86: "Win32",
     Arch.X64: "x64",
@@ -53,6 +57,8 @@ def configure_build(enable_tests: bool = False):
         build_type = "Debug" if debug_build or enable_tests else "Release"
         cmake_command = ["cmake", "..", "-G", build_system_str]
         if build_system_runtime == BuildSystem.NINJA:
+            # Pin the exact ninja/make binary found on PATH, so CMake doesn't fall back to
+            # a different one it might discover on its own (e.g. one bundled with an IDE).
             ninja_path = shutil.which("ninja")
             if ninja_path:
                 cmake_command.append(f"-DCMAKE_MAKE_PROGRAM={ninja_path}")
@@ -65,6 +71,8 @@ def configure_build(enable_tests: bool = False):
             if visual_studio_arch is None:
                 raise RuntimeError(f"Unsupported Visual Studio architecture: {get_arch()}")
             cmake_command.extend(["-A", visual_studio_arch])
+        # Visual Studio generators are multi-config: the configuration is chosen at build
+        # time (`cmake --build --config`), not baked into the cache via CMAKE_BUILD_TYPE.
         if build_system_runtime != BuildSystem.VISUAL_STUDIO and build_system_runtime != BuildSystem.VISUAL_STUDIO_18:
             cmake_command.append(f"-DCMAKE_BUILD_TYPE={build_type}")
         if debug_build and not enable_tests:
@@ -91,6 +99,8 @@ def configure_build(enable_tests: bool = False):
                     logger.error(f"CMake configure stdout:\n{stdout}")
                 if stderr:
                     logger.error(f"CMake configure stderr:\n{stderr}")
+                # CMake's own stderr rarely explains a vcpkg manifest install failure in
+                # detail; surface vcpkg's own log when present for a more useful error.
                 manifest_log = build_dir / "vcpkg-manifest-install.log"
                 if manifest_log.is_file():
                     manifest_log_text = manifest_log.read_text(encoding="utf-8", errors="ignore").strip()

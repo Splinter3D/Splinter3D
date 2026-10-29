@@ -9,7 +9,6 @@
 #include "ui/menus/menu_registration.hpp"
 #include "ui/panels/panel_registration.hpp"
 #include "ui/toolbars/toolbar_registration.hpp"
-#include "ui/windows/demo_window/demo_window.hpp"
 #include "ui/windows/main_window/main_window.hpp"
 
 #include <filesystem>
@@ -79,9 +78,6 @@ namespace app
         platform::logger::clog("[bootstrap] creating main window");
         auto mainWindow = std::make_unique<ui::windows::MainWindow>();
 
-        platform::logger::clog("[bootstrap] creating demo window");
-        auto demoWindow = std::make_unique<ui::windows::DemoWindow>();
-
-        return std::make_unique<App>(std::move(mainWindow), std::move(demoWindow));
+        return std::make_unique<App>(std::move(mainWindow));
     }
 } // namespace app

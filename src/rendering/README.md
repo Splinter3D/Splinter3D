@@ -4,11 +4,15 @@ Handles display, not the decision of what to display. Answers the question "how 
 
 ## Contents
 
-- `renderer/` - rendering engine (currently raylib: `RaylibRenderer`, `RenderObject`).
+- `renderer/` - rendering engine and renderer-independent display values such as `Color` and `Palette`.
 - `camera/` - position, projection, and camera controls.
 - `scene/` - scene graph (`Scene`, `SceneObject`): what is present and where, not how it is manipulated by the user.
 - `lights/` - lighting management.
 - `occt/` - C++ library used for CAD via OpenGL (not to be confused with `ui/framework/occt/`, which deals with integrating OCCT widgets into the UI).
+
+The first OpenCascade integration lives in `geometry/occt`, where CAD shapes
+are owned and imported. Rendering can consume that boundary later through
+`rendering/occt`; the renderer must not make STL parsing or CAD decisions.
 
 ## Dependency Rule
 

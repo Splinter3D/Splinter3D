@@ -1,3 +1,6 @@
+"""Detects the current OS (`Platform`) and the toolchain each OS needs
+(`PLATFORM_REQUIRED_TOOLS`), used by Requirements/Requirements.py."""
+
 import platform
 from enum import Enum, auto
 from Logger import logger
@@ -12,6 +15,7 @@ class Platform(Enum):
 _unix = None
 _cur_platform: Platform | None = None
 
+# Each set is a group of alternatives: at least one tool in the set must be present.
 _GENERAL_REQUIRED_TOOLS = [
     {"git"},
     {"cmake"},
@@ -44,6 +48,7 @@ PLATFORM_TO_STRING = {
 }
 
 def get_platform() -> Platform:
+    # Cached after first detection: platform.system() can't change mid-run.
     global _cur_platform
     if _cur_platform is not None:
         return _cur_platform

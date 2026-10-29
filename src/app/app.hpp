@@ -1,6 +1,5 @@
 #pragma once
 
-#include "ui/windows/demo_window/demo_window.hpp"
 #include "ui/windows/main_window/main_window.hpp"
 
 namespace app
@@ -8,16 +7,7 @@ namespace app
     class App
     {
       public:
-        /**
-         * @brief Constructs the application with an already-built main window.
-         *
-         * @param mainWindow The application's main window. App takes
-         * ownership of it.
-         * @param demoWindow The application's demo window. Used to demonstrate the reusability of the ui
-         *
-         */
-        explicit App(std::unique_ptr<ui::windows::MainWindow> mainWindow,
-                     std::unique_ptr<ui::windows::DemoWindow> demoWindow = nullptr);
+        explicit App(std::unique_ptr<ui::windows::MainWindow> mainWindow);
 
         ~App() = default; // nothing to delete: wx owns and destroys the windows
 
@@ -39,6 +29,5 @@ namespace app
         // cleanly (symptom: the executable stays locked even though
         // every window appears closed).
         ui::windows::MainWindow* main_window_ = nullptr;
-        ui::windows::DemoWindow* demo_window_ = nullptr;
     };
 } // namespace app

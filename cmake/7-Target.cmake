@@ -16,6 +16,19 @@ endif()
 
 target_include_directories(${SPLINTER3D_TARGET_NAME} PRIVATE ${INCLUDE_SPLINTER3D})
 
+#######################################
+
+add_custom_command(
+    TARGET ${SPLINTER3D_TARGET_NAME}
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+            "$<TARGET_FILE_DIR:${SPLINTER3D_TARGET_NAME}>/assets"
+    COMMENT "Copying runtime assets"
+)
+
+########################################
+
 if(DEFINED THIRD_PARTY_LIBS)
     target_link_libraries(${SPLINTER3D_TARGET_NAME} PRIVATE ${THIRD_PARTY_LIBS})
 endif()

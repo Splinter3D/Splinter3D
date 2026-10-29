@@ -1,3 +1,5 @@
+# Enforces that pull requests into `main` only come from `dev` or `hotfix/*` branches;
+# any other PR is closed automatically with an explanatory comment.
 name: main-pr-policy
 
 on:

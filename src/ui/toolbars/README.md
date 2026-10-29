@@ -130,7 +130,7 @@ That's the whole loop - no other file needs to change.
 
 Reference implementation
 
-`ui/toolbars/example_toolbar/` (`ExampleToolBar`) is a minimal, working
+`ui/toolbars/toolbar_object/` (`ExampleToolBar`) is a minimal, working
 toolbar kept around purely to show the pattern end-to-end.
 
 It can safely be deleted - along with its `Register(...)` call in

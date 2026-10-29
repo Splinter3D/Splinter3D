@@ -1,3 +1,6 @@
+# Shared build/package/sign/notarize/upload logic, parametrized per OS by the caller
+# (ci-release.yml and compile-on-pr.yml) via install/build/verify command strings run
+# through the matching shell. Not triggered directly - only invoked with `uses:`.
 name: Build package (reusable)
 
 on:

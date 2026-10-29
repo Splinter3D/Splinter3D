@@ -2,7 +2,7 @@
 
 #include "ui/framework/wx/registry/widget_registry.hpp"
 
-#include <wx/toolbar.h>
+#include <wx/window.h>
 
 namespace ui::toolbars
 {
@@ -11,12 +11,13 @@ namespace ui::toolbars
      *
      * Maps a toolbar identifier (defined in
      * ui::framework::wx::ids::toolbars) to the factory responsible for
-     * constructing the corresponding @c wxToolBar.
+     * constructing the corresponding widget.
      *
-     * Unlike wxFrame::CreateToolBar(), which only supports a single native
-     * toolbar per frame, this registry creates regular parented
-     * @c wxToolBar instances. They can therefore be freely inserted into a
-     * window layout, stacked, hidden, or later managed by wxAUI for docking.
+     * Toolbars are regular parented @c wxWindow instances (a native
+     * @c wxToolBar, or a plain @c wxPanel for bars that need custom layout
+     * and interactions a native toolbar cannot easily provide). They can
+     * therefore be freely inserted into a window layout, stacked, hidden, or
+     * later managed by wxAUI for docking.
      *
      * The registry is populated once during application bootstrap through
      * RegisterAllToolBars(), then queried by windows when building their
@@ -31,6 +32,6 @@ namespace ui::toolbars
      * @endcode
      */
     using ToolBarRegistry =
-        ui::framework::wx::registry::WidgetRegistry<wxToolBar>;
+        ui::framework::wx::registry::WidgetRegistry<wxWindow>;
 
 } // namespace ui::toolbars
