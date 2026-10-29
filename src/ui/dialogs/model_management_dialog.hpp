@@ -18,12 +18,12 @@ namespace ui::dialogs
                               std::function<void(int)>               remove,
                               std::function<void(int)>               focus);
 
-        void RefreshModels();
+        void RefreshModelRows();
 
       private:
+        void ResizeColumns();
         void OnItemActivated(wxListEvent& event);
-        void OnToggle(wxCommandEvent& event);
-        void OnDelete(wxCommandEvent& event);
+        void OnListLeftDown(wxMouseEvent& event);
 
         wxListCtrl*                            list_ = nullptr;
         std::function<std::vector<wxString>()> names_;

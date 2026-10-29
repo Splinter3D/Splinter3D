@@ -155,7 +155,7 @@ namespace ui::windows
                 SyncTransformFields();
                 UpdateGizmoState();
                 if (model_management_menu_ != nullptr)
-                    model_management_menu_->RefreshModels();
+                    model_management_menu_->RefreshModelRows();
             });
 
             transform_toolbar_->SetOnTargetChanged([this](int) {
