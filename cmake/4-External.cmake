@@ -1,6 +1,5 @@
 #######################################
 
-find_package(nfd CONFIG REQUIRED)
 find_package(wxWidgets CONFIG REQUIRED COMPONENTS core base gl)
 
 find_package(OpenCASCADE REQUIRED)
@@ -21,29 +20,7 @@ set(OCCT_LIBRARIES
 
 set(GLFW_LINK_TARGET "")
 
-find_package(glfw3 CONFIG QUIET)
-if(TARGET glfw)
-    set(GLFW_LINK_TARGET glfw)
-elseif(TARGET glfw3)
-    set(GLFW_LINK_TARGET glfw3)
-elseif(TARGET glfw::glfw)
-    set(GLFW_LINK_TARGET glfw::glfw)
-else()
-    find_package(PkgConfig QUIET)
-    if(PkgConfig_FOUND)
-        pkg_check_modules(GLFW3 QUIET IMPORTED_TARGET glfw3)
-        if(TARGET PkgConfig::GLFW3)
-            set(GLFW_LINK_TARGET PkgConfig::GLFW3)
-        endif()
-    endif()
-
-    if(NOT GLFW_LINK_TARGET)
-        find_library(GLFW_LIBRARY NAMES glfw glfw3 REQUIRED)
-        set(GLFW_LINK_TARGET "${GLFW_LIBRARY}")
-    endif()
-endif()
-
-set(THIRD_PARTY_LIBS ${GLFW_LINK_TARGET} nfd::nfd wx::core wx::base wx::gl ${OCCT_LIBRARIES})
+set(THIRD_PARTY_LIBS wx::core wx::base wx::gl ${OCCT_LIBRARIES})
 
 if(WIN32)
     # Add Windows-specific libraries for nativefiledialog-extended
