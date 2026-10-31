@@ -81,7 +81,7 @@ index a4796b2dc1..fef12e3163 100644
 @@ -74,6 +74,26 @@ set (OpenCASCADE_WITH_GLES2     @USE_GLES2@)
  @SET_OpenCASCADE_WITH_D3D@
  @SET_OpenCASCADE_WITH_GLX@
-
+ 
 +include(CMakeFindDependencyMacro)
 +if("@USE_FREEIMAGE@")
 +  find_dependency(freeimage CONFIG)

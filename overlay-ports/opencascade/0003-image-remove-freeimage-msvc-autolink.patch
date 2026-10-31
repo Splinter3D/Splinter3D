@@ -3,7 +3,7 @@ index 238efdcc42..94017e63aa 100644
 --- a/src/Visualization/TKService/Image/Image_AlienPixMap.cxx
 +++ b/src/Visualization/TKService/Image/Image_AlienPixMap.cxx
 @@ -19,10 +19,6 @@
-
+ 
  #ifdef HAVE_FREEIMAGE
    #include <FreeImage.h>
 -

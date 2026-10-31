@@ -4,7 +4,7 @@ index b251109..60cf762 100644
 +++ b/build/cmake/wxWidgetsConfig.cmake.in
 @@ -1,5 +1,8 @@
  @PACKAGE_INIT@
-
+ 
 +include(CMakeFindDependencyMacro)
 +find_dependency(NanoSVG CONFIG)
 +
