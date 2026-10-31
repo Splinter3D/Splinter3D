@@ -1,3 +1,6 @@
+"""Rebuilds an already-configured build/ tree without re-running CMake configure
+(used with --skip-configure)."""
+
 import os
 import pathlib
 

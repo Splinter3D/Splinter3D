@@ -1,3 +1,6 @@
+"""Locates an existing vcpkg installation, either on PATH or in common install locations,
+without installing anything (see vcpkg/Install.py for that)."""
+
 import os
 import shutil
 import subprocess
@@ -21,6 +24,9 @@ def detect_vcpkg() -> str | None:
     except (subprocess.CalledProcessError, FileNotFoundError, OSError):
         logger.info("vcpkg not found in PATH")
 
+    # Search order mirrors where each platform's install script places vcpkg:
+    # Windows CI (install.ps1) clones it under %USERPROFILE%, while Unix installs
+    # (vcpkg/Install.py) default to the current working directory.
     if get_platform() == Platform.WINDOWS:
         path_candidates = [
             os.getenv("USERPROFILE"),

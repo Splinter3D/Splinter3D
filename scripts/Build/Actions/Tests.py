@@ -1,3 +1,6 @@
+"""Runs the unit test executable (--tests) and, optionally, generates a code coverage
+report (--coverage)."""
+
 import glob
 import pathlib
 import shutil
@@ -15,9 +18,13 @@ def test_executable_name() -> str:
 
 
 def _resolve_test_executable() -> pathlib.Path:
+    # Single-config generators (Ninja/Make) put the executable directly under build/ or
+    # build/bin; multi-config generators (Visual Studio) nest it under a per-configuration
+    # subdirectory instead, hence checking every configuration name here.
     executable_name = test_executable_name()
     build_root = pathlib.Path("build")
     candidates = [
+        build_root / "bin" / executable_name,
         build_root / executable_name,
         build_root / "Debug" / executable_name,
         build_root / "Release" / executable_name,
@@ -44,12 +51,15 @@ def run_tests():
 
 
 def generate_coverage():
+    """Writes a coverage report to code_coverage.txt: llvm-cov/xcrun on macOS (matching its
+    Clang-based toolchain), gcovr elsewhere when available, or a placeholder note otherwise."""
     logger.info("Generating coverage report...")
     if args.dry_run:
         logger.info("DRY RUN: generate coverage report")
         return
     with open("code_coverage.txt", "w", encoding="utf-8") as coverage_file:
         if get_platform() == Platform.DARWIN:
+            test_executable = _resolve_test_executable()
             subprocess.run(
                 ["xcrun", "llvm-profdata", "merge", "-sparse", *glob.glob("unit_tests-*.profraw"), "-o", "unit_tests.profdata"],
                 check=True,
@@ -59,7 +69,7 @@ def generate_coverage():
                     "xcrun",
                     "llvm-cov",
                     "report",
-                    f"./build/{test_executable_name()}",
+                    str(test_executable),
                     "-instr-profile=unit_tests.profdata",
                     "-ignore-filename-regex=.*/tests/.*",
                     "-enable-name-compression",

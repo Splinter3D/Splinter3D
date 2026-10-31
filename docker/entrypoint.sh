@@ -29,7 +29,7 @@ x11vnc -display "$DISPLAY" -forever -nopw -shared -rfbport 5900 >/tmp/x11vnc.log
 websockify --web=/usr/share/novnc 6080 localhost:5900 >/tmp/websockify.log 2>&1 &
 
 if [ "$#" -eq 0 ]; then
-    set -- ./splinter3D
+    set -- build/bin/splinter3D
 fi
 
 exec "$@"

@@ -1,3 +1,7 @@
+"""Detects a stale or incompatible build/CMakeCache.txt (wrong platform, wrong build/source
+path, or a mismatched vcpkg toolchain) and deletes it so CMake can reconfigure cleanly,
+instead of failing with a confusing CMake error deep into configuration."""
+
 import pathlib
 import re
 import shutil
@@ -8,6 +12,8 @@ from Platform import Platform, get_platform
 
 __all__ = ["ensure_compatible_build_cache"]
 
+# Matches a Windows drive-letter path (e.g. "C:\" or "C:/"), used to spot Windows-flavored
+# paths recorded in a CMakeCache.txt even when running under a different OS.
 _WINDOWS_DRIVE_PATTERN = re.compile(r"^[A-Za-z]:[\\/]")
 
 
@@ -23,6 +29,9 @@ def _read_cache_entries(cache_file: pathlib.Path) -> dict[str, str]:
 
 
 def _infer_platform_from_cache(cache_entries: dict[str, str]) -> Platform | None:
+    """Best-effort guess at which OS a CMakeCache.txt was generated on, falling back through
+    increasingly indirect signals (explicit system name, generator, then compiler/tool paths)
+    since older caches may not record CMAKE_SYSTEM_NAME directly."""
     for key in ("CMAKE_SYSTEM_NAME", "CMAKE_HOST_SYSTEM_NAME"):
         value = cache_entries.get(key, "").strip().lower()
         if value == "windows":
@@ -78,11 +87,19 @@ def _confirm_delete_mismatched_cache(build_dir: pathlib.Path, reason: str) -> bo
     answer = logger.input(f"Build cache is stale because {reason}. Delete build cache and reconfigure? (y/n) ")
     return answer.strip().lower() in {"y", "yes"}
 
+def _normalize_windows_path(path: str) -> str:
+    # Normalize slash direction and drive-letter case so two paths that refer to the same
+    # location ("C:\foo" vs "c:/foo") compare equal.
+    if not path:
+        return ""
+    normalized = path.strip().replace("\\", "/")
+    if re.match(r"^[A-Za-z]:/", normalized):
+        normalized = normalized[0].lower() + normalized[1:]
+    return normalized
 
 def _normalize_cache_path(path: str) -> str:
     normalized = path.strip()
-    return normalized[:-1] if normalized.endswith("/") else normalized
-
+    return _normalize_windows_path(normalized[:-1] if normalized.endswith("/") else normalized)
 
 def _ensure_matching_cache_paths(build_dir: pathlib.Path, cache_entries: dict[str, str]):
     expected_build_dir = _normalize_cache_path(str(build_dir.resolve()))
@@ -141,6 +158,9 @@ def _ensure_matching_toolchain_file(
 
 
 def ensure_compatible_build_cache(build_dir: pathlib.Path, expected_toolchain_file: str | None = None):
+    """Run each compatibility check in turn, deleting the cache (with confirmation) as soon
+    as one fails. Each check re-verifies the cache file still exists first, since an earlier
+    check may already have deleted it."""
     logger.info(f"Ensuring compatible build cache at {build_dir}")
     cache_file = build_dir / "CMakeCache.txt"
     if not cache_file.is_file():

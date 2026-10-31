@@ -1,5 +1,5 @@
 # -----------------------------------------
-# .clang-format — C++ Allman, 4 espaces
+# .clang-format - C++ Allman, 4 espaces
 # -----------------------------------------
 BasedOnStyle: LLVM
 Language: Cpp

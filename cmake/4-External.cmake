@@ -1,7 +1,23 @@
 #######################################
 
-find_package(raylib CONFIG REQUIRED)
 find_package(nfd CONFIG REQUIRED)
+find_package(wxWidgets CONFIG REQUIRED COMPONENTS core base gl)
+
+find_package(OpenCASCADE REQUIRED)
+set(OCCT_LIBRARIES
+    TKernel
+    TKMath
+    TKG3d
+    TKBRep
+    TKGeomBase
+    TKService
+    TKOpenGl
+    TKV3d
+    TKPrim
+    TKDE
+    TKDESTEP
+    TKDESTL
+)
 
 set(GLFW_LINK_TARGET "")
 
@@ -27,12 +43,7 @@ else()
     endif()
 endif()
 
-# fix: removes duplicate link libraries for raylib when using vcpkg
-if(WIN32 AND TARGET raylib)
-    set_property(TARGET raylib PROPERTY INTERFACE_LINK_LIBRARIES "")
-endif()
-
-set(THIRD_PARTY_LIBS raylib ${GLFW_LINK_TARGET} nfd::nfd)
+set(THIRD_PARTY_LIBS ${GLFW_LINK_TARGET} nfd::nfd wx::core wx::base wx::gl ${OCCT_LIBRARIES})
 
 if(WIN32)
     # Add Windows-specific libraries for nativefiledialog-extended
