@@ -1,8 +1,60 @@
+## v0.2.0-rc.1 (2026-10-31)
+
+### Feat
+
+- improving the object floating menu to have a better experience
+- adding first version of the floating menu for the object management
+- adding first version of the floating menu for the object management
+- add focus and gizmos to tools
+- add target to movement options
+- linked move and rotate UI to fonctionnalities
+- add move and rotates features
+- multiple objects import
+- adding the 3D model viewer panel
+- adding a base shape wrapper to avoid referring to occt everywhere
+- adding the assets in the makefile
+- merge the wx-widget branch to be able to compile and test the new build fix
+- #128 #129 now having a full example of 2 different windows opening with widget placement from layouts
+- removing wx_example, everything is implemented
+- #126 #127 creating menu and toolbar registry just like for panels. New exemple using these.
+- new example of window with base_window and a panel creation
+- introducing app/ folder with new main and bootstrap flow
+- moved every splinter3D/utils and event_bus into core/
+- moving logger into platform/logger
+- redisigned a new architecture to prepare wxwidgets integration
+- new architecture to handle datas app related on runtime
+- now we have ui dialogs
+- starting to build the framework by adding events bindings with ids
+- apply C++ convention
+- new clean and documented ui widgets for wxwidgets merging
+
+### Fix
+
+- added missing dependencies in Dockerfile
+- **build**: macOS compilation
+- moving the binding to wx event_manager and using callback in the windows
+- PI import on windows
+- remove flashed when draging while clicking
+- GL errors on linux
+- remove warnings related to unused parameters and wrong linux include
+- merge conflict from fix/build-cache-validation
+- **windows build**: cache path normalization
+- **windows build**: path normalization in build cache validation
+- **pre-commit**: fix all pre-commit formatting issues
+- **build**: put built binaries in build/bin directory
+- pre-commit clean
+- merge conflicts
+
+### Refactor
+
+- change the top options
+- renameing demo menu and toolbar, marking demo window as deprecated
+
 ## v0.1.3 (2026-07-13)
 
 ### Fix
 
-- **build**: make --vcpkg-path authoritative
+- **build**: make --vcpkg—path authoritative
 
 ## v0.1.2 (2026-07-09)
 
@@ -24,7 +76,16 @@
 - **ci**: add github release workflows
 - docker image build
 - **ci**: multiarch build
+- removing vscode warnings for includes
+- changed the Cmakes and files to run the wxwidgets files only, preparing for the merge between Prototype and WxWidgets
+- adding Windows Configuration for C/C++ extension
 - adding Visual Studio 18 2026 support
+- update directory structure and comments in README
+- update README
+- add testing of 3D pieces
+- add a viewerPanel to import 3D objects with OCCT
+- clean path
+- add the wxWidget exemple
 - custom tranlation
 - adding a proper gestion of the user click when selecting an object
 - docker image
