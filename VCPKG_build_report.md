@@ -4,7 +4,7 @@ The purpose of this report is to document my research on the differents problems
 - The build is time consuming: 50min and more depending of differents cases
 - The vcpkg folder is taking a lot of space
 
-1/
+## 1/
 With the current vcpkg.json config and build.py, on my Windows, I got:
 - Time: **~45min**
 - vcpkg folder size: **21Go**
@@ -13,7 +13,7 @@ Without glfw3 and nativefiledialog-extended on vcpkg.json (that seems unused), o
 - vcpkg folder size: **20Go**
 ===> these two libraries are not that big
 
-2/
+## 2/
 After a further look I saw that OCCT get compiled 2x, everytime. One time for a Debug mode, and another for a Release one.
 I tried to configure vcpkg and the build flow to get only one mode compiled (more precisely, the triplet used).
 I added a debug-only mode and a release-only mode to replace the default triplet.
@@ -26,6 +26,16 @@ I also suppose that WxWidgets was compiling 2x with the default triplet mode.
 
 /!\ After testing, it seems to have no debug-only mode /!\
 
-3/
-I will look further, some OCCT libraries are not usefull for our project,
-maybe is it possible to remove them from the vcpkg.json config, and so reduce the build time and the vcpkg folder size.
+## 3/
+Some OCCT libraries are not usefull for our project, maybe is it possible to remove them from the vcpkg.json config, and so reduce the build time and the vcpkg folder size.
+I will try doing overlay on vcpkg
+Result of using the overlay on OCCT:
+- Time: **~24min**
+- vcpkg folder size: **9.57Go**
+===> we can see that we successfuly replaced the default build of OCCT by a custom one, and that we can remove some libraries from the build. It helps to reduce the build time and the vcpkg folder size.
+
+## 4/
+Trying the same process on WxWidgets, I got:
+- Time: **~23min**
+- vcpkg folder size: **8.32Go**
+===> just like OCCT I was able to remove some wxWidgets libraries from the build, and so reduce the build time and the vcpkg folder size.

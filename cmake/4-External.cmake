@@ -4,19 +4,10 @@ find_package(wxWidgets CONFIG REQUIRED COMPONENTS core base gl)
 
 find_package(OpenCASCADE REQUIRED)
 set(OCCT_LIBRARIES
-    TKernel
-    TKMath
-    TKG3d
-    TKBRep
-    TKGeomBase
-    TKService
-    TKOpenGl
-    TKV3d
-    TKPrim
-    TKDE
-    TKDESTEP
-    TKDESTL
-)
+    TKernel TKMath TKG3d TKBRep TKGeomBase TKTopAlgo    # geometry and topology
+    TKService TKOpenGl TKV3d                            # display
+    TKPrim TKBO TKFillet TKOffset TKHLR TKFeat TKMesh   # modelisation
+    TKDESTEP TKDESTL)                                   # import/export
 
 set(GLFW_LINK_TARGET "")
 
