@@ -69,6 +69,16 @@ TEST_CASE("SceneService: load names models after their file", "[application][sce
     CHECK(scene.transform(0) == Transform{});
 }
 
+TEST_CASE("SceneService: load times the import", "[application][scene]")
+{
+    SceneService scene;
+    scene.load(kCube);
+    scene.add("built", Shape{});
+
+    CHECK(scene.models()[0].loadDuration > platform::benchmark::Benchmark::Duration::zero());
+    CHECK(scene.models()[1].loadDuration == platform::benchmark::Benchmark::Duration::zero());
+}
+
 TEST_CASE("SceneService: duplicate names get a numeric suffix", "[application][scene]")
 {
     SceneService scene;

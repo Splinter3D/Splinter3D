@@ -50,7 +50,7 @@ tests/
 │   └── wx_helpers.hpp             pumpEvents(), pumpUntil(), findDescendant<T>(), ScopedFrame<T>, sendMenuCommand()
 ├── unit/
 │   ├── core/          EventBus, findDataRoot, Singleton/NonCopyable, signal flag
-│   ├── platform/      PreferenceManager, LocaleManager, Logger
+│   ├── platform/      PreferenceManager, LocaleManager, Logger, Benchmark
 │   ├── geometry/      Shape::fromSTL, Transform maths (toTrsf, gizmo drag deltas)
 │   ├── rendering/     Color, Palette
 │   └── application/   SceneService, BatchRunner
@@ -111,7 +111,7 @@ splinter3D --batch script.json
 
 - `open` imports an STL file (File > Open); `transform` sets a model's absolute placement like the toolbar fields (`target`: model index or `"all"`, the default; `move` in mm, `rotate` in degrees, omitted vectors are `[0, 0, 0]`); `export` writes every model, each at its transform, to one STL file (File > Export); `clear` removes every model (File > New).
 - Relative paths are resolved against the script's folder; paths are UTF-8.
-- Steps run in order and stop at the first failure. One line per step goes to stdout, errors to stderr.
+- Steps run in order and stop at the first failure. One line per step goes to stdout (an `open` line ends with the import time, e.g. `in 1.54 ms`), errors to stderr.
 - Exit codes: `0` success, `1` a step failed, `2` bad command line or unreadable/invalid script.
 
 Implemented by `application::workflow::BatchRunner` (`src/application/workflow/`) and `app/cli/batch_mode.cpp`, which `main()` calls before wxWidgets starts.

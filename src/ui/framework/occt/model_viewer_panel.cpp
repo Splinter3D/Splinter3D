@@ -1,6 +1,8 @@
 #include "model_viewer_panel.hpp"
 
 #include "geometry/occt/transform.hpp"
+#include "platform/benchmark/benchmark.hpp"
+#include "platform/logger/logger.hpp"
 #include "ui/dialogs/dialogs.hpp"
 
 #include <AIS_DisplayMode.hxx>
@@ -28,6 +30,7 @@
 #include <V3d_Viewer.hxx>
 #include <algorithm>
 #include <filesystem>
+#include <format>
 #include <gp_Ax2.hxx>
 #include <gp_Pnt.hxx>
 #include <gp_Trsf.hxx>
@@ -121,14 +124,26 @@ namespace ui::framework::occt
 
         void load(const std::filesystem::path& path)
         {
-            const std::size_t index        = scene_.load(path);
-            auto              presentation = new AIS_Shape(scene_.models()[index].shape.value());
+            // Import time is logged by SceneService::load(); this adds the time
+            // spent building the shaded presentation and fitting the view.
+            const std::size_t index = scene_.load(path);
+
+            platform::benchmark::Benchmark benchmark;
+            benchmark.start();
+
+            auto presentation = new AIS_Shape(scene_.models()[index].shape.value());
             presentations_.push_back(presentation);
 
             context_->Display(presentation, false);
             context_->SetDisplayMode(presentation, AIS_Shaded, false);
             context_->UpdateCurrentViewer();
             view_->FitAll(0.1, true);
+
+            const auto& model   = scene_.models()[index];
+            const auto  display = benchmark.stop();
+            platform::logger::clog(std::format("[viewer] displayed '{}' in {:.2f} ms (import {:.2f} ms, total {:.2f} ms)",
+                                               model.name, display.count(), model.loadDuration.count(),
+                                               (model.loadDuration + display).count()));
         }
 
         void clear()

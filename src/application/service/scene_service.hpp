@@ -2,6 +2,7 @@
 
 #include "geometry/occt/shape.hpp"
 #include "geometry/occt/transform.hpp"
+#include "platform/benchmark/benchmark.hpp"
 
 #include <cstddef>
 #include <filesystem>
@@ -27,13 +28,17 @@ namespace application::service
 
         struct Model
         {
-            std::string               name;
-            geometry::occt::Shape     shape;
-            geometry::occt::Transform transform;
+            std::string                              name;
+            geometry::occt::Shape                    shape;
+            geometry::occt::Transform                transform;
+            platform::benchmark::Benchmark::Duration loadDuration{};
         };
 
         /**
          * @brief Imports an STL file and appends it to the scene.
+         *
+         * The import is timed: the duration is kept in Model::loadDuration and
+         * logged (platform::logger::clog) as "[scene] imported ...".
          *
          * @return Index of the new model.
          * @throws std::invalid_argument / std::runtime_error from Shape::fromSTL.

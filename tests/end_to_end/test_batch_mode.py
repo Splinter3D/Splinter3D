@@ -70,7 +70,7 @@ class ImportExport(BatchTestCase):
 
         self.assertBatchOk(run)
         self.assertIn("step 1/3: open", run.stdout)
-        self.assertIn("-> model 1 'cube.stl (2)'", run.stdout)
+        self.assertRegex(run.stdout, r"-> model 1 'cube\.stl \(2\)' in \d+\.\d{2} ms")
         self.assertIn("step 3/3: transform 1", run.stdout)
         self.assertIn("done: 3 step(s)", run.stdout)
 

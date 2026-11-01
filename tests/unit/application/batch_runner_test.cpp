@@ -48,7 +48,8 @@ TEST_CASE_METHOD(BatchFixture, "BatchRunner: open resolves paths against the bas
     REQUIRE(result.ok);
     CHECK(result.stepsRun == 2);
     CHECK(scene.names() == std::vector<std::string>{"cube.stl", "cube.stl (2)"});
-    CHECK_THAT(log.str(), ContainsSubstring("step 2/2: open") && ContainsSubstring("model 1 'cube.stl (2)'"));
+    CHECK_THAT(log.str(), ContainsSubstring("step 2/2: open") && ContainsSubstring("model 1 'cube.stl (2)' in "));
+    CHECK_THAT(log.str(), ContainsSubstring(" ms\n"));
 }
 
 TEST_CASE_METHOD(BatchFixture, "BatchRunner: transform targets one model or all", "[application][batch]")

@@ -1,6 +1,7 @@
 #include "scene_service.hpp"
 
 #include "geometry/occt/path.hpp"
+#include "platform/logger/logger.hpp"
 
 #include <BRepMesh_IncrementalMesh.hxx>
 #include <BRep_Builder.hxx>
@@ -8,13 +9,24 @@
 #include <TopLoc_Location.hxx>
 #include <TopoDS_Compound.hxx>
 #include <algorithm>
+#include <format>
+#include <optional>
 #include <utility>
 
 namespace application::service
 {
     std::size_t SceneService::load(const std::filesystem::path& path)
     {
-        return add(geometry::occt::toUtf8(path.filename()), geometry::occt::Shape::fromSTL(path));
+        platform::benchmark::Benchmark                          benchmark;
+        std::optional<platform::benchmark::Benchmark::Duration> duration;
+        auto                                                    shape = benchmark.measure(&duration, &geometry::occt::Shape::fromSTL, path);
+
+        const std::size_t index     = add(geometry::occt::toUtf8(path.filename()), std::move(shape));
+        models_[index].loadDuration = duration.value_or(platform::benchmark::Benchmark::Duration::zero());
+        platform::logger::clog(std::format("[scene] imported '{}' from {} in {:.2f} ms",
+                                           models_[index].name, geometry::occt::toUtf8(path),
+                                           models_[index].loadDuration.count()));
+        return index;
     }
 
     std::size_t SceneService::add(const std::string& baseName, geometry::occt::Shape shape)

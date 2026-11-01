@@ -8,6 +8,7 @@ Everything that communicates directly with the OS or persists raw data. The lowe
 - `preference/` - persisted user settings (selected theme, selected language, etc.).
 - `locale/` - loading/saving translations.
 - `logging/` - writing logs.
+- `benchmark/` - `Benchmark`: steady-clock timer in milliseconds (`start()`/`stop()`, or `measure()` around a call, which records the duration even if the call throws). Used to log model import (`SceneService::load()`) and display (`ModelViewerPanel`) times.
 - `file_system/` - file reading/writing, paths.
 - `clipboard/` - clipboard operations.
 - `threading/` - thread/asynchronous task management.

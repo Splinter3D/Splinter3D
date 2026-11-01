@@ -1,9 +1,14 @@
+#include "platform/logger/logger.hpp"
 #include "support/temp_dir.hpp"
 #include "support/wx_helpers.hpp"
 #include "ui/framework/occt/model_viewer_panel.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include <filesystem>
+#include <iostream>
+#include <sstream>
+#include <string>
 #include <vector>
 #include <wx/glcanvas.h>
 #include <wx/sizer.h>
@@ -11,6 +16,7 @@
 // Exercises the real OCCT viewer (OpenGL context, AIS presentations, manipulator)
 // inside a shown frame. On headless Linux this needs Xvfb + Mesa (see Tests.py).
 
+using Catch::Matchers::ContainsSubstring;
 using tests::support::ScopedFrame;
 using ui::framework::occt::ModelViewerPanel;
 
@@ -194,4 +200,21 @@ TEST_CASE("ModelViewerPanel: mouse input before any model is loaded is harmless"
 
     CHECK_FALSE(panel->hasModel());
     CHECK(panel->GetModelNames().empty());
+}
+
+TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: logs import and display times", "[integration][ui][viewer]")
+{
+    std::ostringstream captured;
+    std::streambuf*    previous = std::clog.rdbuf(captured.rdbuf());
+    platform::logger::logger::setDebug(true); // what Bootstrap does in the app
+
+    const bool loaded = panel->loadFile(kCube);
+
+    platform::logger::logger::setDebug(false);
+    std::clog.rdbuf(previous);
+
+    REQUIRE(loaded);
+    const std::string log = captured.str();
+    CHECK_THAT(log, ContainsSubstring("[scene] imported 'cube.stl' from ") && ContainsSubstring(" ms"));
+    CHECK_THAT(log, ContainsSubstring("[viewer] displayed 'cube.stl' in ") && ContainsSubstring(", total "));
 }
