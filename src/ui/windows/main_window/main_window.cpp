@@ -1,5 +1,6 @@
 #include "main_window.hpp"
 
+#include "ui/dialogs/model_management_dialog.hpp"
 #include "ui/framework/wx/ids/ids.hpp"
 #include "ui/layouts/layout_registry.hpp"
 #include "ui/menus/menu_registry.hpp"
@@ -7,6 +8,7 @@
 #include "ui/toolbars/toolbar_registry.hpp"
 
 #include <filesystem>
+#include <utility>
 #include <vector>
 #include <wx/image.h>
 #include <wx/stdpaths.h>
@@ -59,6 +61,8 @@ namespace ui::windows
 
         InitializeAll();
     }
+
+    MainWindow::~MainWindow() = default;
 
     void MainWindow::InitMenuBarEntry(wxMenuBar* menuBar, const int menuId, const wxString& title)
     {
@@ -124,6 +128,19 @@ namespace ui::windows
             model_viewer_ = dynamic_cast<ui::framework::occt::ModelViewerPanel*>(modelViewer);
         }
 
+        if (model_viewer_ != nullptr)
+        {
+            model_management_menu_ = std::make_unique<ui::dialogs::ModelManagementDialog>(
+                this,
+                [this] { return model_viewer_->GetModelNames(); },
+                [this] { return model_viewer_->GetModelVisibility(); },
+                [this](int index, bool visible) {
+                    model_viewer_->SetModelVisibility(index, visible);
+                },
+                [this](int index) { model_viewer_->RemoveModel(index); },
+                [this](int index) { model_viewer_->FocusModel(index); });
+        }
+
         Layout();
     }
 
@@ -139,6 +156,8 @@ namespace ui::windows
                 transform_toolbar_->SetEnabled(hasModel);
                 SyncTransformFields();
                 UpdateGizmoState();
+                if (model_management_menu_ != nullptr)
+                    model_management_menu_->RefreshModelRows();
             });
 
             transform_toolbar_->SetOnTargetChanged([this](int) {
@@ -166,6 +185,7 @@ namespace ui::windows
                 model_viewer_->saveFile();
         };
         callbacks.onExit             = [this] { Close(); };
+        callbacks.onModelManagement  = [this] { ShowModelManagement(); };
         callbacks.onTransformChanged = [this] { ApplyTransform(); };
 
         if (transform_toolbar_ != nullptr)
@@ -183,6 +203,13 @@ namespace ui::windows
             this,
             std::move(callbacks));
         event_manager_->bindAll();
+    }
+
+    void MainWindow::ShowModelManagement()
+    {
+        if (model_management_menu_ == nullptr)
+            return;
+        model_management_menu_->ToggleVisibility();
     }
 
     void MainWindow::ApplyTransform()

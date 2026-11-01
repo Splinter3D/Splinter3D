@@ -57,6 +57,13 @@ namespace application::service
         /// Removes every model.
         void clear() noexcept;
 
+        /**
+         * @brief Removes one model; the following ones shift down by one index.
+         *
+         * @return false (and changes nothing) if the index is out of range.
+         */
+        bool remove(int index);
+
         [[nodiscard]] bool        empty() const noexcept;
         [[nodiscard]] std::size_t size() const noexcept;
 

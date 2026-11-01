@@ -207,3 +207,23 @@ TEST_CASE("SceneService: saveSTL", "[application][scene]")
         CHECK_THAT(max.X(), WithinAbs(0, 1e-4));
     }
 }
+
+TEST_CASE("SceneService: remove one model", "[application][scene]")
+{
+    SceneService scene;
+    scene.add("a", Shape{});
+    scene.add("b", Shape{});
+    scene.add("c", Shape{});
+    scene.setTransform(2, kSomeTransform);
+
+    REQUIRE(scene.remove(1));
+
+    CHECK(scene.names() == std::vector<std::string>{"a", "c"});
+    // Later models shift down, keeping their transform.
+    CHECK(scene.transform(1) == kSomeTransform);
+
+    CHECK_FALSE(scene.remove(2));
+    CHECK_FALSE(scene.remove(-1));
+    CHECK_FALSE(scene.remove(SceneService::kAllModels));
+    CHECK(scene.size() == 2);
+}

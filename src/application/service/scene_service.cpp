@@ -40,6 +40,14 @@ namespace application::service
         models_.clear();
     }
 
+    bool SceneService::remove(int index)
+    {
+        if (!isValidIndex(index))
+            return false;
+        models_.erase(models_.begin() + index);
+        return true;
+    }
+
     bool SceneService::empty() const noexcept
     {
         return models_.empty();

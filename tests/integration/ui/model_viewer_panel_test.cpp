@@ -1,3 +1,4 @@
+#include "geometry/occt/shape.hpp"
 #include "platform/logger/logger.hpp"
 #include "support/temp_dir.hpp"
 #include "support/wx_helpers.hpp"
@@ -217,4 +218,98 @@ TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: logs import and display times
     const std::string log = captured.str();
     CHECK_THAT(log, ContainsSubstring("[scene] imported 'cube.stl' from ") && ContainsSubstring(" ms"));
     CHECK_THAT(log, ContainsSubstring("[viewer] displayed 'cube.stl' in ") && ContainsSubstring(", total "));
+}
+
+TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: show and hide models", "[integration][ui][viewer]")
+{
+    panel->loadFile(kCube);
+    panel->loadFile(kCube);
+    REQUIRE(panel->GetModelVisibility() == std::vector<bool>{true, true});
+
+    panel->SetModelVisibility(0, false);
+    CHECK(panel->GetModelVisibility() == std::vector<bool>{false, true});
+
+    panel->SetModelVisibility(0, true);
+    CHECK(panel->GetModelVisibility() == std::vector<bool>{true, true});
+
+    // Out of range: ignored.
+    panel->SetModelVisibility(5, false);
+    panel->SetModelVisibility(-1, false);
+    CHECK(panel->GetModelVisibility() == std::vector<bool>{true, true});
+
+    // A hidden model stays in the scene and keeps its transform.
+    panel->SetModelVisibility(1, false);
+    panel->setTransform(1, 3, 0, 0, 0, 0, 0);
+    CHECK(panel->GetModelNames().size() == 2);
+    CHECK(panel->GetTransform(1).moveX == 3.0);
+}
+
+TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: removing a model", "[integration][ui][viewer]")
+{
+    tests::support::TempDir tmp;
+    panel->loadFile(kCube);
+    panel->loadFile(kCube);
+    panel->loadFile(kCube);
+    panel->setTransform(2, 7, 0, 0, 0, 0, 0);
+    panel->SetModelVisibility(2, false);
+    states.clear();
+
+    panel->RemoveModel(1);
+
+    CHECK(panel->GetModelNames() == std::vector<wxString>{"cube.stl", "cube.stl (3)"});
+    // The models after it shift down with their transform and visibility.
+    CHECK(panel->GetTransform(1).moveX == 7.0);
+    CHECK(panel->GetModelVisibility() == std::vector<bool>{true, false});
+    CHECK(states == std::vector<bool>{true});
+
+    // The scene and the viewport stay in step: export sees 2 cubes.
+    REQUIRE(panel->exportFile(tmp.path() / "out.stl"));
+    CHECK(geometry::occt::Shape::fromSTL(tmp.path() / "out.stl").isNull() == false);
+
+    panel->RemoveModel(9); // nothing removed (the state is still re-notified)
+    CHECK(panel->GetModelNames().size() == 2);
+    panel->RemoveModel(0);
+    panel->RemoveModel(0);
+    CHECK_FALSE(panel->hasModel());
+    CHECK(states == std::vector<bool>{true, true, true, false});
+}
+
+TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: removing the gizmo's model hides the gizmo", "[integration][ui][viewer]")
+{
+    panel->loadFile(kCube);
+    panel->loadFile(kCube);
+    panel->SetGizmoState(1, ModelViewerPanel::GizmoTool::Move);
+
+    panel->RemoveModel(1);
+    // The gizmo must not point at a removed (or shifted) model any more.
+    panel->setTransform(0, 1, 0, 0, 0, 0, 0);
+    panel->SetGizmoState(0, ModelViewerPanel::GizmoTool::Rotate);
+
+    CHECK(panel->GetTransform(0).moveX == 1.0);
+}
+
+TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: focusing a model keeps visibility", "[integration][ui][viewer]")
+{
+    panel->loadFile(kCube);
+    panel->loadFile(kCube);
+    panel->setTransform(1, 100, 0, 0, 0, 0, 0);
+    panel->SetModelVisibility(0, false);
+
+    panel->FocusModel(1);
+    panel->FocusModel(0); // a hidden model can be framed too
+    panel->FocusModel(4); // ignored
+
+    CHECK(panel->GetModelVisibility() == std::vector<bool>{false, true});
+}
+
+TEST_CASE("ModelViewerPanel: model management before the viewer exists is harmless", "[integration][ui][viewer]")
+{
+    ScopedFrame<> frame(nullptr, wxID_ANY, "Uninitialized viewer", wxDefaultPosition, wxSize(320, 240));
+    auto*         panel = new ModelViewerPanel(frame.get());
+
+    panel->SetModelVisibility(0, false);
+    panel->RemoveModel(0);
+    panel->FocusModel(0);
+
+    CHECK(panel->GetModelVisibility().empty());
 }

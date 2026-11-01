@@ -132,7 +132,7 @@ namespace ui::framework::occt
             benchmark.start();
 
             auto presentation = new AIS_Shape(scene_.models()[index].shape.value());
-            presentations_.push_back(presentation);
+            presentations_.push_back({presentation});
 
             context_->Display(presentation, false);
             context_->SetDisplayMode(presentation, AIS_Shaded, false);
@@ -191,6 +191,77 @@ namespace ui::framework::occt
             view_->SetScale(scale_);
         }
 
+        // Visibility of every model, in load order (scene indices).
+        [[nodiscard]] std::vector<bool> modelVisibility() const
+        {
+            std::vector<bool> visibility;
+            visibility.reserve(presentations_.size());
+            for (const auto& entry : presentations_)
+                visibility.push_back(entry.visible);
+            return visibility;
+        }
+
+        // Shows or hides one model in the viewport. Hidden models stay in the
+        // scene (and keep their transform); out-of-range indices are ignored.
+        void setModelVisibility(int modelIndex, bool visible)
+        {
+            if (!isValidIndex(modelIndex))
+                return;
+
+            auto& entry   = presentations_[static_cast<std::size_t>(modelIndex)];
+            entry.visible = visible;
+            if (visible)
+                context_->Display(entry.shape, false);
+            else
+                context_->Erase(entry.shape, false);
+            view_->Redraw();
+        }
+
+        // Removes one model from the scene and the viewport; the following
+        // models shift down by one index. Hides the gizmo if it was on it.
+        void removeModel(int modelIndex)
+        {
+            if (!isValidIndex(modelIndex))
+                return;
+
+            if (gizmoTargetIndex_ == modelIndex)
+                setGizmoTarget(-1, ModelViewerPanel::GizmoTool::None);
+
+            const auto index = static_cast<std::size_t>(modelIndex);
+            context_->Remove(presentations_[index].shape, false);
+            presentations_.erase(presentations_.begin() + modelIndex);
+            scene_.remove(modelIndex);
+            if (gizmoTargetIndex_ > modelIndex)
+                --gizmoTargetIndex_;
+            view_->Redraw();
+        }
+
+        // Frames the camera on one model, without changing which models are
+        // shown: FitAll() only considers displayed objects, so every other
+        // visible model is erased for the fit, then the visibility restored.
+        void focusModel(int modelIndex)
+        {
+            if (!isValidIndex(modelIndex))
+                return;
+
+            const auto target = static_cast<std::size_t>(modelIndex);
+            for (const auto& entry : presentations_)
+                if (entry.visible)
+                    context_->Erase(entry.shape, false);
+
+            context_->Display(presentations_[target].shape, false);
+            view_->FitAll(0.1, true);
+
+            for (const auto& entry : presentations_)
+            {
+                if (entry.visible)
+                    context_->Display(entry.shape, false);
+                else
+                    context_->Erase(entry.shape, false);
+            }
+            view_->Redraw();
+        }
+
         // Applies an absolute transform to a target in the scene (see
         // SceneService::setTransform()) and mirrors it on the matching
         // presentations.
@@ -202,12 +273,12 @@ namespace ui::framework::occt
             const TopLoc_Location location(geometry::occt::toTrsf(transform));
             if (targetIndex == application::service::SceneService::kAllModels)
             {
-                for (const auto& presentation : presentations_)
-                    context_->SetLocation(presentation, location);
+                for (const auto& entry : presentations_)
+                    context_->SetLocation(entry.shape, location);
             }
             else
             {
-                context_->SetLocation(presentations_[static_cast<std::size_t>(targetIndex)], location);
+                context_->SetLocation(presentations_[static_cast<std::size_t>(targetIndex)].shape, location);
             }
 
             repositionGizmoIfVisible();
@@ -336,6 +407,11 @@ namespace ui::framework::occt
         }
 
       private:
+        [[nodiscard]] bool isValidIndex(int modelIndex) const noexcept
+        {
+            return modelIndex >= 0 && static_cast<std::size_t>(modelIndex) < presentations_.size();
+        }
+
         // Moves the gizmo to the current target's pivot - which is always
         // exactly (moveX, moveY, moveZ), since a Transform rotates each
         // model around its own local origin before translating it there.
@@ -358,9 +434,17 @@ namespace ui::framework::occt
         occ::handle<V3d_Viewer>             viewer_;
         occ::handle<V3d_View>               view_;
         occ::handle<AIS_InteractiveContext> context_;
-        // One presentation per scene model, at the same index.
-        std::vector<occ::handle<AIS_Shape>> presentations_;
-        double                              scale_ = 1.0;
+
+        // What the viewport shows for one scene model.
+        struct Presentation
+        {
+            occ::handle<AIS_Shape> shape;
+            bool                   visible = true;
+        };
+
+        // One entry per scene model, at the same index.
+        std::vector<Presentation> presentations_;
+        double                    scale_ = 1.0;
 
         occ::handle<AIS_Manipulator> manipulator_;
         occ::handle<AIS_Shape>       manipulatorProxy_;
@@ -508,6 +592,35 @@ namespace ui::framework::occt
         for (const auto& name : scene_.names())
             names.push_back(wxString::FromUTF8(name));
         return names;
+    }
+
+    std::vector<bool> ModelViewerPanel::GetModelVisibility() const
+    {
+        if (!initialized_ || viewer_ == nullptr)
+            return {};
+        return viewer_->modelVisibility();
+    }
+
+    void ModelViewerPanel::SetModelVisibility(int modelIndex, bool visible)
+    {
+        if (!initialized_ || viewer_ == nullptr)
+            return;
+        viewer_->setModelVisibility(modelIndex, visible);
+    }
+
+    void ModelViewerPanel::RemoveModel(int modelIndex)
+    {
+        if (!initialized_ || viewer_ == nullptr)
+            return;
+        viewer_->removeModel(modelIndex);
+        notifyModelStateChanged();
+    }
+
+    void ModelViewerPanel::FocusModel(int modelIndex)
+    {
+        if (!initialized_ || viewer_ == nullptr)
+            return;
+        viewer_->focusModel(modelIndex);
     }
 
     void ModelViewerPanel::setTransform(int    targetIndex,
