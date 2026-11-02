@@ -21,20 +21,33 @@ if [[ "$MODE" != "stable" && "$MODE" != "rc" ]]; then
 fi
 
 if git remote get-url origin >/dev/null 2>&1; then
-  git fetch --force --tags origin >/dev/null 2>&1
+  git fetch --force --tags origin >/dev/null || die "could not fetch tags from origin"
 fi
 
-latest_stable_tag="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname | head -n 1)"
+latest_stable_tag="$(
+  git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname \
+    | { grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true; } \
+    | head -n 1
+)"
 base_version="$DEFAULT_VERSION"
 
+rc_tag_refs="$(git for-each-ref --format='%(refname:short) %(objectname)' 'refs/tags/v*-rc.*')"
+
+restore_rc_tags() {
+  while read -r name object; do
+    [[ -n "$name" ]] || continue
+    git update-ref "refs/tags/${name}" "$object"
+  done <<< "$rc_tag_refs"
+}
+trap restore_rc_tags EXIT
+
 if [[ -n "$latest_stable_tag" ]]; then
-  # Delete local RC tags first so `cz bump --get-next` computes the next version from the
-  # latest stable tag and commit history, not from a leftover pre-release tag.
-  while IFS= read -r rc_tag; do
-    [[ -n "$rc_tag" ]] || continue
-    git tag -d "$rc_tag" >/dev/null
-  done < <(git tag --list 'v*-rc.*')
+  while read -r name _; do
+    [[ -n "$name" ]] || continue
+    git tag -d "$name" >/dev/null
+  done <<< "$rc_tag_refs"
   base_version="$(cz bump --get-next --yes)"
+  restore_rc_tags
 fi
 
 if [[ -z "$base_version" ]]; then
@@ -47,8 +60,8 @@ if [[ "$MODE" == "stable" ]]; then
 fi
 
 latest_rc_number="$(
-  git tag --list "v${base_version}-rc.*" \
-    | sed -E 's/.*-rc\.([0-9]+)$/\1/' \
+  { grep -E "^v${base_version//./\\.}-rc\.[0-9]+ " <<< "$rc_tag_refs" || true; } \
+    | sed -E 's/^.*-rc\.([0-9]+) .*$/\1/' \
     | sort -n \
     | tail -n 1
 )"
