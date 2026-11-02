@@ -26,6 +26,9 @@ namespace ui::windows
     {
       public:
         MainWindow();
+        // Defined in main_window.cpp, where ModelManagementDialog is a complete
+        // type: model_management_menu_'s unique_ptr can only be destroyed there.
+        ~MainWindow() override;
 
       protected:
         void InitMenuBar() override;

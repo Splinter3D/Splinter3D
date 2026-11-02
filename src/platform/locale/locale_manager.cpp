@@ -8,11 +8,6 @@
 namespace platform::locale
 {
 
-    std::string LocaleManager::s_localePath = "./locale";
-
-    std::unordered_map<std::string, std::string>
-        LocaleManager::s_translations;
-
     LocaleManager& LocaleManager::get()
     {
         static LocaleManager instance;
@@ -21,7 +16,7 @@ namespace platform::locale
 
     void LocaleManager::init(const std::string& path)
     {
-        s_localePath = path;
+        m_localePath = path;
 
         const std::string language = detectSystemLanguage();
 
@@ -42,11 +37,11 @@ namespace platform::locale
     }
 
     std::string LocaleManager::gettext(
-        const std::string& key)
+        const std::string& key) const
     {
-        auto it = s_translations.find(key);
+        auto it = m_translations.find(key);
 
-        if (it == s_translations.end())
+        if (it == m_translations.end())
             return key;
 
         return it->second;
@@ -56,11 +51,11 @@ namespace platform::locale
         const std::string& language)
     {
         std::ifstream file(
-            s_localePath + "/" + language + ".json");
+            m_localePath + "/" + language + ".json");
 
         if (!file.is_open())
         {
-            s_translations.clear();
+            m_translations.clear();
             return;
         }
 
@@ -104,12 +99,12 @@ namespace platform::locale
 
             flatten(json, "");
 
-            s_translations =
+            m_translations =
                 std::move(translations);
         }
         catch (...)
         {
-            s_translations.clear();
+            m_translations.clear();
         }
     }
 

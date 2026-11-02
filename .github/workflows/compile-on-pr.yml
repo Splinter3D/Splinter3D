@@ -1,7 +1,10 @@
 # Validates that a release PR into main (from dev or hotfix/*, i.e. one opened by
 # prepare-release-pr.yml) still compiles on every supported OS/arch before it can be merged.
 # Mirrors ci-release.yml's build matrix but skips signing/notarization/artifact upload
-# (build_only) and doesn't push the Docker image it builds.
+# (build_only) and doesn't push the Docker image it builds. Each OS first builds and runs
+# the unit + integration test suites (--tests; Linux runs the GUI ones under Xvfb), then
+# does the release build that gets packaged, and finally runs the end-to-end tests
+# against the binary inside that package (.github/workflows/scripts/e2e-package.*).
 name: Compile on PR onto main (matrix)
 
 on:
@@ -35,6 +38,7 @@ jobs:
             submodules: true
             install_command: ./.github/workflows/scripts/Linux/install.sh "$WORKSPACE"
             build_command: |
+              ./scripts/build.sh --ci --tests
               ./scripts/build.sh --ci
               bash ./.github/workflows/scripts/Linux/package-linux.sh
             verify_command: |
@@ -45,12 +49,14 @@ jobs:
               fi
               echo "Found package: $package"
               ls -lh "$package" "$package".sha256
+              bash ./.github/workflows/scripts/e2e-package.sh "$package"
           - os_name: linux-arm64
             runs_on: ubuntu-24.04-arm
             shell: bash
             submodules: true
             install_command: ./.github/workflows/scripts/Linux/install.sh "$WORKSPACE"
             build_command: |
+              ./scripts/build.sh --ci --tests
               ./scripts/build.sh --ci
               bash ./.github/workflows/scripts/Linux/package-linux.sh
             verify_command: |
@@ -61,12 +67,14 @@ jobs:
               fi
               echo "Found package: $package"
               ls -lh "$package" "$package".sha256
+              bash ./.github/workflows/scripts/e2e-package.sh "$package"
           - os_name: macos-arm64
             runs_on: macos-latest
             shell: bash
             submodules: true
             install_command: ./.github/workflows/scripts/MacOS/install.sh "$WORKSPACE"
             build_command: |
+              ./scripts/build.sh --ci --tests
               ./scripts/build.sh --ci
               bash ./.github/workflows/scripts/MacOS/package-macos.sh
             verify_command: |
@@ -77,12 +85,14 @@ jobs:
               fi
               echo "Found package: $package"
               ls -lh "$package" "$package".sha256
+              bash ./.github/workflows/scripts/e2e-package.sh "$package"
           - os_name: macos-x64
             runs_on: macos-26-intel
             shell: bash
             submodules: true
             install_command: ./.github/workflows/scripts/MacOS/install.sh "$WORKSPACE"
             build_command: |
+              ./scripts/build.sh --ci --tests
               ./scripts/build.sh --ci
               bash ./.github/workflows/scripts/MacOS/package-macos.sh
             verify_command: |
@@ -93,12 +103,14 @@ jobs:
               fi
               echo "Found package: $package"
               ls -lh "$package" "$package".sha256
+              bash ./.github/workflows/scripts/e2e-package.sh "$package"
           - os_name: windows-x64
             runs_on: windows-latest
             shell: pwsh
             submodules: false
             install_command: pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/Windows/install.ps1 $env:WORKSPACE
             build_command: |
+              pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/build.ps1 --ci --tests
               pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/build.ps1 --ci
               pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/Windows/package-windows.ps1 -ProjectRoot $env:WORKSPACE
             verify_command: |
@@ -106,6 +118,8 @@ jobs:
               if ($zip) {
                 Write-Host "Found package: $($zip.FullName)"
                 Write-Host "Package size: $($zip.Length) bytes"
+                pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/e2e-package.ps1 -Package $zip.FullName
+                if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
               } else {
                 Write-Error 'No splinter3D-*-windows-x64.zip package found'
                 exit 1
@@ -116,6 +130,7 @@ jobs:
             submodules: false
             install_command: pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/Windows/install.ps1 $env:WORKSPACE
             build_command: |
+              pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/build.ps1 --ci --tests
               pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/build.ps1 --ci
               pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/Windows/package-windows.ps1 -ProjectRoot $env:WORKSPACE
             verify_command: |
@@ -123,6 +138,8 @@ jobs:
               if ($zip) {
                 Write-Host "Found package: $($zip.FullName)"
                 Write-Host "Package size: $($zip.Length) bytes"
+                pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/e2e-package.ps1 -Package $zip.FullName
+                if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
               } else {
                 Write-Error 'No splinter3D-*-windows-arm64.zip package found'
                 exit 1

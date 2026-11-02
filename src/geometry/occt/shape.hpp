@@ -1,5 +1,8 @@
 #pragma once
 
+// Must come before any OCCT header (see the file).
+#include "geometry/occt/windows_prelude.hpp"
+
 #include <TopoDS_Shape.hxx>
 #include <filesystem>
 #include <utility>

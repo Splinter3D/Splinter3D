@@ -14,6 +14,7 @@ set(OCCT_LIBRARIES
     TKOpenGl
     TKV3d
     TKPrim
+    TKMesh
     TKDE
     TKDESTEP
     TKDESTL
@@ -48,6 +49,13 @@ set(THIRD_PARTY_LIBS ${GLFW_LINK_TARGET} nfd::nfd wx::core wx::base wx::gl ${OCC
 if(WIN32)
     # Add Windows-specific libraries for nativefiledialog-extended
     list(APPEND THIRD_PARTY_LIBS ole32 shell32 uuid)
+endif()
+
+#######################################
+
+if(ENABLE_TESTS)
+    # Provided by the "tests" feature of vcpkg.json (VCPKG_MANIFEST_FEATURES=tests).
+    find_package(Catch2 3 CONFIG REQUIRED)
 endif()
 
 #######################################
