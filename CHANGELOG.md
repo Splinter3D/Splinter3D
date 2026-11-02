@@ -1,10 +1,12 @@
-## v0.2.0-rc.1 (2026-10-31)
+## v0.2.0-rc.1 (2026-11-02)
 
 ### Feat
 
 - improving the object floating menu to have a better experience
 - adding first version of the floating menu for the object management
 - adding first version of the floating menu for the object management
+- model loading time measurment
+- unit, integration, and e2e tests
 - add focus and gizmos to tools
 - add target to movement options
 - linked move and rotate UI to fonctionnalities
@@ -30,6 +32,7 @@
 
 ### Fix
 
+- **build**: include <windows.h> before OpenCascade headers on Windows
 - added missing dependencies in Dockerfile
 - **build**: macOS compilation
 - moving the binding to wx event_manager and using callback in the windows
