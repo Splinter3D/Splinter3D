@@ -1,5 +1,8 @@
 #pragma once
 
+// Must come before any OCCT header (see the file).
+#include "geometry/occt/windows_prelude.hpp"
+
 #include <gp_Trsf.hxx>
 #include <gp_XYZ.hxx>
 
