@@ -3,7 +3,6 @@
 #include "geometry/occt/path.hpp"
 
 #include <array>
-#include <format>
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <sstream>
@@ -119,7 +118,7 @@ namespace application::workflow
                     const std::size_t index = _scene.load(path);
                     _log << "[batch] " << prefix << ": open " << geometry::occt::toUtf8(path) << " -> model " << index << " '"
                          << _scene.models()[index].name << "' in "
-                         << std::format("{:.2f}", _scene.models()[index].loadDuration.count()) << " ms\n";
+                         << platform::benchmark::formatMilliseconds(_scene.models()[index].loadDuration) << "\n";
                 }
                 else if (action == "transform")
                 {

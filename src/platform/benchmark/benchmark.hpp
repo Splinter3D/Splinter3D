@@ -5,7 +5,10 @@
 #include <concepts>
 #include <core/utils/non_copyable.hpp>
 #include <functional>
+#include <iomanip>
 #include <optional>
+#include <sstream>
+#include <string>
 #include <type_traits>
 #include <utility>
 
@@ -113,4 +116,17 @@ namespace platform::benchmark
         TimePoint _endTime{};
         Duration  _lastRun{};
     };
+
+    /**
+     * @brief Formats a duration for logs, e.g. "1.54 ms" (two decimals).
+     *
+     * Uses iostreams rather than std::format, which libstdc++ only provides
+     * from GCC 13 (Ubuntu 22.04 ships GCC 11).
+     */
+    [[nodiscard]] inline std::string formatMilliseconds(Benchmark::Duration duration)
+    {
+        std::ostringstream stream;
+        stream << std::fixed << std::setprecision(2) << duration.count() << " ms";
+        return stream.str();
+    }
 } // namespace platform::benchmark
