@@ -16,7 +16,8 @@ namespace platform::benchmark
 {
     namespace detail
     {
-        template <std::invocable F>
+        template <typename F>
+            requires std::is_nothrow_invocable_v<F&>
         class ScopeExit
         {
           public:
@@ -90,7 +91,7 @@ namespace platform::benchmark
 
         template <typename Func, typename... Args>
             requires std::invocable<Func, Args...>
-        auto measure(
+        decltype(auto) measure(
             std::optional<Duration>* duration,
             Func&&                   func,
             Args&&... args) noexcept(noexcept(std::invoke(std::forward<Func>(func),
