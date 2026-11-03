@@ -1,3 +1,11 @@
+## v0.2.0-rc.2 (2026-11-03)
+
+### Fix
+
+- **ci**: count existing RC tags so next-tag.sh stops reissuing -rc.1
+- made Benchmark::measure return type decltype(auto) so references are kept in the return value type
+- **build**: removed format includes, as they are not supported by the gcc version used in the ci
+
 ## v0.2.0-rc.1 (2026-11-02)
 
 ### Feat
