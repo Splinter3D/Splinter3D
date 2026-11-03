@@ -9,7 +9,6 @@
 #include <TopLoc_Location.hxx>
 #include <TopoDS_Compound.hxx>
 #include <algorithm>
-#include <format>
 #include <optional>
 #include <utility>
 
@@ -23,9 +22,8 @@ namespace application::service
 
         const std::size_t index     = add(geometry::occt::toUtf8(path.filename()), std::move(shape));
         models_[index].loadDuration = duration.value_or(platform::benchmark::Benchmark::Duration::zero());
-        platform::logger::clog(std::format("[scene] imported '{}' from {} in {:.2f} ms",
-                                           models_[index].name, geometry::occt::toUtf8(path),
-                                           models_[index].loadDuration.count()));
+        platform::logger::clog("[scene] imported '", models_[index].name, "' from ", geometry::occt::toUtf8(path),
+                               " in ", platform::benchmark::formatMilliseconds(models_[index].loadDuration));
         return index;
     }
 

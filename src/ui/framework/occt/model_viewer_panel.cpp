@@ -30,7 +30,6 @@
 #include <V3d_Viewer.hxx>
 #include <algorithm>
 #include <filesystem>
-#include <format>
 #include <gp_Ax2.hxx>
 #include <gp_Pnt.hxx>
 #include <gp_Trsf.hxx>
@@ -141,9 +140,10 @@ namespace ui::framework::occt
 
             const auto& model   = scene_.models()[index];
             const auto  display = benchmark.stop();
-            platform::logger::clog(std::format("[viewer] displayed '{}' in {:.2f} ms (import {:.2f} ms, total {:.2f} ms)",
-                                               model.name, display.count(), model.loadDuration.count(),
-                                               (model.loadDuration + display).count()));
+            platform::logger::clog("[viewer] displayed '", model.name, "' in ",
+                                   platform::benchmark::formatMilliseconds(display), " (import ",
+                                   platform::benchmark::formatMilliseconds(model.loadDuration), ", total ",
+                                   platform::benchmark::formatMilliseconds(model.loadDuration + display), ")");
         }
 
         void clear()

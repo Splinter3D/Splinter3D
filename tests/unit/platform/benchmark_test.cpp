@@ -2,6 +2,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <chrono>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <thread>
@@ -135,3 +136,117 @@ TEST_CASE("Benchmark: measure() forwards noexcept", "[platform][benchmark]")
     STATIC_REQUIRE(noexcept(benchmark.measure(&duration, add, 1, 2)));
     STATIC_REQUIRE_FALSE(noexcept(benchmark.measure(&duration, [] { throw 1; })));
 }
+
+namespace
+{
+    // Copying throws: returning it by value from a noexcept measure() would terminate.
+    struct ThrowingCopy
+    {
+        int value = 0;
+
+        ThrowingCopy() = default;
+
+        ThrowingCopy(const ThrowingCopy&) noexcept(false)
+        { }
+
+        ThrowingCopy& operator=(const ThrowingCopy&) noexcept(false)
+        {
+            return *this;
+        }
+    };
+
+    ThrowingCopy g_shared;
+
+    ThrowingCopy& sharedInstance() noexcept
+    {
+        return g_shared;
+    }
+
+    template <typename F>
+    concept GuardableBy = requires { typename platform::benchmark::detail::ScopeExit<F>; };
+
+    // Only their declarations matter (checked in unevaluated contexts).
+    struct NothrowCallback
+    {
+        void operator()() const noexcept;
+    };
+
+    struct ThrowingCallback
+    {
+        void operator()() const;
+    };
+} // namespace
+
+TEST_CASE("Benchmark: measure() returns references as references", "[platform][benchmark]")
+{
+    Benchmark                          benchmark;
+    std::optional<Benchmark::Duration> duration;
+    int                                value = 1;
+
+    int& ref = benchmark.measure(&duration, [&value]() noexcept -> int& { return value; });
+    ref      = 42;
+
+    CHECK(value == 42);
+    CHECK(duration.has_value());
+
+    const int& constRef = benchmark.measure(&duration, [&value]() -> const int& { return value; });
+    CHECK(&constRef == &value);
+
+    STATIC_REQUIRE(std::is_same_v<decltype(benchmark.measure(&duration, [&value]() -> int& { return value; })), int&>);
+    STATIC_REQUIRE(
+        std::is_same_v<decltype(benchmark.measure(&duration, [&value]() -> const int& { return value; })), const int&>);
+}
+
+TEST_CASE("Benchmark: measure() never copies a returned reference", "[platform][benchmark]")
+{
+    Benchmark                          benchmark;
+    std::optional<Benchmark::Duration> duration;
+
+    // noexcept is forwarded from sharedInstance(), and nothing is copied, so the
+    // throwing copy constructor can never run inside it.
+    STATIC_REQUIRE(noexcept(benchmark.measure(&duration, sharedInstance)));
+    STATIC_REQUIRE(std::is_same_v<decltype(benchmark.measure(&duration, sharedInstance)), ThrowingCopy&>);
+
+    ThrowingCopy& result = benchmark.measure(&duration, sharedInstance);
+    CHECK(&result == &g_shared);
+}
+
+TEST_CASE("Benchmark: measure() returns values and move-only results by value", "[platform][benchmark]")
+{
+    Benchmark                          benchmark;
+    std::optional<Benchmark::Duration> duration;
+
+    STATIC_REQUIRE(std::is_same_v<decltype(benchmark.measure(&duration, add, 1, 2)), int>);
+    STATIC_REQUIRE(std::is_same_v<decltype(benchmark.measure(&duration, [] { })), void>);
+
+    auto owned = benchmark.measure(&duration, [] { return std::make_unique<int>(7); });
+    STATIC_REQUIRE(std::is_same_v<decltype(owned), std::unique_ptr<int>>);
+    REQUIRE(owned != nullptr);
+    CHECK(*owned == 7);
+}
+
+TEST_CASE("ScopeExit: runs its callback when leaving the scope", "[platform][benchmark]")
+{
+    int calls = 0;
+    {
+        const platform::benchmark::detail::ScopeExit guard([&calls]() noexcept { ++calls; });
+        CHECK(calls == 0);
+    }
+    CHECK(calls == 1);
+
+    try
+    {
+        const platform::benchmark::detail::ScopeExit guard([&calls]() noexcept { ++calls; });
+        throw std::runtime_error("unwind");
+    }
+    catch (const std::runtime_error&)
+    {
+    }
+    CHECK(calls == 2);
+}
+
+// Only callables that cannot throw are accepted, since the destructor is noexcept.
+static_assert(GuardableBy<NothrowCallback>);
+static_assert(!GuardableBy<ThrowingCallback>);
+static_assert(!GuardableBy<int>);
+static_assert(!std::is_copy_constructible_v<platform::benchmark::detail::ScopeExit<NothrowCallback>>);
