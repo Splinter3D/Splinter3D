@@ -1,3 +1,11 @@
+## v0.2.0-rc.3 (2026-11-04)
+
+### Fix
+
+- **build**: avoid printing errors twice
+- **ci**: avoid unwanted runs of pre commit action in pre release workflow
+- **build**: avoid -Wdangling-reference false positive in batch runner
+
 ## v0.2.0-rc.2 (2026-11-03)
 
 ### Fix
