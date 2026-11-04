@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   pre-commit:
-    if: ${{ github.head_ref != 'hotfix/release-main'  && github.head_ref != 'main'}}
+    if: ${{ github.head_ref != 'hotfix/release-main'  && github.head_ref != 'main' && github.head_ref != 'release/dev' }}
     runs-on: ubuntu-22.04
 
     steps:

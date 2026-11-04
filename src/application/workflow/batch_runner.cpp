@@ -107,8 +107,9 @@ namespace application::workflow
                 result.error = prefix + ": each step must be an object with exactly one action";
                 return result;
             }
-            const std::string& action = step.begin().key();
-            const json&        args   = step.begin().value();
+            const auto         entry  = step.begin();
+            const std::string& action = entry.key();
+            const json&        args   = entry.value();
 
             try
             {
