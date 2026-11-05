@@ -1,3 +1,9 @@
+## v0.2.0-rc.4 (2026-11-05)
+
+### Fix
+
+- **ci**: create release as draft and publish it after artifact upload
+
 ## v0.2.0-rc.3 (2026-11-04)
 
 ### Fix
