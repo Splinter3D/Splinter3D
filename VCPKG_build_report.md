@@ -39,3 +39,9 @@ Trying the same process on WxWidgets, I got:
 - Time: **~23min**
 - vcpkg folder size: **8.32Go**
 ===> just like OCCT I was able to remove some wxWidgets libraries from the build, and so reduce the build time and the vcpkg folder size.
+
+
+## RECAP:
+
+If you don't mind not having a debug build, you can run your build with --releasemode to get less build time and less vcpkg folder size.
+Debug build seems usefull for testing.
