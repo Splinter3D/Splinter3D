@@ -1,3 +1,9 @@
+## v0.2.0-rc.5 (2026-11-06)
+
+### Fix
+
+- icon loading on windows/macos
+
 ## v0.2.0-rc.4 (2026-11-05)
 
 ### Fix
