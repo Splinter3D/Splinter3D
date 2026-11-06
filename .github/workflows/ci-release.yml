@@ -301,12 +301,13 @@ jobs:
       - name: List artifacts
         run: ls -R output
 
-      - name: Create Release and upload assets
+      - name: Create draft Release and upload assets
         uses: softprops/action-gh-release@v3
         with:
           files: output/**/*
           tag_name: ${{ needs.prepare.outputs.tag }}
           name: ${{ needs.prepare.outputs.tag }}
+          draft: true
           prerelease: ${{ needs.prepare.outputs.is_prerelease == 'true' }}
           body: |
             Automated build for tag ${{ needs.prepare.outputs.tag }}
@@ -340,3 +341,9 @@ jobs:
               "${IMAGE_NAME}:${DOCKER_TAG}-amd64" \
               "${IMAGE_NAME}:${DOCKER_TAG}-arm64"
           fi
+
+      - name: Publish Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: gh release edit "${RELEASE_TAG}" --repo "${{ github.repository }}" --draft=false

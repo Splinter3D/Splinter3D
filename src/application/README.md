@@ -9,6 +9,13 @@ The layer that translates a user action into a decision, without ever drawing an
 - `service/` - reusable application logic called by controllers or commands (e.g., `ExportService`).
 - `workflow/` - sequences of multiple commands/services for a complete scenario (e.g., import → validation → display).
 
+## Current implementations
+
+- `service/scene_service.hpp` - `SceneService`: the models currently open (name, `geometry::occt::Shape`, `geometry::occt::Transform`), in load order. Loading, unique display names (`cube.stl (2)`), per-model or all-model (`kAllModels`) placement, clearing, and STL export (every model at its transform). The single source of truth that `ui::framework::occt::ModelViewerPanel` only mirrors on screen.
+- `workflow/batch_runner.hpp` - `BatchRunner`: runs a JSON script of `open` / `transform` / `export` / `clear` steps against a `SceneService`. Used by `splinter3D --batch` and the end-to-end tests (format: `tests/README.md`, *Batch mode*).
+
+Both are unit-tested without any window (`tests/unit/application/`).
+
 ## Purpose of this layer
 
 In the old structure, logic was scattered between `Gui/states/` and the panels themselves-the UI both made decisions *and* handled display. Here, `ui/` simply calls `application/`, which in turn calls `geometry/`, `rendering/`, and `platform/` via `core/`. This allows the logic to be tested without instantiating a single window.

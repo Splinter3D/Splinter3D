@@ -12,21 +12,21 @@ The Python build system behind `scripts/build.sh` / `scripts/build.ps1`. It conf
 - `Submodules/` - `update_submodules()`: runs `git submodule update --init --recursive`, skipped when `--skip-submodules` is passed.
 - `vcpkg/` - vcpkg lifecycle: detecting an existing install (`Detect.py`), validating it targets the current platform (`Validation.py`), cloning/bootstrapping it (`Install.py`), and computing the CMake toolchain/triplet flags for it (`SetTargets.py`).
 - `ConfigureBuild/` - the core configure/build pipeline:
-  - `Configure.py` - `configure_build()`: checks requirements, updates submodules, resolves vcpkg, runs `cmake` to configure the `build/` directory, then builds unless `--skip-build`.
+  - `Configure.py` - `configure_build()`: checks requirements, updates submodules, resolves vcpkg, runs `cmake` to configure the `build/` directory, then builds unless `--skip-build` (`splinter3D`, or with `--tests` the `splinter3D_tests` target: every test suite plus the app). `ENABLE_TESTS`, `ENABLE_COVERAGE`, `ENABLE_DEBUG` and `VCPKG_MANIFEST_FEATURES` are always passed explicitly (ON or OFF), since CMake would otherwise keep a previous build's values cached in `build/`.
   - `BuildSystem.py` - chooses a generator (Ninja, Unix Makefiles, or a Visual Studio version) and runs `cmake --build`.
   - `Cache.py` - `ensure_compatible_build_cache()`: detects a stale/incompatible `build/CMakeCache.txt` (wrong platform, path, or vcpkg toolchain) and deletes it, prompting for confirmation unless `--auto-mode`/`--dry-run` is set.
   - `MSVC.py` - `ensure_msvc_environment()`: imports the MSVC environment variables via `VsDevCmd.bat` when building with Ninja/Make on Windows.
 - `Actions/` - the top-level actions dispatched from `build.py`:
   - `Build.py` - `build_existing_target()`: builds an already-configured tree (used with `--skip-configure`).
   - `Cleanup.py` - `clean()` / `fclean()`: remove the `build/` directory, or build artifacts (binaries, coverage files, profiling data...) from the repo root.
-  - `Tests.py` - `run_tests()` and `generate_coverage()`: run the `splinter3D_unit_tests` executable and produce a coverage report (`llvm-cov` on macOS, `gcovr` elsewhere).
+  - `Tests.py` - `run_tests()` and `generate_coverage()`: run every built test suite (unit, integration, then the Python end-to-end tests against the app binary - GUI ones under `xvfb-run` on headless Linux) from `build/test-output/` and produce a coverage report there (`llvm-cov` on macOS, `gcovr` elsewhere).
 
 ## Usage
 
 Not run directly by contributors; invoked through `scripts/build.sh` / `scripts/build.ps1`, for example:
 
 ```bash
-scripts/build.sh --tests --coverage    # configure, build, and run unit tests with coverage
+scripts/build.sh --tests --coverage    # configure, build, and run every test suite with coverage (see tests/README.md)
 scripts/build.sh --clean               # remove the build directory
 scripts/build.sh --ci                  # auto mode: no interactive prompts (used by CI)
 scripts/build.sh --skip-configure      # rebuild an already-configured target without reconfiguring

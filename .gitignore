@@ -46,6 +46,9 @@
 # debug information files
 *.dwo
 
+# profiling files
+*.profraw
+
 # build folder
 /build/
 /staging/

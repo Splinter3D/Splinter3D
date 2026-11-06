@@ -49,7 +49,7 @@ def main():
 
     if args.skip_configure:
         # Rebuild an already-configured tree without re-running CMake configure.
-        build_existing_target("splinter3D_unit_tests" if args.tests else "splinter3D")
+        build_existing_target("splinter3D_tests" if args.tests else "splinter3D")
         if args.tests and not args.skip_build:
             run_tests()
             if args.coverage:
@@ -69,5 +69,4 @@ if __name__ == "__main__":
     try:
         main()
     except Exception as e:
-        logger.error(str(e))
         exit(1)

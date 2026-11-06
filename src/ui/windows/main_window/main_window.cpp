@@ -62,6 +62,8 @@ namespace ui::windows
         InitializeAll();
     }
 
+    MainWindow::~MainWindow() = default;
+
     void MainWindow::InitMenuBarEntry(wxMenuBar* menuBar, const int menuId, const wxString& title)
     {
         using ui::menus::MenuRegistry;

@@ -49,5 +49,6 @@ endif()
 #######################################
 
 option(ENABLE_TESTS "Enable building tests" OFF)
+option(ENABLE_COVERAGE "Instrument the library and tests for code coverage" OFF)
 
 #######################################

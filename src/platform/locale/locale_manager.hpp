@@ -6,10 +6,21 @@
 namespace platform::locale
 {
 
+    /**
+     * @brief Loads locale/<language>.json files and translates dotted keys.
+     *
+     * Each instance has its own locale folder, language and translations, so
+     * tests (or several windows) can use independent managers. get() returns
+     * the application-wide instance, initialized by app/bootstrap and used by
+     * ui::framework::wx::locale::tr().
+     */
     class LocaleManager
     {
       public:
+        /// The application-wide instance.
         static LocaleManager& get();
+
+        LocaleManager() = default;
 
         void init(
             const std::string& path = "./locale");
@@ -20,11 +31,9 @@ namespace platform::locale
         std::string getLanguage() const;
 
         std::string gettext(
-            const std::string& key);
+            const std::string& key) const;
 
       private:
-        LocaleManager() = default;
-
         void loadTranslations(
             const std::string& language);
 
@@ -36,12 +45,12 @@ namespace platform::locale
       private:
         std::string m_currentLanguage = "en";
 
-        static std::string s_localePath;
+        std::string m_localePath = "./locale";
 
-        static std::unordered_map<
+        std::unordered_map<
             std::string,
             std::string>
-            s_translations;
+            m_translations;
     };
 
 } // namespace platform::locale

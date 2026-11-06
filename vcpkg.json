@@ -1,6 +1,6 @@
 {
   "name": "prototype",
-  "version-semver": "0.2.0-rc.1",
+  "version-semver": "0.2.0-rc.4",
   "license": "MIT",
   "builtin-baseline": "fab1c6dc7a944372a90a1e19ab5e8e32cd658fc2",
   "dependencies": [
@@ -17,6 +17,17 @@
       "version>=": "3.12.0"
     }
   ],
+  "features": {
+    "tests": {
+      "description": "Test frameworks, installed only when building tests",
+      "dependencies": [
+        {
+          "name": "catch2",
+          "version>=": "3.8.0"
+        }
+      ]
+    }
+  },
   "overrides": [
     {
       "name": "zlib",

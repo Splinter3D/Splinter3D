@@ -24,7 +24,7 @@ def build_existing_target(target: str):
         build_system = _detect_build_system_from_cache(pathlib.Path.cwd())
         if get_platform() == Platform.WINDOWS and build_system == BuildSystem.NINJA:
             ensure_msvc_environment()
-        build_type = "Debug" if args.debug_build or args.debug or target == "splinter3D_unit_tests" else "Release"
+        build_type = "Debug" if args.debug_build or args.debug or target == "splinter3D_tests" else "Release"
         run_build_tool(None, target, build_type)
     finally:
         os.chdir(cwd)
