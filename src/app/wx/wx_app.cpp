@@ -2,6 +2,7 @@
 
 #include "app/app.hpp"
 #include "app/bootstrap/bootstrap.hpp"
+#include "core/utils/data_root.hpp"
 #include "core/utils/os_compatibility.hpp"
 
 #include <filesystem>
@@ -13,23 +14,12 @@ namespace app
 {
     namespace
     {
+        // Wide strings so non-ASCII install paths survive on Windows.
         std::filesystem::path findWordmark()
         {
-            const auto executable = std::filesystem::path(
-                wxStandardPaths::Get().GetExecutablePath().ToStdString());
-            const std::vector<std::filesystem::path> roots{
-                std::filesystem::current_path(), executable.parent_path(),
-                executable.parent_path().parent_path(),
-                executable.parent_path().parent_path().parent_path(),
-                executable.parent_path().parent_path().parent_path().parent_path()};
-
-            for (const auto& root : roots)
-            {
-                const auto candidate = root / "assets" / "icons" / "logo_full_no_bg.png";
-                if (std::filesystem::exists(candidate))
-                    return candidate;
-            }
-            return {};
+            const std::filesystem::path executable(
+                wxStandardPaths::Get().GetExecutablePath().ToStdWstring());
+            return core::utils::findAssetFile(executable, "icons/logo_full_no_bg.png");
         }
     } // namespace
 
@@ -51,7 +41,7 @@ namespace app
         const auto wordmarkPath = findWordmark();
         if (!wordmarkPath.empty())
         {
-            wxImage wordmark(wordmarkPath.string(), wxBITMAP_TYPE_PNG);
+            wxImage wordmark(wxString(wordmarkPath.wstring()), wxBITMAP_TYPE_PNG);
             if (wordmark.IsOk())
             {
                 wordmark.Rescale(520, 150, wxIMAGE_QUALITY_HIGH);

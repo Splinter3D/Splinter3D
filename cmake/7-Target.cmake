@@ -24,7 +24,10 @@ apply_coverage(${SPLINTER3D_LIB_TARGET_NAME})
 ########################################
 
 if(WIN32)
-    add_executable(${SPLINTER3D_TARGET_NAME} WIN32 ${SRC_SPLINTER3D_MAIN})
+    # splinter3D.rc embeds the application icon into the .exe.
+    enable_language(RC)
+    add_executable(${SPLINTER3D_TARGET_NAME} WIN32 ${SRC_SPLINTER3D_MAIN}
+                   "${CMAKE_CURRENT_SOURCE_DIR}/src/app/splinter3D.rc")
 else()
     add_executable(${SPLINTER3D_TARGET_NAME} ${SRC_SPLINTER3D_MAIN})
 endif()

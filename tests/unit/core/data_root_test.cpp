@@ -3,6 +3,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
+#include <fstream>
 
 namespace fs = std::filesystem;
 
@@ -39,4 +40,44 @@ TEST_CASE("findDataRoot: falls back to the executable's parent directory", "[cor
     fs::create_directories(installDir / "locale");
 
     REQUIRE(core::utils::findDataRoot(installDir / "bin" / "splinter3D") == installDir);
+}
+
+TEST_CASE("findDataRoot: finds Resources inside a macOS app bundle", "[core][data_root]")
+{
+    TempCwd        tmp;
+    const fs::path contents = tmp.path() / "Splinter3D.app" / "Contents";
+    fs::create_directories(contents / "MacOS");
+    fs::create_directories(contents / "Resources" / "assets");
+
+    REQUIRE(core::utils::findDataRoot(contents / "MacOS" / "splinter3D") == contents / "Resources");
+}
+
+TEST_CASE("findAssetFile: returns an empty path when the asset is missing", "[core][data_root]")
+{
+    TempCwd tmp;
+    REQUIRE(core::utils::findAssetFile(tmp.path() / "bin" / "splinter3D", "icons/logo.png").empty());
+}
+
+TEST_CASE("findAssetFile: finds assets next to bin/ in a release archive", "[core][data_root]")
+{
+    TempCwd        tmp;
+    const fs::path root = tmp.path() / "release";
+    fs::create_directories(root / "bin");
+    fs::create_directories(root / "assets" / "icons");
+    std::ofstream(root / "assets" / "icons" / "logo.png") << "x";
+
+    REQUIRE(core::utils::findAssetFile(root / "bin" / "splinter3D.exe", "icons/logo.png") ==
+            root / "assets" / "icons" / "logo.png");
+}
+
+TEST_CASE("findAssetFile: finds assets in a macOS app bundle's Resources", "[core][data_root]")
+{
+    TempCwd        tmp;
+    const fs::path contents = tmp.path() / "Splinter3D.app" / "Contents";
+    fs::create_directories(contents / "MacOS");
+    fs::create_directories(contents / "Resources" / "assets" / "icons");
+    std::ofstream(contents / "Resources" / "assets" / "icons" / "logo.png") << "x";
+
+    REQUIRE(core::utils::findAssetFile(contents / "MacOS" / "splinter3D", "icons/logo.png") ==
+            contents / "Resources" / "assets" / "icons" / "logo.png");
 }
