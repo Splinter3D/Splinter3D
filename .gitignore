@@ -2,6 +2,7 @@
 !*/
 !*.*
 !CODEOWNERS
+!overlay-ports/**/usage
 
 # Prerequisites
 *.d
