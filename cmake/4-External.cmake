@@ -9,9 +9,11 @@ set(OCCT_LIBRARIES
     TKPrim TKBO TKFillet TKOffset TKHLR TKFeat TKMesh   # modelisation
     TKDE TKDESTEP TKDESTL)                              # import/export
 
+find_package(nlohmann_json CONFIG REQUIRED)
+
 set(GLFW_LINK_TARGET "")
 
-set(THIRD_PARTY_LIBS wx::core wx::base wx::gl ${OCCT_LIBRARIES})
+set(THIRD_PARTY_LIBS wx::core wx::base wx::gl ${OCCT_LIBRARIES} nlohmann_json::nlohmann_json)
 
 if(WIN32)
     # Add Windows-specific libraries for nativefiledialog-extended
