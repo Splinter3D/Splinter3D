@@ -1,5 +1,6 @@
 #include "main_window.hpp"
 
+#include "core/utils/data_root.hpp"
 #include "ui/dialogs/model_management_dialog.hpp"
 #include "ui/framework/wx/ids/ids.hpp"
 #include "ui/layouts/layout_registry.hpp"
@@ -9,7 +10,7 @@
 
 #include <filesystem>
 #include <utility>
-#include <vector>
+#include <wx/iconbndl.h>
 #include <wx/image.h>
 #include <wx/stdpaths.h>
 
@@ -17,23 +18,26 @@ namespace ui::windows
 {
     namespace
     {
+        // Wide strings so non-ASCII install paths survive on Windows.
         std::filesystem::path findIcon(const char* filename)
         {
-            const auto executable = std::filesystem::path(
-                wxStandardPaths::Get().GetExecutablePath().ToStdString());
-            const std::vector<std::filesystem::path> roots{
-                std::filesystem::current_path(), executable.parent_path(),
-                executable.parent_path().parent_path(),
-                executable.parent_path().parent_path().parent_path(),
-                executable.parent_path().parent_path().parent_path().parent_path()};
+            const std::filesystem::path executable(
+                wxStandardPaths::Get().GetExecutablePath().ToStdWstring());
+            return core::utils::findAssetFile(executable, std::filesystem::path("icons") / filename);
+        }
 
-            for (const auto& root : roots)
+        // Window managers pick the closest size for the title bar, taskbar and
+        // alt-tab, so provide the usual ones instead of a single huge bitmap.
+        wxIconBundle makeIconBundle(const wxImage& source)
+        {
+            wxIconBundle bundle;
+            for (const int size : {16, 24, 32, 48, 64, 128, 256})
             {
-                const auto candidate = root / "assets" / "icons" / filename;
-                if (std::filesystem::exists(candidate))
-                    return candidate;
+                wxIcon icon;
+                icon.CopyFromBitmap(wxBitmap(source.Scale(size, size, wxIMAGE_QUALITY_HIGH)));
+                bundle.AddIcon(icon);
             }
-            return {};
+            return bundle;
         }
     } // namespace
 
@@ -44,17 +48,11 @@ namespace ui::windows
         const auto iconPath = findIcon("logo_borderless.png");
         if (!iconPath.empty())
         {
-            wxImage image(iconPath.string(), wxBITMAP_TYPE_PNG);
+            wxImage image(wxString(iconPath.wstring()), wxBITMAP_TYPE_PNG);
             if (image.IsOk())
-            {
-                wxIcon icon;
-                icon.CopyFromBitmap(wxBitmap(image));
-                SetIcon(icon);
-            }
+                SetIcons(makeIconBundle(image));
             else
-            {
-                wxLogWarning("Unable to load application icon: %s", iconPath.string());
-            }
+                wxLogWarning("Unable to load application icon: %s", wxString(iconPath.wstring()));
         }
         else
             wxLogWarning("Application icon was not found in assets/icons.");
