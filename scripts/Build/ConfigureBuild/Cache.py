@@ -2,9 +2,11 @@
 path, or a mismatched vcpkg toolchain) and deletes it so CMake can reconfigure cleanly,
 instead of failing with a confusing CMake error deep into configuration."""
 
+import functools
 import pathlib
 import re
 import shutil
+import string
 
 from Logger import logger
 from ParseArgs import args
@@ -87,12 +89,44 @@ def _confirm_delete_mismatched_cache(build_dir: pathlib.Path, reason: str) -> bo
     answer = logger.input(f"Build cache is stale because {reason}. Delete build cache and reconfigure? (y/n) ")
     return answer.strip().lower() in {"y", "yes"}
 
+@functools.cache
+def _network_share_drives() -> dict[str, str]:
+    """Map each mapped network share root ("//mac/home") to its drive letter ("y:").
+    Path.resolve() expands mapped drives to their UNC form (e.g. Parallels' "\\\\Mac\\Home"),
+    while CMake records the drive-letter form, so both must be folded to the same spelling."""
+    if get_platform() != Platform.WINDOWS:
+        return {}
+    import ctypes
+    from ctypes import wintypes
+
+    shares: dict[str, str] = {}
+    buffer = ctypes.create_unicode_buffer(1024)
+    for letter in string.ascii_lowercase:
+        size = wintypes.DWORD(len(buffer))
+        if ctypes.windll.mpr.WNetGetConnectionW(f"{letter}:", buffer, ctypes.byref(size)) == 0: # type: ignore
+            shares[buffer.value.replace("\\", "/").rstrip("/").lower()] = f"{letter}:"
+    return shares
+
+def _replace_network_share_with_drive(path: str) -> str:
+    for prefix in ("//?/UNC/", "//?/"):
+        if path.startswith(prefix):
+            path = ("//" if prefix.endswith("UNC/") else "") + path[len(prefix):]
+            break
+    if not path.startswith("//"):
+        return path
+    lowered = path.lower()
+    for share, drive in _network_share_drives().items():
+        if lowered == share or lowered.startswith(share + "/"):
+            return drive + path[len(share):]
+    return path
+
 def _normalize_windows_path(path: str) -> str:
-    # Normalize slash direction and drive-letter case so two paths that refer to the same
-    # location ("C:\foo" vs "c:/foo") compare equal.
+    # Normalize slash direction, mapped network shares and drive-letter case so paths that
+    # refer to the same location ("C:\foo" vs "c:/foo", "\\Mac\Home\foo" vs "Y:/foo")
+    # compare equal.
     if not path:
         return ""
-    normalized = path.strip().replace("\\", "/")
+    normalized = _replace_network_share_with_drive(path.strip().replace("\\", "/"))
     if re.match(r"^[A-Za-z]:/", normalized):
         normalized = normalized[0].lower() + normalized[1:]
     return normalized
