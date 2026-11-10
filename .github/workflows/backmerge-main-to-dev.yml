@@ -17,8 +17,7 @@ jobs:
   open-backmerge-pr:
     if: >-
       github.event.pull_request.merged == true &&
-      startsWith(github.event.pull_request.head.ref, 'hotfix/') &&
-      github.event.pull_request.head.ref != 'hotfix/release-main'
+      startsWith(github.event.pull_request.head.ref, 'hotfix/')
     runs-on: ubuntu-22.04
 
     steps:
