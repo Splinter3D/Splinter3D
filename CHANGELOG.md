@@ -1,3 +1,23 @@
+## v0.2.0-rc.7 (2026-11-10)
+
+### Feat
+
+- **ci**: use --releasemode in ci builds
+- small recap to mention the flag to use
+- exclude overlay-ports folder from pre-commit config and gitattribute, to avoid .patch files getting corrupted
+- trying to use overlay to reduce even more the build time and vcpkg folder size
+- md report to explain what I've changed and the way I relfect on these changes
+- creating release-only build for vcpkg
+- remove libraries that seems unused
+
+### Fix
+
+- **build**: make UNIX release triplets use dynamic CRT linkage
+- **build**: improve windows build cache checking for builds on network shares
+- **build**: add missing triplets for --releasemode builds
+- **build**: add missing usage in wxwidgets overlay ports
+- **build**: add find_package nlohmann_json in cmake
+
 ## v0.2.0-rc.6 (2026-11-10)
 
 ## v0.2.0-rc.5 (2026-11-06)
