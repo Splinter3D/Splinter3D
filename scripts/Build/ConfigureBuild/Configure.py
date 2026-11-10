@@ -38,7 +38,10 @@ def configure_build(enable_tests: bool = False):
         logger.info("DRY RUN: skip submodule update")
     else:
         update_submodules()
-    vcpkg_targets = [] if args.skip_vcpkg else set_vcpkg_targets()
+    debug_build = args.debug_build or args.debug
+    build_type = "Release" if args.releasemode else ("Debug" if debug_build or enable_tests else "Release")
+
+    vcpkg_targets = [] if args.skip_vcpkg else set_vcpkg_targets(args.releasemode)
     cwd = os.getcwd()
     try:
         build_dir = pathlib.Path("build")
@@ -53,8 +56,6 @@ def configure_build(enable_tests: bool = False):
             build_system_runtime == BuildSystem.MAKE):
             ensure_msvc_environment()
         build_system_str = BUILD_SYSTEM_TO_STRING[build_system_runtime]
-        debug_build = args.debug_build or args.debug
-        build_type = "Debug" if debug_build or enable_tests else "Release"
         cmake_command = ["cmake", "..", "-G", build_system_str]
         if build_system_runtime == BuildSystem.NINJA:
             # Pin the exact ninja/make binary found on PATH, so CMake doesn't fall back to

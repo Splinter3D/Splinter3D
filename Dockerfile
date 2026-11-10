@@ -21,6 +21,9 @@ COPY ./locale /app/locale
 COPY ./assets /app/assets
 COPY ./scripts /app/scripts
 COPY ./vcpkg.json /app/vcpkg.json
+COPY ./vcpkg-configuration.json /app/vcpkg-configuration.json
+COPY ./triplets /app/triplets
+COPY ./overlay-ports /app/overlay-ports
 COPY ./CMakeLists.txt /app/CMakeLists.txt
 WORKDIR /app
 
@@ -28,7 +31,7 @@ RUN useradd -m -u 1000 -s /bin/bash appuser
 RUN chown -R appuser:appuser /app
 
 RUN git config --global --add safe.directory /app
-RUN scripts/build.sh --ci --debug-build
+RUN scripts/build.sh --ci --releasemode
 
 COPY ./docker/entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh

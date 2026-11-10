@@ -1,50 +1,19 @@
 #######################################
 
-find_package(nfd CONFIG REQUIRED)
 find_package(wxWidgets CONFIG REQUIRED COMPONENTS core base gl)
 
 find_package(OpenCASCADE REQUIRED)
 set(OCCT_LIBRARIES
-    TKernel
-    TKMath
-    TKG3d
-    TKBRep
-    TKGeomBase
-    TKService
-    TKOpenGl
-    TKV3d
-    TKPrim
-    TKMesh
-    TKDE
-    TKDESTEP
-    TKDESTL
-)
+    TKernel TKMath TKG3d TKBRep TKGeomBase TKTopAlgo    # geometry and topology
+    TKService TKOpenGl TKV3d                            # display
+    TKPrim TKBO TKFillet TKOffset TKHLR TKFeat TKMesh   # modelisation
+    TKDE TKDESTEP TKDESTL)                              # import/export
+
+find_package(nlohmann_json CONFIG REQUIRED)
 
 set(GLFW_LINK_TARGET "")
 
-find_package(glfw3 CONFIG QUIET)
-if(TARGET glfw)
-    set(GLFW_LINK_TARGET glfw)
-elseif(TARGET glfw3)
-    set(GLFW_LINK_TARGET glfw3)
-elseif(TARGET glfw::glfw)
-    set(GLFW_LINK_TARGET glfw::glfw)
-else()
-    find_package(PkgConfig QUIET)
-    if(PkgConfig_FOUND)
-        pkg_check_modules(GLFW3 QUIET IMPORTED_TARGET glfw3)
-        if(TARGET PkgConfig::GLFW3)
-            set(GLFW_LINK_TARGET PkgConfig::GLFW3)
-        endif()
-    endif()
-
-    if(NOT GLFW_LINK_TARGET)
-        find_library(GLFW_LIBRARY NAMES glfw glfw3 REQUIRED)
-        set(GLFW_LINK_TARGET "${GLFW_LIBRARY}")
-    endif()
-endif()
-
-set(THIRD_PARTY_LIBS ${GLFW_LINK_TARGET} nfd::nfd wx::core wx::base wx::gl ${OCCT_LIBRARIES})
+set(THIRD_PARTY_LIBS wx::core wx::base wx::gl ${OCCT_LIBRARIES} nlohmann_json::nlohmann_json)
 
 if(WIN32)
     # Add Windows-specific libraries for nativefiledialog-extended

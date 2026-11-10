@@ -17,7 +17,7 @@ _TRIPLET_ARCH_MAPPING = {
     Arch.aarch64: "arm64"
 }
 
-def _get_triplet() -> str:
+def _get_triplet(releasemode: bool) -> str:
     logger.info("Determining vcpkg triplet...")
     triplet = None
     platform = get_platform()
@@ -33,14 +33,18 @@ def _get_triplet() -> str:
             triplet = f"{arch}-osx"
         case _:
             raise RuntimeError(f"Unsupported platform for vcpkg triplet: {PLATFORM_TO_STRING[platform]}")
+
+    # Custom configuration-specific triplets.
+    triplet += "-release" if releasemode else ""
+
     logger.info(f"Determined vcpkg triplet: {triplet}")
     return triplet
 
 
-def set_vcpkg_targets() -> list[str]:
+def set_vcpkg_targets(releasemode: bool) -> list[str]:
     logger.info("Setting vcpkg targets...")
     vcpkg_root = install_vcpkg()
-    triplet = _get_triplet()
+    triplet = _get_triplet(releasemode)
     cmake_toolchain_file = os.path.join(vcpkg_root, "scripts", "buildsystems", "vcpkg.cmake")
     if not os.path.isfile(cmake_toolchain_file):
         # Some setups (e.g. Windows CI's `vcpkg integrate install`) rely on user-wide
