@@ -9,7 +9,6 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../../" && pwd)"
 BUILD_DIR="${PROJECT_ROOT}/build"
 STAGING_DIR="${PROJECT_ROOT}/staging"
 OUTPUT_DIR="${PROJECT_ROOT}/output"
-TRIPLET="${VCPKG_TARGET_TRIPLET:-}"
 APP_NAME="Splinter3D"
 
 # ============================================================================
@@ -29,6 +28,9 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
     die "This packaging script must run on macOS (Darwin)"
 fi
 
+if [[ "$(uname -m)" != "arm64" ]]; then
+    die "x86_64 macOS is deprecated. Please run this script on an Apple Silicon (arm64) macOS machine."
+fi
 # ============================================================================
 # Auto-detect Version from scm
 # ============================================================================
@@ -43,13 +45,7 @@ fi
 # Determine triplet/arch for naming
 # ============================================================================
 
-if [[ -z "$TRIPLET" ]]; then
-    case "$(uname -m)" in
-        arm64|aarch64) TRIPLET="arm64-osx" ;;
-        *) TRIPLET="x64-osx" ;;
-    esac
-fi
-
+TRIPLET="arm64-osx"
 ARCH="${TRIPLET%%-*}"
 PACKAGE_DIRNAME="splinter3D-${VERSION}-macos-${ARCH}"
 PACKAGE_NAME="${PACKAGE_DIRNAME}.dmg"

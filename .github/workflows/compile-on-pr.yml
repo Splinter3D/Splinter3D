@@ -86,24 +86,6 @@ jobs:
               echo "Found package: $package"
               ls -lh "$package" "$package".sha256
               bash ./.github/workflows/scripts/e2e-package.sh "$package"
-          - os_name: macos-x64
-            runs_on: macos-26-intel
-            shell: bash
-            submodules: true
-            install_command: ./.github/workflows/scripts/MacOS/install.sh "$WORKSPACE"
-            build_command: |
-              ./scripts/build.sh --ci --releasemode --tests
-              ./scripts/build.sh --ci --releasemode
-              bash ./.github/workflows/scripts/MacOS/package-macos.sh
-            verify_command: |
-              package=$(ls output/splinter3D-*-macos-x64.dmg 2>/dev/null | head -1)
-              if [ -z "$package" ]; then
-                echo "ERROR: No macOS package found"
-                exit 1
-              fi
-              echo "Found package: $package"
-              ls -lh "$package" "$package".sha256
-              bash ./.github/workflows/scripts/e2e-package.sh "$package"
           - os_name: windows-x64
             runs_on: windows-latest
             shell: pwsh
