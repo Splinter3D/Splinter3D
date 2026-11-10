@@ -50,7 +50,8 @@ getSCMVersion() {
         return
     fi
 
-    latest="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)"
+    # versionsort.suffix=- sorts pre-releases (v1.2.3-rc.N) before their final release (v1.2.3)
+    latest="$(git -c versionsort.suffix=- tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)"
     if [[ -z "$latest" ]]; then
         latest="v0.0.0"
     fi
