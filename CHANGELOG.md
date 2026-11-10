@@ -1,3 +1,5 @@
+## v0.2.0-rc.6 (2026-11-10)
+
 ## v0.2.0-rc.5 (2026-11-06)
 
 ### Fix
@@ -89,6 +91,19 @@
 
 ## v0.1.2 (2026-07-09)
 
+### Feat
+
+- removing vscode warnings for includes
+- changed the Cmakes and files to run the wxwidgets files only, preparing for the merge between Prototype and WxWidgets
+- adding Windows Configuration for C/C++ extension
+- update directory structure and comments in README
+- update README
+- add testing of 3D pieces
+- add a viewerPanel to import 3D objects with OCCT
+- clean path
+- add the wxWidget exemple
+- docker-compose file to use the prebuilt image
+
 ### Fix
 
 - use recent cis
@@ -107,16 +122,7 @@
 - **ci**: add github release workflows
 - docker image build
 - **ci**: multiarch build
-- removing vscode warnings for includes
-- changed the Cmakes and files to run the wxwidgets files only, preparing for the merge between Prototype and WxWidgets
-- adding Windows Configuration for C/C++ extension
 - adding Visual Studio 18 2026 support
-- update directory structure and comments in README
-- update README
-- add testing of 3D pieces
-- add a viewerPanel to import 3D objects with OCCT
-- clean path
-- add the wxWidget exemple
 - custom tranlation
 - adding a proper gestion of the user click when selecting an object
 - docker image
