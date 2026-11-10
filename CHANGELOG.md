@@ -1,3 +1,9 @@
+## v0.2.0 (2026-11-10)
+
+### Fix
+
+- remove VCPKG_build_report.md (to be moved in research repo)
+
 ## v0.2.0-rc.8 (2026-11-10)
 
 ### Fix
