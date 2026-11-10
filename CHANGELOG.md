@@ -1,3 +1,10 @@
+## v0.2.0-rc.8 (2026-11-10)
+
+### Fix
+
+- **ci**: improve docker build cache and parallelism
+- **ci**: in main-pr-policy, a crafted branch name could run code
+
 ## v0.2.0-rc.7 (2026-11-10)
 
 ### Feat
