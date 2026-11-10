@@ -1,3 +1,6 @@
+"""Checks whether a vcpkg root actually contains a usable, current-platform executable,
+distinguishing "not installed" from "installed for the wrong OS/arch"."""
+
 import os
 import subprocess
 from Logger import logger
@@ -16,6 +19,8 @@ class VcpkgInstallationStatus:
     root: str
     executable_path: str | None
     matches_current_platform: bool
+    # True when a vcpkg binary exists at this root but fails to run because it targets a
+    # different OS/arch (as opposed to simply not being installed at all).
     wrong_platform: bool
 
 
@@ -31,10 +36,14 @@ def _candidate_executables(vcpkg_root: str) -> tuple[str, ...]:
 
 
 def _is_exec_format_error(error: OSError) -> bool:
+    # errno 8 (Exec format error) on Unix and winerror 193 (%1 is not a valid Win32
+    # application) on Windows both mean "binary exists but is built for another platform/arch".
     return error.errno == 8 or getattr(error, "winerror", None) == 193
 
 
 def _probe_executable(path: str) -> tuple[bool, bool]:
+    # Spawn the binary just to confirm the OS can launch it, then kill it immediately;
+    # we don't care about its output, only whether it started successfully.
     logger.info(f"Probing vcpkg executable: {path}")
     if not os.path.isfile(path):
         return False, False

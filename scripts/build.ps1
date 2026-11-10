@@ -1,4 +1,7 @@
 #!/usr/bin/env pwsh
+# Windows entry point for the build system: locates a Python 3.10+ interpreter,
+# then forwards all arguments to Build/build.py, run from the repository root.
+# See scripts/Build/README.md for the available flags.
 
 $ErrorActionPreference = "Stop"
 

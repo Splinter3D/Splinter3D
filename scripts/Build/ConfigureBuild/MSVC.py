@@ -1,3 +1,7 @@
+"""Imports the MSVC compiler environment (INCLUDE, LIB, PATH...) via VsDevCmd.bat when
+building with Ninja or Make on Windows, since those generators (unlike Visual Studio
+project generators) don't locate the MSVC toolchain themselves."""
+
 import os
 import subprocess
 import tempfile
@@ -138,6 +142,10 @@ def _find_vsdevcmd(target_arch: str) -> str:
 
 
 def ensure_msvc_environment() -> None:
+    """Locate VsDevCmd.bat via vswhere, run it in a throwaway .bat wrapper that dumps `set`
+    afterwards, and copy the resulting environment variables into this process. Tries the
+    detected host architecture first, then falls back through common host archs, since
+    VsDevCmd rejects some host/target architecture combinations."""
     if get_platform() != Platform.WINDOWS:
         return
 
@@ -164,6 +172,9 @@ def ensure_msvc_environment() -> None:
     last_error: Exception | None = None
     for host_arch in host_candidates:
         logger.debug(f"Trying VsDevCmd with host_arch={host_arch}, target_arch={target_arch}")
+        # VsDevCmd.bat sets environment variables in its own cmd.exe process, which are lost
+        # once it returns; appending `set` to the wrapper prints them so we can capture and
+        # re-apply them to this Python process below.
         wrapper_contents = "\r\n".join(
             [
                 "@echo off",

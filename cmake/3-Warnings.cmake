@@ -19,6 +19,8 @@ function(apply_compiler_warnings target)
                     /wd4100
                     /wd4996
                     /wd4456
+                    /wd4005
+                    /wd4101
             )
         endif()
     elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang")
@@ -47,6 +49,33 @@ function(apply_compiler_warnings target)
         )
     endif ()
     message(STATUS "INFO: applied compiler warnings to target ${target}")
+endfunction()
+
+#######################################
+
+#######################################
+#######################################
+
+# Instruments a target for code coverage when ENABLE_COVERAGE is ON. Flags are PUBLIC so
+# every executable linking an instrumented library also links the coverage runtime.
+# Clang emits .profraw files (into build/test-output/, merged by llvm-profdata, see
+# scripts/Build/Actions/Tests.py);
+# GCC emits .gcda/.gcno files (read by gcovr).
+function(apply_coverage target)
+    if(NOT ENABLE_COVERAGE)
+        return()
+    endif()
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        target_compile_options(${target} PUBLIC -fprofile-instr-generate -fcoverage-mapping)
+        target_link_options(${target} PUBLIC -fprofile-instr-generate)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        target_compile_options(${target} PUBLIC --coverage)
+        target_link_options(${target} PUBLIC --coverage)
+    else()
+        message(WARNING "ENABLE_COVERAGE is not supported with ${CMAKE_CXX_COMPILER_ID}; ignoring for ${target}")
+        return()
+    endif()
+    message(STATUS "INFO: applied coverage instrumentation to target ${target}")
 endfunction()
 
 #######################################

@@ -1,3 +1,4 @@
+# Re-exports the top-level actions dispatched by Build/build.py.
 from .Build import build_existing_target
 from .Cleanup import clean, fclean
 from .Tests import generate_coverage, run_tests, test_executable_name

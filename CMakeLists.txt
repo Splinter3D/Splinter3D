@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.18)
 project(splinter3D-project LANGUAGES CXX)
 
 ########################################
@@ -14,5 +14,6 @@ include(4-External)
 include(5-Sources)
 include(6-Linker)
 include(7-Target)
+include(8-Tests)
 
 ########################################

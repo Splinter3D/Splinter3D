@@ -7,10 +7,10 @@ RUN apt-get update && \
     build-essential ca-certificates cmake curl git pkg-config \
     python3 python3-pip python3-venv ninja-build g++ \
     libgl1-mesa-dev libglu1-mesa-dev \
-    libgl1-mesa-dri libglx-mesa0 xterm \
+    libgl1-mesa-dri libglx-mesa0 xterm linux-libc-dev \
     libx11-dev libxcursor-dev libxinerama-dev libxrandr-dev \
     tar unzip xorg-dev zip libltdl-dev \
-    autoconf autoconf-archive automake libtool \
+    autoconf autoconf-archive automake libtool bison \
     xvfb x11vnc novnc websockify fluxbox x11-utils feh \
     && rm -rf /var/lib/apt/lists/*
 
@@ -19,7 +19,6 @@ COPY ./.git /app/.git
 COPY ./cmake /app/cmake
 COPY ./locale /app/locale
 COPY ./assets /app/assets
-COPY ./include /app/include
 COPY ./scripts /app/scripts
 COPY ./vcpkg.json /app/vcpkg.json
 COPY ./CMakeLists.txt /app/CMakeLists.txt
@@ -44,4 +43,4 @@ EXPOSE 6080
 USER appuser
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["./splinter3D"]
+CMD ["build/bin/splinter3D"]
