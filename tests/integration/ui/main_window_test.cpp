@@ -87,8 +87,8 @@ TEST_CASE_METHOD(MainWindowFixture, "MainWindow: loading a model enables the tra
 
 TEST_CASE_METHOD(MainWindowFixture, "MainWindow: editing a toolbar field moves the selected model", "[integration][ui][main_window]")
 {
-    viewer->loadFile(kCube);
-    viewer->loadFile(kCube);
+    REQUIRE(viewer->loadFile(kCube));
+    REQUIRE(viewer->loadFile(kCube));
 
     // Select the second model, as the user would in the dropdown.
     auto* combo = findDescendant<wxComboBox>(toolbar);
@@ -111,7 +111,7 @@ TEST_CASE_METHOD(MainWindowFixture, "MainWindow: editing a toolbar field moves t
 
 TEST_CASE_METHOD(MainWindowFixture, "MainWindow: switching target refreshes the fields", "[integration][ui][main_window]")
 {
-    viewer->loadFile(kCube);
+    REQUIRE(viewer->loadFile(kCube));
     viewer->setTransform(0, 7, 8, 9, 10, 20, 30);
 
     auto* combo = findDescendant<wxComboBox>(toolbar);
