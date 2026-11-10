@@ -17,3 +17,5 @@
 *.py text eol=lf
 
 docs/** linguist-documentation=true
+
+overlay-ports/** -text -whitespace

@@ -1,3 +1,115 @@
+## v0.2.0-rc.8 (2026-11-10)
+
+### Fix
+
+- **ci**: improve docker build cache and parallelism
+- **ci**: in main-pr-policy, a crafted branch name could run code
+
+## v0.2.0-rc.7 (2026-11-10)
+
+### Feat
+
+- **ci**: use --releasemode in ci builds
+- small recap to mention the flag to use
+- exclude overlay-ports folder from pre-commit config and gitattribute, to avoid .patch files getting corrupted
+- trying to use overlay to reduce even more the build time and vcpkg folder size
+- md report to explain what I've changed and the way I relfect on these changes
+- creating release-only build for vcpkg
+- remove libraries that seems unused
+
+### Fix
+
+- **build**: make UNIX release triplets use dynamic CRT linkage
+- **build**: improve windows build cache checking for builds on network shares
+- **build**: add missing triplets for --releasemode builds
+- **build**: add missing usage in wxwidgets overlay ports
+- **build**: add find_package nlohmann_json in cmake
+
+## v0.2.0-rc.6 (2026-11-10)
+
+## v0.2.0-rc.5 (2026-11-06)
+
+### Fix
+
+- icon loading on windows/macos
+
+## v0.2.0-rc.4 (2026-11-05)
+
+### Fix
+
+- **ci**: create release as draft and publish it after artifact upload
+
+## v0.2.0-rc.3 (2026-11-04)
+
+### Fix
+
+- **build**: avoid printing errors twice
+- **ci**: avoid unwanted runs of pre commit action in pre release workflow
+- **build**: avoid -Wdangling-reference false positive in batch runner
+
+## v0.2.0-rc.2 (2026-11-03)
+
+### Fix
+
+- **ci**: count existing RC tags so next-tag.sh stops reissuing -rc.1
+- made Benchmark::measure return type decltype(auto) so references are kept in the return value type
+- **build**: removed format includes, as they are not supported by the gcc version used in the ci
+
+## v0.2.0-rc.1 (2026-11-02)
+
+### Feat
+
+- improving the object floating menu to have a better experience
+- adding first version of the floating menu for the object management
+- adding first version of the floating menu for the object management
+- model loading time measurment
+- unit, integration, and e2e tests
+- add focus and gizmos to tools
+- add target to movement options
+- linked move and rotate UI to fonctionnalities
+- add move and rotates features
+- multiple objects import
+- adding the 3D model viewer panel
+- adding a base shape wrapper to avoid referring to occt everywhere
+- adding the assets in the makefile
+- merge the wx-widget branch to be able to compile and test the new build fix
+- #128 #129 now having a full example of 2 different windows opening with widget placement from layouts
+- removing wx_example, everything is implemented
+- #126 #127 creating menu and toolbar registry just like for panels. New exemple using these.
+- new example of window with base_window and a panel creation
+- introducing app/ folder with new main and bootstrap flow
+- moved every splinter3D/utils and event_bus into core/
+- moving logger into platform/logger
+- redisigned a new architecture to prepare wxwidgets integration
+- new architecture to handle datas app related on runtime
+- now we have ui dialogs
+- starting to build the framework by adding events bindings with ids
+- apply C++ convention
+- new clean and documented ui widgets for wxwidgets merging
+
+### Fix
+
+- **build**: include <windows.h> before OpenCascade headers on Windows
+- added missing dependencies in Dockerfile
+- **build**: macOS compilation
+- moving the binding to wx event_manager and using callback in the windows
+- PI import on windows
+- remove flashed when draging while clicking
+- GL errors on linux
+- remove warnings related to unused parameters and wrong linux include
+- merge conflict from fix/build-cache-validation
+- **windows build**: cache path normalization
+- **windows build**: path normalization in build cache validation
+- **pre-commit**: fix all pre-commit formatting issues
+- **build**: put built binaries in build/bin directory
+- pre-commit clean
+- merge conflicts
+
+### Refactor
+
+- change the top options
+- renameing demo menu and toolbar, marking demo window as deprecated
+
 ## v0.1.3 (2026-07-13)
 
 ### Fix
@@ -5,6 +117,19 @@
 - **build**: make --vcpkg—path authoritative
 
 ## v0.1.2 (2026-07-09)
+
+### Feat
+
+- removing vscode warnings for includes
+- changed the Cmakes and files to run the wxwidgets files only, preparing for the merge between Prototype and WxWidgets
+- adding Windows Configuration for C/C++ extension
+- update directory structure and comments in README
+- update README
+- add testing of 3D pieces
+- add a viewerPanel to import 3D objects with OCCT
+- clean path
+- add the wxWidget exemple
+- docker-compose file to use the prebuilt image
 
 ### Fix
 

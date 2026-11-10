@@ -1,3 +1,7 @@
+"""Ensures a usable, current-platform vcpkg installation exists, cloning and bootstrapping
+one from GitHub if needed. Reinstalls when the existing checkout targets the wrong OS/arch
+or when the user explicitly requested a reinstall."""
+
 import os
 import pathlib
 import shutil
@@ -36,7 +40,12 @@ def _is_empty_directory(path: str) -> bool:
 
 
 def _resolve_vcpkg_path(vcpkg_path: str) -> str:
-    """Accept either a vcpkg root or an existing directory to contain it."""
+    """Accept either a vcpkg root or an existing directory to contain it.
+
+    When --vcpkg-path points at a plain directory that isn't itself a vcpkg checkout
+    (and isn't already named "vcpkg"), treat it as a container and install into a
+    "vcpkg" subdirectory of it instead of clobbering the directory's contents.
+    """
     normalized = _normalize_vcpkg_root(vcpkg_path)
     if (
         args.vcpkg_path
@@ -76,6 +85,8 @@ def _should_reinstall_incompatible_vcpkg(vcpkg_root: str) -> bool:
 
 
 def _ensure_current_platform_vcpkg(vcpkg_root: str) -> str | None:
+    """Return the vcpkg root if it's already usable; otherwise wipe it if it targets the
+    wrong platform (after confirmation) and return None so the caller reinstalls it."""
     installation_status = inspect_vcpkg_root(vcpkg_root)
     if installation_status.matches_current_platform:
         logger.info(f"vcpkg is already installed at: {installation_status.root}")
@@ -127,6 +138,10 @@ def _bootstrap(vcpkg_path: str):
         raise RuntimeError(f"Failed to bootstrap vcpkg: {e}")
 
 def install_vcpkg() -> str:
+    """Resolve, and install/reinstall if necessary, a vcpkg checkout for the current
+    platform. Order of preference: an explicit --vcpkg-path/VCPKG_ROOT, then a checkout
+    already sitting at the default location, then one found via detect_vcpkg(), and
+    finally a fresh clone+bootstrap from GitHub."""
     vcpkg_path = args.vcpkg_path if args.vcpkg_path else _get_vcpkg_path()
     vcpkg_path = _resolve_vcpkg_path(vcpkg_path)
     reinstall = args.reinstall_vcpkg or args.reinstall_dependencies

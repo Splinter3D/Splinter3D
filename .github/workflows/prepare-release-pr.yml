@@ -1,3 +1,6 @@
+# After a PR is merged into dev or main (or on manual dispatch), bumps CHANGELOG.md and
+# vcpkg.json to the next release version and opens/updates a release PR
+# (release/dev -> dev, or hotfix/release-main -> main) for tag-on-merge.yml to tag later.
 name: prepare-release-pr
 
 on:
@@ -54,7 +57,7 @@ jobs:
         run: git fetch --force --tags origin
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -179,7 +182,7 @@ jobs:
         run: git fetch --force --tags origin
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 

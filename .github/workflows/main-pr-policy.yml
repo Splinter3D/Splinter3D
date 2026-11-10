@@ -1,3 +1,6 @@
+# Enforces that pull requests into `main` only come from this repository's `dev` or
+# `hotfix/*` branches; any other PR, including one from a fork, is closed automatically
+# with an explanatory comment.
 name: main-pr-policy
 
 on:
@@ -21,15 +24,16 @@ jobs:
     steps:
       - name: Close invalid pull request
         run: |
-          head_ref="${{ github.head_ref }}"
+          head_ref="$HEAD_REF"
+          head_repo="$HEAD_REPO"
           pr_number="${{ github.event.pull_request.number }}"
           repo="${{ github.repository }}"
 
-          if [[ "$head_ref" == "dev" || "$head_ref" =~ ^hotfix/ ]]; then
+          if [[ "$head_repo" == "$repo" && ( "$head_ref" == "dev" || "$head_ref" =~ ^hotfix/ ) ]]; then
             exit 0
           fi
 
-          body='{"body":"Closing this PR automatically: pull requests into `main` must come from `dev` or `hotfix/*`."}'
+          body='{"body":"Closing this PR automatically: pull requests into `main` must come from this repository'"'"'s `dev` or `hotfix/*` branches."}'
           state='{"state":"closed"}'
 
           curl --fail-with-body \
@@ -49,3 +53,5 @@ jobs:
             --data "$state"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}

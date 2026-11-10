@@ -1,0 +1,3 @@
+// Windows resources for the splinter3D executable: the icon shown by
+// Explorer, shortcuts and the taskbar before the window sets its own.
+appicon ICON "../../assets/Splinter3D.ico"

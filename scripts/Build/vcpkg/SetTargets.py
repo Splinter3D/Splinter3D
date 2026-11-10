@@ -1,3 +1,6 @@
+"""Computes the CMake flags (toolchain file + triplet) needed to build against vcpkg
+for the current platform/architecture."""
+
 import os
 from vcpkg.Install import install_vcpkg
 from Logger import logger
@@ -5,6 +8,8 @@ from Platform import get_platform, Platform, PLATFORM_TO_STRING, get_arch, Arch
 
 __all__ = ["set_vcpkg_targets"]
 
+# vcpkg triplet names use their own arch spelling (e.g. "arm" for 32-bit ARM),
+# distinct from ARCH_TO_STRING in Platform/Arch.py.
 _TRIPLET_ARCH_MAPPING = {
     Arch.X86: "x86",
     Arch.X64: "x64",
@@ -12,7 +17,7 @@ _TRIPLET_ARCH_MAPPING = {
     Arch.aarch64: "arm64"
 }
 
-def _get_triplet() -> str:
+def _get_triplet(releasemode: bool) -> str:
     logger.info("Determining vcpkg triplet...")
     triplet = None
     platform = get_platform()
@@ -28,16 +33,22 @@ def _get_triplet() -> str:
             triplet = f"{arch}-osx"
         case _:
             raise RuntimeError(f"Unsupported platform for vcpkg triplet: {PLATFORM_TO_STRING[platform]}")
+
+    # Custom configuration-specific triplets.
+    triplet += "-release" if releasemode else ""
+
     logger.info(f"Determined vcpkg triplet: {triplet}")
     return triplet
 
 
-def set_vcpkg_targets() -> list[str]:
+def set_vcpkg_targets(releasemode: bool) -> list[str]:
     logger.info("Setting vcpkg targets...")
     vcpkg_root = install_vcpkg()
-    triplet = _get_triplet()
+    triplet = _get_triplet(releasemode)
     cmake_toolchain_file = os.path.join(vcpkg_root, "scripts", "buildsystems", "vcpkg.cmake")
     if not os.path.isfile(cmake_toolchain_file):
+        # Some setups (e.g. Windows CI's `vcpkg integrate install`) rely on user-wide
+        # integration instead of an explicit toolchain file; nothing extra to pass to CMake.
         logger.info(f"vcpkg toolchain file not found at {cmake_toolchain_file}; vcpkg integration skipped.")
         return []
     logger.info(f"vcpkg toolchain file found at {cmake_toolchain_file}; setting CMake targets.")

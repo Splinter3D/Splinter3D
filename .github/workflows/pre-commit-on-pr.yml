@@ -1,3 +1,5 @@
+# Runs the same checks as `scripts/bootstrap-pre-commit.sh` / .pre-commit-config.yaml
+# against every PR into dev or main, so formatting/lint issues are caught before merge.
 name: Pre-commit on PR
 
 on:
@@ -11,7 +13,7 @@ permissions:
 
 jobs:
   pre-commit:
-    if: ${{ github.head_ref != 'hotfix/release-main'  && github.head_ref != 'main'}}
+    if: ${{ github.head_ref != 'hotfix/release-main'  && github.head_ref != 'main' && github.head_ref != 'release/dev' }}
     runs-on: ubuntu-22.04
 
     steps:
@@ -24,7 +26,7 @@ jobs:
         run: git fetch --force --tags origin
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 

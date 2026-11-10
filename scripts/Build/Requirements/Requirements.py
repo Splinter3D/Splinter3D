@@ -1,3 +1,5 @@
+"""Fails fast, before configuring, if a tool required on the current platform is missing."""
+
 import shutil
 from Logger import logger
 from Platform import get_platform, PLATFORM_REQUIRED_TOOLS
@@ -8,6 +10,7 @@ def check_requirements():
     logger.info("Checking requirements...")
     platform = get_platform()
     required_tools = PLATFORM_REQUIRED_TOOLS[platform]
+    # Each tool_set is a group of alternatives (e.g. {"ninja", "make"}); any one satisfies it.
     for tool_set in required_tools:
         if not any(shutil.which(tool) for tool in tool_set):
             logger.error(f"Missing required tools: {' or '.join(tool_set)}")
