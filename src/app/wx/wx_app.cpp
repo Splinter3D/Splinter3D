@@ -28,7 +28,12 @@ namespace app
         constexpr int kSignalPollMs = 100;
     } // namespace
 
-    WxApp::WxApp()  = default;
+    // wx creates the app before Initialize() starts GTK, so this is early enough.
+    WxApp::WxApp()
+    {
+        core::utils::preferX11Backend();
+    }
+
     WxApp::~WxApp() = default;
 
     bool WxApp::OnInit()
