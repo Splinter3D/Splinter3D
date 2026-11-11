@@ -9,6 +9,7 @@
 #include <TopLoc_Location.hxx>
 #include <TopoDS_Compound.hxx>
 #include <algorithm>
+#include <fstream>
 #include <optional>
 #include <utility>
 
@@ -114,7 +115,10 @@ namespace application::service
         (void) mesher;
 
         StlAPI_Writer writer;
-        return writer.Write(compound, geometry::occt::toUtf8(path).c_str());
+        std::ofstream stream(path, writer.ASCIIMode() ? std::ios::out : std::ios::out | std::ios::binary);
+        if (!stream)
+            return false;
+        return writer.Write(compound, stream) && stream.flush().good();
     }
 
     bool SceneService::isValidIndex(int index) const noexcept

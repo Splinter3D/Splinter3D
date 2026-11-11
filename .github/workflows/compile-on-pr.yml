@@ -11,6 +11,9 @@ on:
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - CHANGELOG.md
+      - vcpkg.json
 
 permissions:
   contents: read

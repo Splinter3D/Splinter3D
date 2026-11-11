@@ -35,6 +35,12 @@ namespace
             // The default GUI log target shows a modal dialog for wxLogError /
             // wxLogWarning, which would block the run forever.
             delete wxLog::SetActiveTarget(new wxLogStderr());
+            wxSetAssertHandler([](const wxString& file, int line, const wxString& func,
+                                  const wxString& cond, const wxString& msg) {
+                throw std::logic_error(wxString::Format("wxASSERT failed at %s(%d) in %s(): %s %s",
+                                                        file, line, func, cond, msg)
+                                           .utf8_string());
+            });
         }
 
         void testRunEnded(const Catch::TestRunStats&) override
