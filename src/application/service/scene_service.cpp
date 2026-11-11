@@ -17,14 +17,13 @@ namespace application::service
 {
     std::size_t SceneService::load(const std::filesystem::path& path)
     {
-        platform::benchmark::Benchmark                          benchmark;
-        std::optional<platform::benchmark::Benchmark::Duration> duration;
-        auto                                                    shape = benchmark.measure(&duration, &geometry::occt::Shape::fromSTL, path);
+        std::optional<platform::benchmark::Report> report;
 
+        auto shape = platform::benchmark::measure(&report, platform::benchmark::ALL, &geometry::occt::Shape::fromSTL, path);
         const std::size_t index     = add(geometry::occt::toUtf8(path.filename()), std::move(shape));
-        models_[index].loadDuration = duration.value_or(platform::benchmark::Benchmark::Duration::zero());
+        models_[index].loadDuration = report->time.value_or(platform::benchmark::Duration::zero());
         platform::logger::clog("[scene] imported '", models_[index].name, "' from ", geometry::occt::toUtf8(path),
-                               " in ", platform::benchmark::formatMilliseconds(models_[index].loadDuration));
+                               " (", *report, ")");
         return index;
     }
 

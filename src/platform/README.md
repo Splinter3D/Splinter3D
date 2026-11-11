@@ -8,7 +8,7 @@ Everything that communicates directly with the OS or persists raw data. The lowe
 - `preference/` - persisted user settings (selected theme, selected language, etc.).
 - `locale/` - loading/saving translations.
 - `logging/` - writing logs.
-- `benchmark/` - `Benchmark`: steady-clock timer in milliseconds (`start()`/`stop()`, or `measure()` around a call, which records the duration even if the call throws). Used to log model import (`SceneService::load()`) and display (`ModelViewerPanel`) times.
+- `benchmark/` - `measure()`: runs a call and fills a `Report` with the requested `Metrics` (wall and CPU time, cores used, resident memory change, longest UI frame), even if the call throws; `operator<<`/`formatReport()` print it. `FrameClock` is the UI heartbeat (ticked by `WxApp`) behind the longest frame, so a frozen UI shows up as a frame as long as the freeze. Used to log model import (`SceneService::load()`) and display (`ModelViewerPanel`) costs.
 - `file_system/` - file reading/writing, paths.
 - `clipboard/` - clipboard operations.
 - `threading/` - thread/asynchronous task management.

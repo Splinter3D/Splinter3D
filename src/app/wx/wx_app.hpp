@@ -73,8 +73,13 @@ namespace app
         // core::utils::InstallSignalHandlers(), which only sets a flag).
         void onSignalPoll(wxTimerEvent& event);
 
+        // UI heartbeat for platform::benchmark::FrameClock: only fires while
+        // the event loop runs, so benchmarks can tell when the UI froze.
+        void onFrameTick(wxTimerEvent& event);
+
         std::unique_ptr<App> application_;
         wxTimer              signal_timer_;
+        wxTimer              frame_timer_;
         wxSplashScreen*      splash_screen_ = nullptr;
     };
 } // namespace app

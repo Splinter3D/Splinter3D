@@ -217,7 +217,7 @@ TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: logs import and display times
     REQUIRE(loaded);
     const std::string log = captured.str();
     CHECK_THAT(log, ContainsSubstring("[scene] imported 'cube.stl' from ") && ContainsSubstring(" ms"));
-    CHECK_THAT(log, ContainsSubstring("[viewer] displayed 'cube.stl' in ") && ContainsSubstring(", total "));
+    CHECK_THAT(log, ContainsSubstring("[viewer] displayed 'cube.stl' (time ") && ContainsSubstring(", total "));
 }
 
 TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: show and hide models", "[integration][ui][viewer]")

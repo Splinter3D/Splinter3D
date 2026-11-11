@@ -50,7 +50,7 @@ tests/
 │   └── wx_helpers.hpp             pumpEvents(), pumpUntil(), findDescendant<T>(), ScopedFrame<T>, sendMenuCommand()
 ├── unit/
 │   ├── core/          EventBus, findDataRoot, Singleton/NonCopyable, signal flag
-│   ├── platform/      PreferenceManager, LocaleManager, Logger, Benchmark
+│   ├── platform/      PreferenceManager, LocaleManager, Logger, benchmark
 │   ├── geometry/      Shape::fromSTL, Transform maths (toTrsf, gizmo drag deltas)
 │   ├── rendering/     Color, Palette
 │   └── application/   SceneService, BatchRunner

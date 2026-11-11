@@ -75,8 +75,8 @@ TEST_CASE("SceneService: load times the import", "[application][scene]")
     scene.load(kCube);
     scene.add("built", Shape{});
 
-    CHECK(scene.models()[0].loadDuration > platform::benchmark::Benchmark::Duration::zero());
-    CHECK(scene.models()[1].loadDuration == platform::benchmark::Benchmark::Duration::zero());
+    CHECK(scene.models()[0].loadDuration > platform::benchmark::Duration::zero());
+    CHECK(scene.models()[1].loadDuration == platform::benchmark::Duration::zero());
 }
 
 TEST_CASE("SceneService: duplicate names get a numeric suffix", "[application][scene]")

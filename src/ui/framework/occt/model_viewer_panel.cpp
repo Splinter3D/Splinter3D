@@ -34,6 +34,7 @@
 #include <gp_Ax2.hxx>
 #include <gp_Pnt.hxx>
 #include <gp_Trsf.hxx>
+#include <optional>
 #include <vector>
 #include <wx/dcclient.h>
 #include <wx/log.h>
@@ -136,21 +137,20 @@ namespace ui::framework::occt
             // spent building the shaded presentation and fitting the view.
             const std::size_t index = scene_.load(path);
 
-            platform::benchmark::Benchmark benchmark;
-            benchmark.start();
+            std::optional<platform::benchmark::Report> report;
+            platform::benchmark::measure(&report, platform::benchmark::ALL, [&] {
+                auto presentation = new AIS_Shape(scene_.models()[index].shape.value());
+                presentations_.push_back({presentation});
 
-            auto presentation = new AIS_Shape(scene_.models()[index].shape.value());
-            presentations_.push_back({presentation});
-
-            context_->Display(presentation, false);
-            context_->SetDisplayMode(presentation, AIS_Shaded, false);
-            context_->UpdateCurrentViewer();
-            view_->FitAll(0.1, true);
+                context_->Display(presentation, false);
+                context_->SetDisplayMode(presentation, AIS_Shaded, false);
+                context_->UpdateCurrentViewer();
+                view_->FitAll(0.1, true);
+            });
 
             const auto& model   = scene_.models()[index];
-            const auto  display = benchmark.stop();
-            platform::logger::clog("[viewer] displayed '", model.name, "' in ",
-                                   platform::benchmark::formatMilliseconds(display), " (import ",
+            const auto  display = report->time.value_or(platform::benchmark::Duration::zero());
+            platform::logger::clog("[viewer] displayed '", model.name, "' (", *report, "; import ",
                                    platform::benchmark::formatMilliseconds(model.loadDuration), ", total ",
                                    platform::benchmark::formatMilliseconds(model.loadDuration + display), ")");
         }

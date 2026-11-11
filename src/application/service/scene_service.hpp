@@ -28,10 +28,10 @@ namespace application::service
 
         struct Model
         {
-            std::string                              name;
-            geometry::occt::Shape                    shape;
-            geometry::occt::Transform                transform;
-            platform::benchmark::Benchmark::Duration loadDuration{};
+            std::string                   name;
+            geometry::occt::Shape         shape;
+            geometry::occt::Transform     transform;
+            platform::benchmark::Duration loadDuration{};
         };
 
         /**
