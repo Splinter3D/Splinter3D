@@ -157,3 +157,20 @@ TEST_CASE("WorkerPool: a waiting caller never runs another call's slices", "[pla
 
     REQUIRE(secondSliceThread != std::this_thread::get_id());
 }
+
+TEST_CASE("WorkerPool: post runs the task on a pool thread without context", "[platform][threading]")
+{
+    WorkerPool                    pool(2);
+    const ExecutionContext::Scope scope({"caller", 2});
+    std::latch                    ran(1);
+    std::thread::id               thread;
+    bool                          hadContext = true;
+    pool.post([&] {
+        thread     = std::this_thread::get_id();
+        hadContext = ExecutionContext::current().has_value();
+        ran.count_down();
+    });
+    ran.wait();
+    REQUIRE(thread != std::this_thread::get_id());
+    REQUIRE_FALSE(hadContext);
+}

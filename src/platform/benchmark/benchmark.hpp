@@ -179,7 +179,7 @@ namespace platform::benchmark
      *
      * @code{.cpp}
      * std::optional<platform::benchmark::Report> report;
-     * auto shape = platform::benchmark::measure(&report, std::nullopt, &geometry::occt::Shape::fromSTL, path);
+     * auto shape = platform::benchmark::measure(&report, std::nullopt, [&] { return geometry::occt::Shape::fromSTL(path); });
      * platform::logger::clog("loaded (", *report, ")"); // "time 12.30 ms, cpu 11.80 ms, ..."
      * @endcode
      */

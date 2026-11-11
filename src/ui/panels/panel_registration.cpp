@@ -3,6 +3,7 @@
 #include "panel_registry.hpp"
 #include "ui/framework/occt/model_viewer_panel.hpp"
 #include "ui/framework/wx/ids/ids.hpp"
+#include "ui/panels/tasks_panel/tasks_panel.hpp"
 
 namespace ui::panels
 {
@@ -14,5 +15,8 @@ namespace ui::panels
                           [](wxWindow* parent) -> wxPanel* {
                               return new ui::framework::occt::ModelViewerPanel(parent);
                           });
+
+        registry.Register(ui::framework::wx::ids::panels::kTasks,
+                          [](wxWindow* parent) -> wxPanel* { return new TasksPanel(parent); });
     }
 } // namespace ui::panels

@@ -37,6 +37,32 @@ namespace platform::threading
         return _pool.size() + 1;
     }
 
+    void Dispatcher::submit(std::string operation, std::function<void()> fn, std::function<void()> then)
+    {
+        _pool.post([this, operation = std::move(operation), fn = std::move(fn), then = std::move(then)] {
+            try
+            {
+                run(operation, fn);
+            }
+            catch (const std::exception& error)
+            {
+                platform::logger::cerr("[dispatcher] '", operation, "' threw: ", error.what());
+            }
+            catch (...)
+            {
+                platform::logger::cerr("[dispatcher] '", operation, "' threw a non-standard exception");
+            }
+            if (then)
+                then();
+        });
+    }
+
+    std::size_t Dispatcher::freeWorkers() const noexcept
+    {
+        const std::lock_guard lock(_mutex);
+        return total() - std::min(_allocated, total());
+    }
+
     void Dispatcher::parallelFor(std::size_t first, std::size_t last, const std::function<void(std::size_t)>& body)
     {
         _pool.parallelFor(first, last, nproc(), body);

@@ -1,15 +1,20 @@
+#include "application/tasks/task.hpp"
+#include "support/temp_dir.hpp"
 #include "support/wx_helpers.hpp"
 #include "ui/framework/occt/model_viewer_panel.hpp"
 #include "ui/framework/wx/ids/ids.hpp"
 #include "ui/layouts/layout_registration.hpp"
 #include "ui/menus/menu_registration.hpp"
 #include "ui/panels/panel_registration.hpp"
+#include "ui/panels/tasks_panel/tasks_panel.hpp"
 #include "ui/toolbars/toolbar_registration.hpp"
 #include "ui/toolbars/transform_toolbar/transform_toolbar.hpp"
 #include "ui/windows/main_window/main_window.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <chrono>
 #include <filesystem>
+#include <thread>
 #include <wx/combobox.h>
 #include <wx/menu.h>
 #include <wx/tglbtn.h>
@@ -51,6 +56,27 @@ namespace
             REQUIRE(toolbar != nullptr);
         }
 
+        // Waits until every task the viewer started is over.
+        bool settle()
+        {
+            return tests::support::pumpUntil([this] { return viewer->tasks().idle(); });
+        }
+
+        // A task that holds the first model until cancelled.
+        void hold()
+        {
+            application::tasks::Task task;
+            task.name      = "hold";
+            task.operation = "test.hold";
+            task.writes    = {viewer->GetModelIds().front()};
+            task.work      = [](application::tasks::TaskContext& context) {
+                while (!context.cancelled())
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            };
+            task.apply = [] { };
+            viewer->tasks().submit(std::move(task));
+        }
+
         ScopedFrame<ui::windows::MainWindow> window;
         ModelViewerPanel*                    viewer  = nullptr;
         TransformToolbar*                    toolbar = nullptr;
@@ -79,6 +105,7 @@ TEST_CASE_METHOD(MainWindowFixture, "MainWindow: loading a model enables the tra
     CHECK_FALSE(moveButton->IsEnabled());
 
     REQUIRE(viewer->loadFile(kCube));
+    REQUIRE(settle());
 
     CHECK(moveButton->IsEnabled());
     REQUIRE(combo->GetCount() == 2);
@@ -89,6 +116,7 @@ TEST_CASE_METHOD(MainWindowFixture, "MainWindow: editing a toolbar field moves t
 {
     REQUIRE(viewer->loadFile(kCube));
     REQUIRE(viewer->loadFile(kCube));
+    REQUIRE(settle());
 
     // Select the second model, as the user would in the dropdown.
     auto* combo = findDescendant<wxComboBox>(toolbar);
@@ -112,6 +140,7 @@ TEST_CASE_METHOD(MainWindowFixture, "MainWindow: editing a toolbar field moves t
 TEST_CASE_METHOD(MainWindowFixture, "MainWindow: switching target refreshes the fields", "[integration][ui][main_window]")
 {
     REQUIRE(viewer->loadFile(kCube));
+    REQUIRE(settle());
     viewer->setTransform(0, 7, 8, 9, 10, 20, 30);
 
     auto* combo = findDescendant<wxComboBox>(toolbar);
@@ -128,6 +157,7 @@ TEST_CASE_METHOD(MainWindowFixture, "MainWindow: switching target refreshes the 
 TEST_CASE_METHOD(MainWindowFixture, "MainWindow: File > New clears the scene and disables the toolbar", "[integration][ui][main_window]")
 {
     viewer->loadFile(kCube);
+    REQUIRE(settle());
     auto* moveButton = findDescendant<wxToggleButton>(toolbar);
     REQUIRE(moveButton->IsEnabled());
 
@@ -135,4 +165,43 @@ TEST_CASE_METHOD(MainWindowFixture, "MainWindow: File > New clears the scene and
 
     CHECK_FALSE(viewer->hasModel());
     CHECK_FALSE(moveButton->IsEnabled());
+}
+
+TEST_CASE_METHOD(MainWindowFixture, "MainWindow: the tasks panel shows while a task runs", "[integration][ui][main_window][tasks]")
+{
+    auto* panel = findDescendant<ui::panels::TasksPanel>(window.get());
+    REQUIRE(panel != nullptr);
+    CHECK_FALSE(panel->IsShown());
+
+    REQUIRE(viewer->loadFile(kCube));
+    CHECK(panel->IsShown());
+    REQUIRE(settle());
+    CHECK_FALSE(panel->IsShown());
+}
+
+TEST_CASE_METHOD(MainWindowFixture, "MainWindow: closing with pending tasks asks first", "[integration][ui][main_window][tasks]")
+{
+    tests::support::TempDir tmp;
+    const auto              output = tmp.path() / "out.stl";
+    REQUIRE(viewer->loadFile(kCube));
+    REQUIRE(settle());
+    hold();
+    REQUIRE(viewer->exportFile(output)); // queued behind the holder
+
+    std::size_t asked = 0;
+    window->SetConfirmQuit([&](std::size_t pending) {
+        asked = pending;
+        return false; // Keep working
+    });
+    window->Close();
+    CHECK(asked == 2);
+    CHECK(window->IsShown());
+    CHECK(viewer->tasks().pending() == 2);
+
+    window->SetConfirmQuit([](std::size_t) { return true; }); // Quit
+    window->Close();
+    // Not pumped: the frame is only deleted at the next idle, by ScopedFrame.
+    CHECK(viewer->tasks().pending() == 0);
+    CHECK_FALSE(std::filesystem::exists(output));
+    CHECK_FALSE(tests::support::hasTemporaryFiles(tmp.path()));
 }

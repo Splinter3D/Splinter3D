@@ -1,15 +1,21 @@
 #include "application/service/scene_service.hpp"
+#include "support/progress_probe.hpp"
 #include "support/temp_dir.hpp"
 
 #include <BRep_Tool.hxx>
+#include <Poly_Triangulation.hxx>
 #include <TopExp_Explorer.hxx>
+#include <TopLoc_Location.hxx>
 #include <TopoDS.hxx>
 #include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <filesystem>
+#include <fstream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -226,4 +232,147 @@ TEST_CASE("SceneService: remove one model", "[application][scene]")
     CHECK_FALSE(scene.remove(-1));
     CHECK_FALSE(scene.remove(SceneService::kAllModels));
     CHECK(scene.size() == 2);
+}
+
+TEST_CASE("SceneService: ids are unique and never reused", "[application][scene]")
+{
+    SceneService scene;
+    scene.add("a", Shape::fromSTL(kCube));
+    scene.add("b", Shape::fromSTL(kCube));
+    const auto first  = scene.models()[0].id;
+    const auto second = scene.models()[1].id;
+    REQUIRE(scene.remove(0));
+    scene.add("c", Shape::fromSTL(kCube));
+    const auto third = scene.models()[1].id;
+
+    CHECK(first != 0);
+    CHECK(first < second);
+    CHECK(second < third);
+}
+
+TEST_CASE("SceneService: find and indexOf follow removals", "[application][scene]")
+{
+    SceneService scene;
+    scene.add("a", Shape::fromSTL(kCube));
+    scene.add("b", Shape::fromSTL(kCube));
+    const auto removed = scene.models()[0].id;
+    const auto kept    = scene.models()[1].id;
+    REQUIRE(scene.remove(0));
+
+    CHECK(scene.find(removed) == nullptr);
+    CHECK_FALSE(scene.indexOf(removed));
+    REQUIRE(scene.find(kept) != nullptr);
+    CHECK(scene.find(kept)->name == "b");
+    CHECK(scene.indexOf(kept) == 0u);
+    CHECK(scene.ids() == std::vector<application::service::ModelId>{kept});
+}
+
+TEST_CASE("SceneService: add with a reserved id keeps it", "[application][scene]")
+{
+    SceneService scene;
+    const auto   reserved = scene.reserveId();
+    scene.add("other", Shape::fromSTL(kCube));
+    scene.add("reserved", Shape::fromSTL(kCube), reserved);
+
+    CHECK(scene.find(reserved)->name == "reserved");
+    CHECK(scene.models()[0].id != reserved);
+}
+
+TEST_CASE("SceneService: removeById and setTransformById", "[application][scene]")
+{
+    SceneService scene;
+    scene.add("a", Shape::fromSTL(kCube));
+    const auto id = scene.models()[0].id;
+
+    REQUIRE(scene.setTransformById(id, kSomeTransform));
+    CHECK(scene.transform(0).moveZ == 3);
+    CHECK_FALSE(scene.setTransformById(id + 100, kSomeTransform));
+    CHECK_FALSE(scene.removeById(id + 100));
+    REQUIRE(scene.removeById(id));
+    CHECK(scene.empty());
+}
+
+TEST_CASE("exportSTL: writes through a temporary file", "[application][scene]")
+{
+    const tests::support::TempDir dir;
+    const auto                    output = dir.path() / "out.stl";
+    SceneService                  scene;
+    scene.add("cube", Shape::fromSTL(kCube));
+
+    occ::handle<tests::support::ProgressProbe> probe = new tests::support::ProgressProbe();
+    REQUIRE(application::service::exportSTL(scene.models(), output, probe->Start()));
+    CHECK(std::filesystem::file_size(output) > 0);
+    CHECK_FALSE(tests::support::hasTemporaryFiles(dir.path()));
+    CHECK(probe->maxPosition >= 0.99);
+}
+
+TEST_CASE("exportSTL: leaves nothing behind when cancelled", "[application][scene]")
+{
+    const tests::support::TempDir dir;
+    const auto                    output = dir.path() / "out.stl";
+    std::ofstream(output) << "previous";
+    SceneService scene;
+    scene.add("cube", Shape::fromSTL(kCube));
+
+    occ::handle<tests::support::ProgressProbe> probe = new tests::support::ProgressProbe();
+    probe->cancel                                    = true;
+    CHECK_FALSE(application::service::exportSTL(scene.models(), output, probe->Start()));
+    CHECK_FALSE(tests::support::hasTemporaryFiles(dir.path()));
+    std::ifstream     previous(output);
+    std::stringstream content;
+    content << previous.rdbuf();
+    CHECK(content.str() == "previous");
+}
+
+TEST_CASE("exportSTL: refuses an empty model list", "[application][scene]")
+{
+    const tests::support::TempDir dir;
+    CHECK_FALSE(application::service::exportSTL({}, dir.path() / "out.stl"));
+    CHECK_FALSE(std::filesystem::exists(dir.path() / "out.stl"));
+}
+
+TEST_CASE("exportSTL: concurrent exports to one path both produce a whole file", "[application][scene]")
+{
+    const tests::support::TempDir dir;
+    const auto                    output   = dir.path() / "out.stl";
+    const auto                    magnolia = std::filesystem::path(SPLINTER3D_TEST_ASSETS_DIR) / "stl" / "binary" / "magnolia_binary.stl";
+    SceneService                  scene;
+    scene.add("magnolia", Shape::fromSTL(magnolia));
+    const int expectedFaces = countFaces(scene.models()[0].shape);
+
+    for (int round = 0; round < 3; ++round)
+    {
+        bool        first  = false;
+        bool        second = false;
+        std::thread other([&] { first = application::service::exportSTL(scene.models(), output); });
+        second = application::service::exportSTL(scene.models(), output);
+        other.join();
+        CHECK(first);
+        CHECK(second);
+        CHECK(countFaces(Shape::fromSTL(output)) == expectedFaces);
+    }
+    for (const auto& entry : std::filesystem::directory_iterator(dir.path()))
+        CHECK(entry.path().filename() == "out.stl"); // no temporary left behind
+}
+
+TEST_CASE("exportSTL: leaves the scene's shapes untouched", "[application][scene]")
+{
+    const tests::support::TempDir dir;
+    SceneService                  scene;
+    scene.add("cube", Shape::fromSTL(kCube));
+
+    std::vector<const Poly_Triangulation*> before;
+    for (TopExp_Explorer it(scene.models()[0].shape.value(), TopAbs_FACE); it.More(); it.Next())
+    {
+        TopLoc_Location location;
+        before.push_back(BRep_Tool::Triangulation(TopoDS::Face(it.Current()), location).get());
+    }
+    REQUIRE(application::service::exportSTL(scene.models(), dir.path() / "out.stl"));
+
+    std::size_t i = 0;
+    for (TopExp_Explorer it(scene.models()[0].shape.value(), TopAbs_FACE); it.More(); it.Next(), ++i)
+    {
+        TopLoc_Location location;
+        CHECK(BRep_Tool::Triangulation(TopoDS::Face(it.Current()), location).get() == before[i]);
+    }
 }

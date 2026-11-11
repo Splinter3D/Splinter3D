@@ -109,3 +109,12 @@ That's the whole loop - no other file needs to change.
 around purely to show the pattern end-to-end. Safe to delete - along with
 its `Register(...)` call in `panel_registration.cpp` and its id in
 `ids.hpp` - once a first real panel exists.
+
+## Tasks panel
+
+`ui/panels/tasks_panel/` (`TasksPanel`, id `panels::kTasks`) lists the
+background tasks of an `application::tasks::TaskManager` as cards (name,
+progress bar, status, Cancel or Dismiss). `attach(manager)` makes it follow
+that manager. It hides itself when it has no card and shows itself (re-laying
+out its parent) when one appears. `MainWindow` places it on the right of the
+viewer and attaches it to `ModelViewerPanel::tasks()`.

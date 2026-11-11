@@ -193,6 +193,7 @@ namespace ui::framework::wx
             constexpr int kExample         = app::kBase + 600;
             constexpr int kWidgetsShowcase = app::kBase + 601;
             constexpr int kModelViewer     = app::kBase + 602;
+            constexpr int kTasks           = app::kBase + 603;
 
         } // namespace panels
 

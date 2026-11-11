@@ -121,6 +121,18 @@ namespace platform::threading
             std::rethrow_exception(batch->error);
     }
 
+    void WorkerPool::post(std::function<void()> task)
+    {
+        {
+            const std::lock_guard lock(_mutex);
+            _queue.emplace_back([task = std::move(task)] {
+                const ExecutionContext::Scope scope(std::optional<ExecutionContext>{});
+                task();
+            });
+        }
+        _wake.notify_one();
+    }
+
     void WorkerPool::_workerLoop()
     {
         for (;;)

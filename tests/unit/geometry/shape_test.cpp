@@ -1,9 +1,14 @@
 #include "geometry/occt/shape.hpp"
+#include "support/progress_probe.hpp"
 
+#include <BRepBndLib.hxx>
+#include <Bnd_Box.hxx>
+#include <StlAPI_Reader.hxx>
 #include <TopAbs_ShapeEnum.hxx>
 #include <TopExp_Explorer.hxx>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <filesystem>
 #include <stdexcept>
 #include <string>
@@ -59,4 +64,42 @@ TEST_CASE("Shape: wraps and exposes an existing TopoDS_Shape", "[geometry][shape
     imported.value().Nullify(); // the mutable accessor gives write access
     CHECK(imported.isNull());
     CHECK_FALSE(wrapped.isNull());
+}
+
+TEST_CASE("Shape::fromSTL: the progress-aware read builds the same shape as StlAPI_Reader", "[geometry][shape]")
+{
+    const std::string file = GENERATE("ascii/cube.stl", "binary/model.stl");
+    CAPTURE(file);
+    const auto path = kAssets / "stl" / file;
+
+    TopoDS_Shape  expected;
+    StlAPI_Reader reader;
+    REQUIRE(reader.Read(expected, path.string().c_str()));
+
+    occ::handle<tests::support::ProgressProbe> probe = new tests::support::ProgressProbe();
+    const auto shape = geometry::occt::Shape::fromSTL(path, probe->Start());
+
+    REQUIRE(countFaces(shape.value()) == countFaces(expected));
+    Bnd_Box expectedBox;
+    Bnd_Box actualBox;
+    BRepBndLib::Add(expected, expectedBox);
+    BRepBndLib::Add(shape.value(), actualBox);
+    using Catch::Matchers::WithinAbs;
+    CHECK_THAT(actualBox.CornerMin().Distance(expectedBox.CornerMin()), WithinAbs(0.0, 1e-9));
+    CHECK_THAT(actualBox.CornerMax().Distance(expectedBox.CornerMax()), WithinAbs(0.0, 1e-9));
+}
+
+TEST_CASE("Shape::fromSTL: reports progress up to completion", "[geometry][shape]")
+{
+    occ::handle<tests::support::ProgressProbe> probe = new tests::support::ProgressProbe();
+    (void) geometry::occt::Shape::fromSTL(kAssets / "stl" / "binary" / "model.stl", probe->Start());
+    CHECK(probe->maxPosition >= 0.99);
+}
+
+TEST_CASE("Shape::fromSTL: stops when cancelled", "[geometry][shape]")
+{
+    occ::handle<tests::support::ProgressProbe> probe = new tests::support::ProgressProbe();
+    probe->cancel = true;
+    REQUIRE_THROWS_AS(geometry::occt::Shape::fromSTL(kAssets / "stl" / "binary" / "model.stl", probe->Start()),
+                      std::runtime_error);
 }

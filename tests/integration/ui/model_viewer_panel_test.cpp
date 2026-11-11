@@ -1,3 +1,4 @@
+#include "application/tasks/task.hpp"
 #include "geometry/occt/shape.hpp"
 #include "platform/logger/logger.hpp"
 #include "support/temp_dir.hpp"
@@ -6,10 +7,12 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
+#include <chrono>
 #include <filesystem>
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <vector>
 #include <wx/glcanvas.h>
 #include <wx/sizer.h>
@@ -40,6 +43,28 @@ namespace
             panel->SetOnModelStateChanged([this](bool hasModel) { states.push_back(hasModel); });
         }
 
+        // A task that holds `id` until cancelled: anything later on that model queues behind it.
+        application::tasks::TaskId hold(application::service::ModelId id)
+        {
+            application::tasks::Task task;
+            task.name      = "hold";
+            task.operation = "test.hold";
+            task.writes    = {id};
+            task.work      = [](application::tasks::TaskContext& context) {
+                while (!context.cancelled())
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            };
+            task.apply = [] { };
+            return panel->tasks().submit(std::move(task));
+        }
+
+        // Waits until every task the panel started is over (tasks apply on the
+        // UI thread, through events this pumps).
+        bool settle()
+        {
+            return tests::support::pumpUntil([this] { return panel->tasks().idle(); });
+        }
+
         ScopedFrame<>     frame;
         ModelViewerPanel* panel;
         std::vector<bool> states;
@@ -52,6 +77,7 @@ TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: loading models", "[integratio
 
     REQUIRE(panel->loadFile(kCube));
     REQUIRE(panel->loadFile(kCube));
+    REQUIRE(settle());
 
     CHECK(panel->hasModel());
     CHECK(panel->GetModelNames() == std::vector<wxString>{"cube.stl", "cube.stl (2)"});
@@ -60,16 +86,23 @@ TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: loading models", "[integratio
 
 TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: a failed load changes nothing", "[integration][ui][viewer]")
 {
-    CHECK_FALSE(panel->loadFile(kCube.parent_path() / "missing.stl"));
+    REQUIRE(panel->loadFile(kCube.parent_path() / "missing.stl"));
+    REQUIRE(settle());
 
     CHECK_FALSE(panel->hasModel());
     CHECK(states.empty());
+    const auto cards = panel->tasks().snapshots();
+    REQUIRE(cards.size() == 1);
+    CHECK(cards[0].state == application::tasks::TaskState::Failed);
+    CHECK_FALSE(cards[0].error.empty());
 }
 
 TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: transforms are applied per target", "[integration][ui][viewer]")
 {
     panel->loadFile(kCube);
+    REQUIRE(settle());
     panel->loadFile(kCube);
+    REQUIRE(settle());
 
     panel->setTransform(1, 10, 20, 30, 0, 0, 90);
     CHECK(panel->GetTransform(0) == ModelViewerPanel::TransformValues{});
@@ -83,6 +116,7 @@ TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: transforms are applied per ta
 TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: gizmo can be shown, switched and hidden", "[integration][ui][viewer]")
 {
     panel->loadFile(kCube);
+    REQUIRE(settle());
 
     // Builds/attaches a fresh AIS_Manipulator each time (see setGizmoTarget());
     // a stale-selection bug here used to segfault inside OCCT.
@@ -104,10 +138,13 @@ TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: export and new file", "[integ
     CHECK_FALSE(panel->exportFile(output)); // nothing loaded yet
 
     panel->loadFile(kCube);
+    REQUIRE(settle());
     CHECK(panel->exportFile(output));
+    REQUIRE(settle());
     CHECK(std::filesystem::file_size(output) > 0);
 
     panel->newFile();
+    REQUIRE(settle());
     CHECK_FALSE(panel->hasModel());
     CHECK(panel->GetModelNames().empty());
     CHECK(states == std::vector<bool>{true, false});
@@ -136,6 +173,7 @@ TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: camera controls never move th
     auto* canvas = tests::support::findDescendant<wxGLCanvas>(panel);
     REQUIRE(canvas != nullptr);
     panel->loadFile(kCube);
+    REQUIRE(settle());
     panel->setTransform(0, 1, 2, 3, 0, 0, 0);
 
     SECTION("left drag orbits")
@@ -210,6 +248,7 @@ TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: logs import and display times
     platform::logger::logger::setDebug(true); // what Bootstrap does in the app
 
     const bool loaded = panel->loadFile(kCube);
+    REQUIRE(settle());
 
     platform::logger::logger::setDebug(false);
     std::clog.rdbuf(previous);
@@ -224,6 +263,7 @@ TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: show and hide models", "[inte
 {
     panel->loadFile(kCube);
     panel->loadFile(kCube);
+    REQUIRE(settle());
     REQUIRE(panel->GetModelVisibility() == std::vector<bool>{true, true});
 
     panel->SetModelVisibility(0, false);
@@ -250,6 +290,7 @@ TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: removing a model", "[integrat
     panel->loadFile(kCube);
     panel->loadFile(kCube);
     panel->loadFile(kCube);
+    REQUIRE(settle());
     panel->setTransform(2, 7, 0, 0, 0, 0, 0);
     panel->SetModelVisibility(2, false);
     states.clear();
@@ -264,6 +305,7 @@ TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: removing a model", "[integrat
 
     // The scene and the viewport stay in step: export sees 2 cubes.
     REQUIRE(panel->exportFile(tmp.path() / "out.stl"));
+    REQUIRE(settle());
     CHECK(geometry::occt::Shape::fromSTL(tmp.path() / "out.stl").isNull() == false);
 
     panel->RemoveModel(9); // nothing removed (the state is still re-notified)
@@ -278,6 +320,7 @@ TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: removing the gizmo's model hi
 {
     panel->loadFile(kCube);
     panel->loadFile(kCube);
+    REQUIRE(settle());
     panel->SetGizmoState(1, ModelViewerPanel::GizmoTool::Move);
 
     panel->RemoveModel(1);
@@ -292,6 +335,7 @@ TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: focusing a model keeps visibi
 {
     panel->loadFile(kCube);
     panel->loadFile(kCube);
+    REQUIRE(settle());
     panel->setTransform(1, 100, 0, 0, 0, 0, 0);
     panel->SetModelVisibility(0, false);
 
@@ -312,4 +356,135 @@ TEST_CASE("ModelViewerPanel: model management before the viewer exists is harmle
     panel->FocusModel(0);
 
     CHECK(panel->GetModelVisibility().empty());
+}
+
+TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: loadFile returns before the model is loaded", "[integration][ui][viewer][tasks]")
+{
+    REQUIRE(panel->loadFile(kCube));
+    CHECK_FALSE(panel->hasModel()); // still importing in the background
+    REQUIRE(settle());
+    CHECK(panel->hasModel());
+}
+
+TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: cancelling an import adds nothing", "[integration][ui][viewer][tasks]")
+{
+    REQUIRE(panel->loadFile(kCube));
+    const auto cards = panel->tasks().snapshots();
+    REQUIRE(cards.size() == 1);
+    panel->tasks().cancel(cards[0].id);
+    REQUIRE(settle());
+    CHECK_FALSE(panel->hasModel());
+    CHECK(states.empty());
+}
+
+TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: a cancelled export leaves no file", "[integration][ui][viewer][tasks]")
+{
+    tests::support::TempDir tmp;
+    const auto              output = tmp.path() / "out.stl";
+    panel->loadFile(kCube);
+    REQUIRE(settle());
+
+    const auto holder = hold(panel->GetModelIds().front());
+    REQUIRE(panel->exportFile(output)); // queued behind the holder
+    const auto cards = panel->tasks().snapshots();
+    REQUIRE(cards.size() == 2);
+    panel->tasks().cancel(cards[1].id);
+    panel->tasks().cancel(holder);
+    REQUIRE(settle());
+
+    CHECK_FALSE(std::filesystem::exists(output));
+    CHECK_FALSE(tests::support::hasTemporaryFiles(tmp.path()));
+}
+
+TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: a move on a busy model waits for it", "[integration][ui][viewer][tasks]")
+{
+    panel->loadFile(kCube);
+    REQUIRE(settle());
+
+    const auto holder = hold(panel->GetModelIds().front());
+    panel->setTransform(0, 5, 0, 0, 0, 0, 0);
+    CHECK(panel->GetTransform(0).moveX == 0.0); // queued behind the holder
+    CHECK(panel->tasks().pending() == 2);
+
+    panel->tasks().cancel(holder); // the next task on the model goes ahead
+    REQUIRE(settle());
+    CHECK(panel->GetTransform(0).moveX == 5.0);
+}
+
+TEST_CASE("ModelViewerPanel: destroying the panel with a running task is safe", "[integration][ui][viewer][tasks]")
+{
+    ScopedFrame<> frame(nullptr, wxID_ANY, "Busy viewer", wxDefaultPosition, wxSize(320, 240));
+    auto*         panel = new ModelViewerPanel(frame.get());
+    auto*         sizer = new wxBoxSizer(wxVERTICAL);
+    sizer->Add(panel, 1, wxEXPAND);
+    frame->SetSizer(sizer);
+    frame.showAndWait();
+
+    REQUIRE(panel->loadFile(kCube));
+    CHECK(panel->tasks().pending() == 1);
+    // ScopedFrame destroys the frame here, with the import possibly still running.
+}
+
+TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: exporting right after opening waits for the import", "[integration][ui][viewer][tasks]")
+{
+    tests::support::TempDir tmp;
+    const auto              output = tmp.path() / "out.stl";
+    REQUIRE(panel->loadFile(kCube));
+    REQUIRE(panel->exportFile(output)); // the cube is still being read
+    REQUIRE(settle());
+    CHECK(std::filesystem::exists(output));
+}
+
+TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: dragging the gizmo of a busy model previews, then queues", "[integration][ui][viewer][tasks]")
+{
+    panel->loadFile(kCube);
+    REQUIRE(settle());
+    const auto holder = hold(panel->GetModelIds().front());
+
+    panel->SimulateGizmoDrag(0, ModelViewerPanel::TransformValues{5, 0, 0, 0, 0, 0});
+    CHECK(panel->GetTransform(0).moveX == 5.0); // the toolbar follows the preview
+    CHECK(panel->tasks().pending() == 1);       // nothing queued while dragging
+
+    panel->SimulateGizmoRelease();
+    CHECK(panel->GetTransform(0).moveX == 0.0); // back where the scene has it...
+    CHECK(panel->tasks().pending() == 2);       // ...with the move queued
+
+    panel->tasks().cancel(holder);
+    REQUIRE(settle());
+    CHECK(panel->GetTransform(0).moveX == 5.0);
+}
+
+TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: losing the mouse mid-drag ends the drag", "[integration][ui][viewer][tasks]")
+{
+    auto* canvas = tests::support::findDescendant<wxGLCanvas>(panel);
+    panel->loadFile(kCube);
+    REQUIRE(settle());
+    const auto holder = hold(panel->GetModelIds().front());
+
+    panel->SimulateGizmoDrag(0, ModelViewerPanel::TransformValues{5, 0, 0, 0, 0, 0});
+    wxMouseCaptureLostEvent lost(canvas->GetId());
+    lost.SetEventObject(canvas);
+    canvas->HandleWindowEvent(lost);
+    CHECK(panel->tasks().pending() == 2); // the previewed move was queued
+    CHECK(panel->GetTransform(0).moveX == 0.0);
+
+    panel->tasks().cancel(holder);
+    REQUIRE(settle());
+}
+
+TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: an import finishing mid-orbit leaves the camera alone", "[integration][ui][viewer][tasks]")
+{
+    auto* canvas = tests::support::findDescendant<wxGLCanvas>(panel);
+    panel->loadFile(kCube);
+    REQUIRE(settle());
+    sendMouse(canvas, wxEVT_MIDDLE_DOWN, 100, 100); // pan the camera away from the fitted view
+    sendMouse(canvas, wxEVT_MOTION, 160, 140);
+    sendMouse(canvas, wxEVT_MIDDLE_UP, 160, 140);
+    const auto panned = panel->CameraEye();
+
+    sendMouse(canvas, wxEVT_LEFT_DOWN, 100, 100); // orbiting...
+    panel->loadFile(kCube);
+    REQUIRE(settle()); // ...when the import lands
+    CHECK(panel->CameraEye() == panned);
+    sendMouse(canvas, wxEVT_LEFT_UP, 100, 100);
 }

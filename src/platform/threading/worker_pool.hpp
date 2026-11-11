@@ -46,6 +46,12 @@ namespace platform::threading
         void parallelFor(std::size_t first, std::size_t last, std::size_t maxWorkers,
                          const std::function<void(std::size_t)>& body);
 
+        /**
+         * @brief Runs task once on a pool thread, outside any
+         * ExecutionContext, and returns at once. task must not throw.
+         */
+        void post(std::function<void()> task);
+
       private:
         using Task = std::function<void()>;
 

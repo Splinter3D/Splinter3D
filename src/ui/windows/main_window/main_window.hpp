@@ -6,11 +6,18 @@
 #include "ui/toolbars/transform_toolbar/transform_toolbar.hpp"
 #include "ui/windows/base_window/base_window.hpp"
 
+#include <cstddef>
+#include <functional>
 #include <memory>
 
 namespace ui::dialogs
 {
     class ModelManagementDialog;
+}
+
+namespace ui::panels
+{
+    class TasksPanel;
 }
 
 namespace ui::windows
@@ -30,6 +37,11 @@ namespace ui::windows
         // type: model_management_menu_'s unique_ptr can only be destroyed there.
         ~MainWindow() override;
 
+#if defined(SPLINTER3D_TESTING)
+        /** @brief Test-only: replaces the "quit with tasks pending?" dialog (true = quit). */
+        void SetConfirmQuit(std::function<bool(std::size_t pending)> confirm);
+#endif
+
       protected:
         void InitMenuBar() override;
         void InitStatusBar() override;
@@ -42,9 +54,12 @@ namespace ui::windows
         // Owns the spatial organization of the window. MainWindow never
         // touches a wxSizer directly - it only asks layout_ where to put
         // each widget it creates.
-        std::unique_ptr<ui::layouts::BaseLayout>                 layout_;
-        ui::framework::occt::ModelViewerPanel*                   model_viewer_      = nullptr;
-        ui::toolbars::TransformToolbar*                          transform_toolbar_ = nullptr;
+        std::unique_ptr<ui::layouts::BaseLayout> layout_;
+        ui::framework::occt::ModelViewerPanel*   model_viewer_      = nullptr;
+        ui::toolbars::TransformToolbar*          transform_toolbar_ = nullptr;
+        ui::panels::TasksPanel*                  tasks_panel_       = nullptr;
+        // Asked before closing with tasks pending; true quits. Empty: a dialog asks.
+        std::function<bool(std::size_t pending)>                 confirm_quit_;
         std::unique_ptr<ui::framework::wx::events::EventManager> event_manager_;
         std::unique_ptr<ui::dialogs::ModelManagementDialog>      model_management_menu_;
 
@@ -63,5 +78,9 @@ namespace ui::windows
         void UpdateGizmoState();
 
         void ShowModelManagement();
+
+        // Asks before quitting with tasks pending (vetoes on "Keep working"),
+        // then cancels them and waits until none runs.
+        void OnClose(wxCloseEvent& event);
     };
 } // namespace ui::windows

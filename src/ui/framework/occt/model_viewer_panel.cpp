@@ -1,5 +1,6 @@
 #include "model_viewer_panel.hpp"
 
+#include "application/tasks/model_tasks.hpp"
 #include "geometry/occt/transform.hpp"
 #include "platform/benchmark/benchmark.hpp"
 #include "platform/logger/logger.hpp"
@@ -57,7 +58,9 @@ namespace ui::framework::occt
         }
     } // namespace
 
-    class ModelViewerPanel::Viewer
+    // The OCCT viewer, and the SceneEditor through which tasks commit their
+    // changes: every change goes to the scene and to its presentation together.
+    class ModelViewerPanel::Viewer final : public application::tasks::SceneEditor
     {
       public:
         Viewer(wxGLCanvas* canvas, application::service::SceneService& scene)
@@ -131,11 +134,25 @@ namespace ui::framework::occt
             manipulatorProxy_ = new AIS_Shape(dummyVertex);
         }
 
-        void load(const std::filesystem::path& path)
+        void setOnModelsChanged(std::function<void()> callback)
         {
-            // Import time is logged by SceneService::load(); this adds the time
+            onModelsChanged_ = std::move(callback);
+        }
+
+        // Whether the user is moving the camera or a gizmo right now.
+        void setIsInteracting(std::function<bool()> callback)
+        {
+            isInteracting_ = std::move(callback);
+        }
+
+        void addModel(application::service::ModelId id,
+                      const std::string&            baseName,
+                      geometry::occt::Shape         shape,
+                      platform::benchmark::Duration loadDuration) override
+        {
+            // Import time was logged by the import task; this adds the time
             // spent building the shaded presentation and fitting the view.
-            const std::size_t index = scene_.load(path);
+            const std::size_t index = scene_.add(baseName, std::move(shape), id, loadDuration);
 
             std::optional<platform::benchmark::Report> report;
             platform::benchmark::measure(&report, platform::benchmark::ALL, [&] {
@@ -145,7 +162,10 @@ namespace ui::framework::occt
                 context_->Display(presentation, false);
                 context_->SetDisplayMode(presentation, AIS_Shaded, false);
                 context_->UpdateCurrentViewer();
-                view_->FitAll(0.1, true);
+                // A background import can land mid-orbit or mid-drag: don't
+                // yank the camera away from the user then.
+                if (!isInteracting_ || !isInteracting_())
+                    view_->FitAll(0.1, true);
             });
 
             const auto& model   = scene_.models()[index];
@@ -153,19 +173,31 @@ namespace ui::framework::occt
             platform::logger::clog("[viewer] displayed '", model.name, "' (", *report, "; import ",
                                    platform::benchmark::formatMilliseconds(model.loadDuration), ", total ",
                                    platform::benchmark::formatMilliseconds(model.loadDuration + display), ")");
+            modelsChanged();
         }
 
-        void clear()
+        void clear() override
         {
+            if (gizmoTargetIndex_ >= 0)
+                setGizmoTarget(-1, ModelViewerPanel::GizmoTool::None);
             context_->RemoveAll(false);
             presentations_.clear();
             scene_.clear();
             view_->Redraw();
+            modelsChanged();
         }
 
-        bool save(const std::filesystem::path& path) const
+        void removeModel(application::service::ModelId id) override
         {
-            return scene_.saveSTL(path);
+            if (const auto index = scene_.indexOf(id))
+                removeAt(static_cast<int>(*index));
+            modelsChanged();
+        }
+
+        void setTransform(application::service::ModelId id, const geometry::occt::Transform& transform) override
+        {
+            if (const auto index = scene_.indexOf(id))
+                setTransformAt(static_cast<int>(*index), transform);
         }
 
         void resize()
@@ -228,7 +260,7 @@ namespace ui::framework::occt
 
         // Removes one model from the scene and the viewport; the following
         // models shift down by one index. Hides the gizmo if it was on it.
-        void removeModel(int modelIndex)
+        void removeAt(int modelIndex)
         {
             if (!isValidIndex(modelIndex))
                 return;
@@ -274,7 +306,7 @@ namespace ui::framework::occt
         // Applies an absolute transform to a target in the scene (see
         // SceneService::setTransform()) and mirrors it on the matching
         // presentations.
-        void setTransform(int targetIndex, const geometry::occt::Transform& transform)
+        void setTransformAt(int targetIndex, const geometry::occt::Transform& transform)
         {
             if (!scene_.setTransform(targetIndex, transform))
                 return;
@@ -377,18 +409,18 @@ namespace ui::framework::occt
             return true;
         }
 
-        // Applies the drag delta accumulated since StartTransform() to the
-        // target's transform at drag start, through setTransform() so the
-        // scene stays the single source of truth. No-op if no drag is in
-        // progress.
-        void updateGizmoDrag(const wxPoint& point)
+        // The target's transform at drag start plus the drag delta
+        // accumulated since StartTransform(); empty if no drag is in progress
+        // or the manipulator has no delta. Changes nothing: the caller commits
+        // it (as a move task) or previews it.
+        [[nodiscard]] std::optional<geometry::occt::Transform> gizmoDragTransform(const wxPoint& point)
         {
             if (!gizmoDragging_)
-                return;
+                return std::nullopt;
 
             gp_Trsf delta;
             if (!manipulator_->ObjectTransformation(point.x, point.y, view_, delta))
-                return;
+                return std::nullopt;
 
             geometry::occt::Transform transform = dragStart_;
 
@@ -397,8 +429,44 @@ namespace ui::framework::occt
                 transform = geometry::occt::withTranslationDelta(dragStart_, delta.TranslationPart());
             else if (mode == AIS_MM_Rotation)
                 transform = geometry::occt::withRotationDelta(dragStart_, manipulator_->ActiveAxisIndex(), delta);
+            return transform;
+        }
 
-            setTransform(gizmoTargetIndex_, transform);
+        [[nodiscard]] std::array<double, 3> cameraEye() const
+        {
+            double x = 0.0;
+            double y = 0.0;
+            double z = 0.0;
+            view_->Eye(x, y, z);
+            return {x, y, z};
+        }
+
+        [[nodiscard]] int gizmoTargetIndex() const noexcept
+        {
+            return gizmoTargetIndex_;
+        }
+
+        // Shows a model (and the gizmo) at `transform` without changing the
+        // scene: a drag on a model a task is still changing.
+        void previewTransform(int modelIndex, const geometry::occt::Transform& transform)
+        {
+            if (!isValidIndex(modelIndex))
+                return;
+            context_->SetLocation(presentations_[static_cast<std::size_t>(modelIndex)].shape,
+                                  TopLoc_Location(geometry::occt::toTrsf(transform)));
+            positionGizmoAt(transform);
+            view_->Redraw();
+        }
+
+        // Puts a previewed model back where the scene has it.
+        void restoreLocation(int modelIndex)
+        {
+            if (!isValidIndex(modelIndex))
+                return;
+            context_->SetLocation(presentations_[static_cast<std::size_t>(modelIndex)].shape,
+                                  TopLoc_Location(geometry::occt::toTrsf(scene_.transform(modelIndex))));
+            repositionGizmoIfVisible();
+            view_->Redraw();
         }
 
         // Ends the current gizmo drag, if any.
@@ -433,9 +501,21 @@ namespace ui::framework::occt
                 static_cast<std::size_t>(gizmoTargetIndex_) >= scene_.size())
                 return;
 
-            const auto transform = scene_.transform(gizmoTargetIndex_);
+            positionGizmoAt(scene_.transform(gizmoTargetIndex_));
+        }
+
+        void positionGizmoAt(const geometry::occt::Transform& transform)
+        {
+            if (gizmoTool_ == ModelViewerPanel::GizmoTool::None || gizmoTargetIndex_ < 0)
+                return;
             manipulator_->SetPosition(
                 gp_Ax2(gp_Pnt(transform.moveX, transform.moveY, transform.moveZ), gp::DZ(), gp::DX()));
+        }
+
+        void modelsChanged()
+        {
+            if (onModelsChanged_)
+                onModelsChanged_();
         }
 
         application::service::SceneService& scene_;
@@ -461,10 +541,14 @@ namespace ui::framework::occt
         ModelViewerPanel::GizmoTool  gizmoTool_        = ModelViewerPanel::GizmoTool::None;
         bool                         gizmoDragging_    = false;
         geometry::occt::Transform    dragStart_;
+        std::function<void()>        onModelsChanged_;
+        std::function<bool()>        isInteracting_;
     };
 
     ModelViewerPanel::ModelViewerPanel(wxWindow* parent)
         : wxPanel(parent, wxID_ANY)
+        // Results come back on the UI thread; pending ones die with the panel.
+        , tasks_([this](std::function<void()> callback) { CallAfter(std::move(callback)); })
     {
         wxGLAttributes attributes;
         attributes.PlatformDefaults().RGBA().DoubleBuffer().Depth(24).Stencil(8).EndList();
@@ -485,6 +569,13 @@ namespace ui::framework::occt
         canvas_->Bind(wxEVT_MIDDLE_UP, &ModelViewerPanel::onMouseUp, this);
         canvas_->Bind(wxEVT_MOTION, &ModelViewerPanel::onMouseMove, this);
         canvas_->Bind(wxEVT_MOUSEWHEEL, &ModelViewerPanel::onMouseWheel, this);
+        // The mouse-up never comes when the capture is lost (e.g. a dialog
+        // pops up mid-drag): end the drag as if it did.
+        canvas_->Bind(wxEVT_MOUSE_CAPTURE_LOST, [this](wxMouseCaptureLostEvent&) {
+            releaseGizmo();
+            rotating_ = false;
+            panning_  = false;
+        });
 
         // wxBG_STYLE_PAINT must be set on the canvas itself, not just the
         // wrapping panel: it is canvas_ that OpenGL paints into. Without
@@ -497,15 +588,23 @@ namespace ui::framework::occt
         SetBackgroundStyle(wxBG_STYLE_PAINT);
     }
 
-    ModelViewerPanel::~ModelViewerPanel() = default;
+    ModelViewerPanel::~ModelViewerPanel()
+    {
+        // Running work references the scene and the viewer: stop it first.
+        tasks_.cancelAllAndWait();
+    }
+
+    application::tasks::TaskManager& ModelViewerPanel::tasks() noexcept
+    {
+        return tasks_;
+    }
 
     void ModelViewerPanel::newFile()
     {
         try
         {
             initializeViewer();
-            viewer_->clear();
-            notifyModelStateChanged();
+            tasks_.submit(application::tasks::clearTask(scene_, *viewer_));
         }
         catch (const std::exception& error)
         {
@@ -543,9 +642,7 @@ namespace ui::framework::occt
         try
         {
             initializeViewer();
-            viewer_->load(path);
-            viewer_->paint();
-            notifyModelStateChanged();
+            tasks_.submit(application::tasks::importTask(scene_, *viewer_, path));
             return true;
         }
         catch (const std::exception& error)
@@ -557,18 +654,17 @@ namespace ui::framework::occt
 
     bool ModelViewerPanel::exportFile(const std::filesystem::path& path)
     {
-        try
+        // A model still being imported counts: the export queues behind it.
+        const auto& reserved      = scene_.reservedIds();
+        const bool  importPending = std::any_of(reserved.begin(), reserved.end(),
+                                                [this](application::service::ModelId id) { return tasks_.wouldWait(id); });
+        if (scene_.empty() && !importPending)
         {
-            initializeViewer();
-            if (viewer_->save(path))
-                return true;
-            wxLogError("Unable to export the model.");
+            wxLogError("Unable to export: no model loaded.");
+            return false;
         }
-        catch (const std::exception& error)
-        {
-            wxLogError("Unable to export the model: %s", error.what());
-        }
-        return false;
+        tasks_.submit(application::tasks::exportTask(scene_, path));
+        return true;
     }
 
     void ModelViewerPanel::initializeViewer()
@@ -587,6 +683,8 @@ namespace ui::framework::occt
         canvas_->SetCurrent(*context_);
         viewer_      = std::make_unique<Viewer>(canvas_, scene_);
         initialized_ = true;
+        viewer_->setOnModelsChanged([this] { notifyModelStateChanged(); });
+        viewer_->setIsInteracting([this] { return rotating_ || panning_ || gizmo_dragging_; });
     }
 
     bool ModelViewerPanel::hasModel() const
@@ -601,6 +699,11 @@ namespace ui::framework::occt
         for (const auto& name : scene_.names())
             names.push_back(wxString::FromUTF8(name));
         return names;
+    }
+
+    std::vector<application::service::ModelId> ModelViewerPanel::GetModelIds() const
+    {
+        return scene_.ids();
     }
 
     std::vector<bool> ModelViewerPanel::GetModelVisibility() const
@@ -621,8 +724,13 @@ namespace ui::framework::occt
     {
         if (!initialized_ || viewer_ == nullptr)
             return;
-        viewer_->removeModel(modelIndex);
-        notifyModelStateChanged();
+        if (modelIndex < 0 || static_cast<std::size_t>(modelIndex) >= scene_.size())
+        {
+            notifyModelStateChanged(); // nothing to remove; listeners still resync
+            return;
+        }
+        tasks_.submit(application::tasks::removeTask(
+            scene_, *viewer_, scene_.models()[static_cast<std::size_t>(modelIndex)].id));
     }
 
     void ModelViewerPanel::FocusModel(int modelIndex)
@@ -643,11 +751,23 @@ namespace ui::framework::occt
         if (!initialized_ || viewer_ == nullptr)
             return;
 
-        viewer_->setTransform(targetIndex, {moveXmm, moveYmm, moveZmm, rotateXdeg, rotateYdeg, rotateZdeg});
+        const geometry::occt::Transform            transform{moveXmm, moveYmm, moveZmm, rotateXdeg, rotateYdeg, rotateZdeg};
+        std::vector<application::service::ModelId> targets;
+        if (targetIndex == application::service::SceneService::kAllModels)
+            targets = scene_.ids();
+        else if (targetIndex >= 0 && static_cast<std::size_t>(targetIndex) < scene_.size())
+            targets.push_back(scene_.models()[static_cast<std::size_t>(targetIndex)].id);
+
+        // Each applies at once, or queues behind a task still changing that model.
+        for (const auto id : targets)
+            tasks_.submit(application::tasks::moveTask(scene_, *viewer_, id, transform));
     }
 
     ModelViewerPanel::TransformValues ModelViewerPanel::GetTransform(int targetIndex) const
     {
+        // While a drag on a busy model is previewed, show what is previewed.
+        if (pending_drag_ && targetIndex >= 0 && scene_.indexOf(pending_drag_->first) == static_cast<std::size_t>(targetIndex))
+            return pending_drag_->second;
         return scene_.transform(targetIndex);
     }
 
@@ -718,14 +838,69 @@ namespace ui::framework::occt
         canvas_->CaptureMouse();
     }
 
+    void ModelViewerPanel::dragGizmoTo(int modelIndex, const geometry::occt::Transform& transform)
+    {
+        if (modelIndex < 0 || static_cast<std::size_t>(modelIndex) >= scene_.size())
+            return;
+        const auto id = scene_.models()[static_cast<std::size_t>(modelIndex)].id;
+        if (tasks_.wouldWait(id))
+        {
+            viewer_->previewTransform(modelIndex, transform);
+            pending_drag_.emplace(id, transform);
+        }
+        else
+        {
+            pending_drag_.reset();
+            tasks_.submit(application::tasks::moveTask(scene_, *viewer_, id, transform));
+        }
+    }
+
+    void ModelViewerPanel::releaseGizmo()
+    {
+        if (gizmo_dragging_ && initialized_)
+        {
+            viewer_->stopGizmoDrag();
+            // The model was busy: what was previewed becomes a queued move.
+            if (pending_drag_)
+            {
+                const auto [id, transform] = *pending_drag_;
+                pending_drag_.reset();
+                if (const auto index = scene_.indexOf(id))
+                    viewer_->restoreLocation(static_cast<int>(*index));
+                tasks_.submit(application::tasks::moveTask(scene_, *viewer_, id, transform));
+            }
+        }
+        gizmo_dragging_ = false;
+    }
+
+#if defined(SPLINTER3D_TESTING)
+    void ModelViewerPanel::SimulateGizmoDrag(int modelIndex, const TransformValues& transform)
+    {
+        if (!initialized_)
+            return;
+        gizmo_dragging_ = true;
+        dragGizmoTo(modelIndex, transform);
+        if (on_gizmo_changed_)
+            on_gizmo_changed_();
+    }
+
+    void ModelViewerPanel::SimulateGizmoRelease()
+    {
+        releaseGizmo();
+    }
+
+    std::array<double, 3> ModelViewerPanel::CameraEye() const
+    {
+        return initialized_ ? viewer_->cameraEye() : std::array<double, 3>{};
+    }
+#endif
+
     void ModelViewerPanel::onMouseUp(wxMouseEvent& event)
     {
         if (event.LeftUp())
         {
-            if (gizmo_dragging_ && initialized_)
-                viewer_->stopGizmoDrag();
-            gizmo_dragging_ = false;
-            rotating_       = false;
+            releaseGizmo();
+            rotating_ = false;
         }
         if (event.MiddleUp())
             panning_ = false;
@@ -750,9 +925,9 @@ namespace ui::framework::occt
         // is clicked.
         if (gizmo_dragging_)
         {
-            // updateGizmoDrag() already redraws (via setTransform()) when
-            // it successfully applies a delta; no need to redraw again.
-            viewer_->updateGizmoDrag(position);
+            // Both paths redraw; no need to redraw again here.
+            if (const auto transform = viewer_->gizmoDragTransform(position))
+                dragGizmoTo(viewer_->gizmoTargetIndex(), *transform);
             last_mouse_position_ = position;
             if (on_gizmo_changed_)
                 on_gizmo_changed_();

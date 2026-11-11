@@ -3,14 +3,20 @@
 #include "geometry/occt/path.hpp"
 #include "platform/logger/logger.hpp"
 
+#include <BRepBuilderAPI_Copy.hxx>
 #include <BRepMesh_IncrementalMesh.hxx>
 #include <BRep_Builder.hxx>
+#include <IMeshTools_Parameters.hxx>
+#include <Message_ProgressScope.hxx>
 #include <StlAPI_Writer.hxx>
 #include <TopLoc_Location.hxx>
 #include <TopoDS_Compound.hxx>
 #include <algorithm>
+#include <atomic>
 #include <fstream>
 #include <optional>
+#include <random>
+#include <string>
 #include <utility>
 
 namespace application::service
@@ -19,7 +25,8 @@ namespace application::service
     {
         std::optional<platform::benchmark::Report> report;
 
-        auto shape = platform::benchmark::measure(&report, platform::benchmark::ALL, &geometry::occt::Shape::fromSTL, path);
+        auto              shape     = platform::benchmark::measure(&report, platform::benchmark::ALL,
+                                                                   [&] { return geometry::occt::Shape::fromSTL(path); });
         const std::size_t index     = add(geometry::occt::toUtf8(path.filename()), std::move(shape));
         models_[index].loadDuration = report->time.value_or(platform::benchmark::Duration::zero());
         platform::logger::clog("[scene] imported '", models_[index].name, "' from ", geometry::occt::toUtf8(path),
@@ -27,10 +34,76 @@ namespace application::service
         return index;
     }
 
-    std::size_t SceneService::add(const std::string& baseName, geometry::occt::Shape shape)
+    std::size_t SceneService::add(const std::string&            baseName,
+                                  geometry::occt::Shape         shape,
+                                  ModelId                       id,
+                                  platform::benchmark::Duration loadDuration)
     {
-        models_.push_back(Model{uniqueName(baseName), std::move(shape), {}});
+        Model model;
+        model.id           = id != 0 ? id : nextId_++;
+        model.name         = uniqueName(baseName);
+        model.shape        = std::move(shape);
+        model.loadDuration = loadDuration;
+        std::erase(reserved_, model.id);
+        models_.push_back(std::move(model));
         return models_.size() - 1;
+    }
+
+    ModelId SceneService::reserveId()
+    {
+        reserved_.push_back(nextId_);
+        return nextId_++;
+    }
+
+    void SceneService::releaseId(ModelId id)
+    {
+        std::erase(reserved_, id);
+    }
+
+    const std::vector<ModelId>& SceneService::reservedIds() const noexcept
+    {
+        return reserved_;
+    }
+
+    bool SceneService::removeById(ModelId id)
+    {
+        const auto index = indexOf(id);
+        if (!index)
+            return false;
+        models_.erase(models_.begin() + static_cast<std::ptrdiff_t>(*index));
+        return true;
+    }
+
+    const SceneService::Model* SceneService::find(ModelId id) const noexcept
+    {
+        const auto index = indexOf(id);
+        return index ? &models_[*index] : nullptr;
+    }
+
+    std::optional<std::size_t> SceneService::indexOf(ModelId id) const noexcept
+    {
+        for (std::size_t i = 0; i < models_.size(); ++i)
+            if (models_[i].id == id)
+                return i;
+        return std::nullopt;
+    }
+
+    std::vector<ModelId> SceneService::ids() const
+    {
+        std::vector<ModelId> result;
+        result.reserve(models_.size());
+        for (const auto& model : models_)
+            result.push_back(model.id);
+        return result;
+    }
+
+    bool SceneService::setTransformById(ModelId id, const geometry::occt::Transform& transform)
+    {
+        const auto index = indexOf(id);
+        if (!index)
+            return false;
+        models_[*index].transform = transform;
+        return true;
     }
 
     void SceneService::clear() noexcept
@@ -93,31 +166,7 @@ namespace application::service
 
     bool SceneService::saveSTL(const std::filesystem::path& path) const
     {
-        if (models_.empty())
-            return false;
-
-        // Every model, each placed where the viewer shows it, in one compound.
-        // Moved() only attaches a location to the shared geometry; the writer
-        // applies it to the triangles it outputs.
-        TopoDS_Compound compound;
-        BRep_Builder    builder;
-        builder.MakeCompound(compound);
-        for (const auto& model : models_)
-            builder.Add(compound,
-                        model.shape.value().Moved(TopLoc_Location(geometry::occt::toTrsf(model.transform))));
-
-        // StlAPI_Writer only exports faces that already carry a triangulation.
-        // The viewer happens to create one when it displays a shape, but export
-        // must not depend on that: mesh here (a no-op if already meshed finely
-        // enough). 0.01 is relative to each edge's size.
-        BRepMesh_IncrementalMesh mesher(compound, 0.01, /*isRelative=*/true, 0.5, /*isInParallel=*/false);
-        (void) mesher;
-
-        StlAPI_Writer writer;
-        std::ofstream stream(path, writer.ASCIIMode() ? std::ios::out : std::ios::out | std::ios::binary);
-        if (!stream)
-            return false;
-        return writer.Write(compound, stream) && stream.flush().good();
+        return exportSTL(models_, path);
     }
 
     bool SceneService::isValidIndex(int index) const noexcept
@@ -139,5 +188,81 @@ namespace application::service
         for (int suffix = 2; taken(candidate); ++suffix)
             candidate = base + " (" + std::to_string(suffix) + ")";
         return candidate;
+    }
+
+    std::optional<std::filesystem::path> writeSTLTemporary(const std::vector<SceneService::Model>& models,
+                                                           const std::filesystem::path&            path,
+                                                           const Message_ProgressRange&            progress)
+    {
+        if (models.empty())
+            return std::nullopt;
+
+        // Every model, each placed where the viewer shows it, in one compound.
+        // Moved() only attaches a location to the shared geometry; the writer
+        // applies it to the triangles it outputs.
+        TopoDS_Compound compound;
+        BRep_Builder    builder;
+        builder.MakeCompound(compound);
+        for (const auto& model : models)
+            builder.Add(compound,
+                        model.shape.value().Moved(TopLoc_Location(geometry::occt::toTrsf(model.transform))));
+
+        Message_ProgressScope scope(progress, "Export STL", 2);
+
+        // Meshing replaces the faces' triangulations, and the shapes are shared
+        // with the scene and the viewer (and other exports, on other threads):
+        // work on a deep copy, meshes included, so nothing outside changes.
+        BRepBuilderAPI_Copy copier(compound, /*copyGeom=*/true, /*copyMesh=*/true);
+        const TopoDS_Shape  exported = copier.Shape();
+
+        // StlAPI_Writer only exports faces that already carry a triangulation.
+        // The viewer happens to create one when it displays a shape, but export
+        // must not depend on that: mesh here (a no-op if already meshed finely
+        // enough). 0.01 is relative to each edge's size.
+        IMeshTools_Parameters parameters;
+        parameters.Deflection = 0.01;
+        parameters.Relative   = true;
+        parameters.Angle      = 0.5;
+        parameters.InParallel = false;
+        BRepMesh_IncrementalMesh mesher(exported, parameters, scope.Next());
+        if (scope.UserBreak())
+            return std::nullopt;
+
+        // Unique, so two exports to the same path never write the same file.
+        static std::atomic<std::uint64_t> counter{0};
+        std::filesystem::path             temporary = path;
+        temporary += "." + std::to_string(std::random_device{}()) + "-" + std::to_string(counter++) + ".tmp";
+        bool written = false;
+        {
+            StlAPI_Writer writer;
+            std::ofstream stream(temporary, writer.ASCIIMode() ? std::ios::out : std::ios::out | std::ios::binary);
+            written = stream && writer.Write(exported, stream, scope.Next()) && stream.flush().good();
+        }
+
+        if (!written || scope.UserBreak())
+        {
+            std::error_code ec;
+            std::filesystem::remove(temporary, ec);
+            return std::nullopt;
+        }
+        return temporary;
+    }
+
+    bool commitSTLTemporary(const std::filesystem::path& temporary, const std::filesystem::path& path)
+    {
+        std::error_code ec;
+        std::filesystem::rename(temporary, path, ec);
+        if (!ec)
+            return true;
+        std::filesystem::remove(temporary, ec);
+        return false;
+    }
+
+    bool exportSTL(const std::vector<SceneService::Model>& models,
+                   const std::filesystem::path&            path,
+                   const Message_ProgressRange&            progress)
+    {
+        const auto temporary = writeSTLTemporary(models, path, progress);
+        return temporary && commitSTLTemporary(*temporary, path);
     }
 } // namespace application::service

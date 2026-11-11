@@ -1,11 +1,15 @@
 #pragma once
 
 #include "application/service/scene_service.hpp"
+#include "application/tasks/task_manager.hpp"
 #include "geometry/occt/transform.hpp"
 
+#include <array>
 #include <filesystem>
 #include <functional>
 #include <memory>
+#include <optional>
+#include <utility>
 #include <vector>
 #include <wx/glcanvas.h>
 #include <wx/panel.h>
@@ -29,12 +33,18 @@ namespace ui::framework::occt
         // Asks for a destination with a dialog, then exportFile()s to it.
         void saveFile();
 
-        // Imports an STL file into the scene and displays it. Logs and
-        // returns false if it could not be imported (the scene is unchanged).
+        // Starts importing an STL file in the background (a task); the model
+        // appears once it is read. Returns false only if the viewer could not
+        // start; import errors show on the task's card.
         bool loadFile(const std::filesystem::path& path);
 
-        // Writes the scene to an STL file. Logs and returns false on failure.
+        // Starts writing the scene to an STL file in the background (a task).
+        // Returns false (and logs) if no model is loaded or being imported;
+        // errors show on the task's card.
         bool exportFile(const std::filesystem::path& path);
+
+        // The background tasks working on this panel's scene (see TasksPanel).
+        [[nodiscard]] application::tasks::TaskManager& tasks() noexcept;
 
         // True as soon as a shape is loaded in the viewer.
         [[nodiscard]] bool hasModel() const;
@@ -42,6 +52,9 @@ namespace ui::framework::occt
         // Display names of every currently loaded model, in load order.
         // Index i matches setTransform()/GetTransform()'s targetIndex.
         [[nodiscard]] std::vector<wxString> GetModelNames() const;
+
+        // Stable ids of every loaded model, same order as GetModelNames().
+        [[nodiscard]] std::vector<application::service::ModelId> GetModelIds() const;
 
         [[nodiscard]] std::vector<bool> GetModelVisibility() const;
         void                            SetModelVisibility(int modelIndex, bool visible);
@@ -53,7 +66,8 @@ namespace ui::framework::occt
         // targetIndex selects which one: -1 applies the same absolute
         // transform to every loaded model, otherwise it is an index into
         // GetModelNames(). Does nothing if no model is loaded or the index
-        // is out of range.
+        // is out of range. Applies at once, unless a task is still changing
+        // that model: then it is queued behind it (FIFO).
         void setTransform(int    targetIndex,
                           double moveXmm,
                           double moveYmm,
@@ -89,8 +103,25 @@ namespace ui::framework::occt
         // so other widgets (e.g. the transform toolbar) can react.
         void SetOnModelStateChanged(std::function<void(bool)> callback);
 
+#if defined(SPLINTER3D_TESTING)
+        // Test-only: what a gizmo drag to `transform` on model `modelIndex`,
+        // then the mouse button's release, do (a real drag needs the mouse
+        // on a gizmo handle, which tests can't aim at).
+        void SimulateGizmoDrag(int modelIndex, const TransformValues& transform);
+        void SimulateGizmoRelease();
+
+        // Test-only: where the camera is.
+        [[nodiscard]] std::array<double, 3> CameraEye() const;
+#endif
+
       private:
         void notifyModelStateChanged();
+
+        // Commits a gizmo drag position, or previews it while a task still
+        // changes the model (see pending_drag_).
+        void dragGizmoTo(int modelIndex, const geometry::occt::Transform& transform);
+        // Ends a gizmo drag: a previewed position becomes a queued move.
+        void releaseGizmo();
 
         void onPaint(wxPaintEvent& event);
         void onSize(wxSizeEvent& event);
@@ -113,5 +144,10 @@ namespace ui::framework::occt
         wxPoint                   last_mouse_position_;
         std::function<void(bool)> on_model_state_changed_;
         std::function<void()>     on_gizmo_changed_;
+        // Last gizmo drag position on a model a task is still changing: only
+        // previewed, queued as a move on mouse up.
+        std::optional<std::pair<application::service::ModelId, geometry::occt::Transform>> pending_drag_;
+        // Declared last, destroyed first: its tasks reference scene_ and viewer_.
+        application::tasks::TaskManager tasks_;
     };
 } // namespace ui::framework::occt

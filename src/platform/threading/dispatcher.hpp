@@ -57,6 +57,19 @@ namespace platform::threading
             return benchmark::measure(&lease.report, kMetrics, std::forward<Func>(fn));
         }
 
+        /**
+         * @brief Runs run(operation, fn) on a pool thread and returns at once.
+         * The pool thread counts as the operation's calling thread, so NPROC
+         * and parallelFor() inside fn work as in run(). fn should not throw;
+         * if it does, the exception is logged and dropped. then, if given,
+         * runs on the same thread once the run's budget is released (also
+         * after fn threw); it must not throw.
+         */
+        void submit(std::string operation, std::function<void()> fn, std::function<void()> then = {});
+
+        /** @brief Workers no top-level run holds right now; 0 when saturated. */
+        [[nodiscard]] std::size_t freeWorkers() const noexcept;
+
         /** @brief The current thread's worker budget; 1 outside any run(). */
         [[nodiscard]] std::size_t nproc() const noexcept;
 

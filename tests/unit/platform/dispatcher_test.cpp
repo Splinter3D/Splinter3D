@@ -4,6 +4,7 @@
 #include <array>
 #include <atomic>
 #include <catch2/catch_test_macros.hpp>
+#include <chrono>
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
@@ -33,6 +34,15 @@ namespace
         ScalabilityProfile profile;
         profile.record(workers, report, false);
         return profile;
+    }
+
+    // A submitted run releases its workers after fn returns; wait for that so
+    // the next test starts with an idle Dispatcher.
+    bool waitIdle(Dispatcher& dispatcher)
+    {
+        for (int i = 0; i < 5000 && dispatcher.freeWorkers() != dispatcher.total(); ++i)
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        return dispatcher.freeWorkers() == dispatcher.total();
     }
 
     void writeFile(const std::string& path, const std::string& content)
@@ -255,4 +265,58 @@ TEST_CASE("Dispatcher: bad profile files are ignored", "[platform][threading]")
     REQUIRE_NOTHROW(dispatcher.load(path));
     REQUIRE(dispatcher.profile("ok"));
     REQUIRE_FALSE(dispatcher.profile("bad"));
+}
+
+TEST_CASE("Dispatcher: freeWorkers is total when idle and drops during a run", "[platform][threading]")
+{
+    auto& dispatcher = Dispatcher::getInstance();
+    REQUIRE(dispatcher.freeWorkers() == dispatcher.total());
+    dispatcher.run("f", [&] { REQUIRE(dispatcher.freeWorkers() == dispatcher.total() - NPROC); });
+    REQUIRE(dispatcher.freeWorkers() == dispatcher.total());
+}
+
+TEST_CASE("Dispatcher: submit runs fn under a budget on another thread", "[platform][threading]")
+{
+    auto&           dispatcher = Dispatcher::getInstance();
+    std::latch      ran(1);
+    std::thread::id thread;
+    std::size_t     budget = 0;
+    dispatcher.submit("s.async", [&] {
+        thread = std::this_thread::get_id();
+        budget = NPROC;
+        ran.count_down();
+    });
+    ran.wait();
+    REQUIRE(thread != std::this_thread::get_id());
+    REQUIRE(budget >= 1);
+    REQUIRE(waitIdle(dispatcher));
+    REQUIRE(dispatcher.profile("s.async"));
+}
+
+TEST_CASE("Dispatcher: submit swallows exceptions", "[platform][threading]")
+{
+    auto&      dispatcher = Dispatcher::getInstance();
+    std::latch ran(1);
+    dispatcher.submit("s.throw", [] { throw std::runtime_error("boom"); });
+    dispatcher.submit("s.after", [&] { ran.count_down(); });
+    ran.wait();
+    REQUIRE(waitIdle(dispatcher)); // the pool survived the throwing task
+}
+
+TEST_CASE("Dispatcher: submit's then runs once the budget is released", "[platform][threading]")
+{
+    auto&             dispatcher = Dispatcher::getInstance();
+    std::latch        done(1);
+    std::size_t       freeInThen = 0;
+    std::atomic<bool> ranFn      = false;
+    dispatcher.submit(
+        "s.then", [&] { ranFn = true; },
+        [&] {
+            freeInThen = dispatcher.freeWorkers();
+            done.count_down();
+        });
+    done.wait();
+    REQUIRE(ranFn);
+    REQUIRE(freeInThen == dispatcher.total());
+    REQUIRE(waitIdle(dispatcher));
 }

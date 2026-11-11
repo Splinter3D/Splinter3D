@@ -6,12 +6,14 @@
 #include "ui/layouts/layout_registry.hpp"
 #include "ui/menus/menu_registry.hpp"
 #include "ui/panels/panel_registry.hpp"
+#include "ui/panels/tasks_panel/tasks_panel.hpp"
 #include "ui/toolbars/toolbar_registry.hpp"
 
 #include <filesystem>
 #include <utility>
 #include <wx/iconbndl.h>
 #include <wx/image.h>
+#include <wx/msgdlg.h>
 #include <wx/stdpaths.h>
 
 namespace ui::windows
@@ -126,6 +128,15 @@ namespace ui::windows
             model_viewer_ = dynamic_cast<ui::framework::occt::ModelViewerPanel*>(modelViewer);
         }
 
+        // Right of the viewer; hidden until a task shows up.
+        auto* tasksPanel = PanelRegistry::getInstance().Create(ui::framework::wx::ids::panels::kTasks, this);
+        tasks_panel_     = dynamic_cast<ui::panels::TasksPanel*>(tasksPanel);
+        if (tasks_panel_ != nullptr && layout_ != nullptr && model_viewer_ != nullptr)
+        {
+            layout_->AddRight(tasks_panel_);
+            tasks_panel_->attach(model_viewer_->tasks());
+        }
+
         if (model_viewer_ != nullptr)
         {
             model_management_menu_ = std::make_unique<ui::dialogs::ModelManagementDialog>(
@@ -201,7 +212,48 @@ namespace ui::windows
             this,
             std::move(callbacks));
         event_manager_->bindAll();
+
+        Bind(wxEVT_CLOSE_WINDOW, &MainWindow::OnClose, this);
     }
+
+    void MainWindow::OnClose(wxCloseEvent& event)
+    {
+        if (model_viewer_ != nullptr)
+        {
+            auto&             tasks   = model_viewer_->tasks();
+            const std::size_t pending = tasks.pending();
+            // A forced close (e.g. a signal) can't be refused: cancel without asking.
+            if (pending > 0 && event.CanVeto())
+            {
+                bool quit = false;
+                if (confirm_quit_)
+                    quit = confirm_quit_(pending);
+                else
+                {
+                    wxMessageDialog dialog(
+                        this,
+                        wxString::Format("%zu task(s) still running or queued. Cancel them and quit?", pending),
+                        "Quit Splinter3D", wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION);
+                    dialog.SetYesNoLabels("Quit", "Keep working");
+                    quit = dialog.ShowModal() == wxID_YES;
+                }
+                if (!quit)
+                {
+                    event.Veto();
+                    return;
+                }
+            }
+            tasks.cancelAllAndWait();
+        }
+        event.Skip();
+    }
+
+#if defined(SPLINTER3D_TESTING)
+    void MainWindow::SetConfirmQuit(std::function<bool(std::size_t pending)> confirm)
+    {
+        confirm_quit_ = std::move(confirm);
+    }
+#endif
 
     void MainWindow::ShowModelManagement()
     {

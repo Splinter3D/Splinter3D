@@ -41,9 +41,11 @@ namespace ui::framework::wx
         {
             frame_->Bind(
                 wxEVT_CLOSE_WINDOW,
-                [this](wxCloseEvent&) {
-                    frame_->Destroy();
-                });
+                // Skip rather than Destroy(): the frame's default handler
+                // destroys it once every close handler had its say, so one
+                // bound earlier (e.g. MainWindow asking about running tasks)
+                // can still veto, whatever the binding order.
+                [](wxCloseEvent& event) { event.Skip(); });
         }
 
         void WindowEvents::bindResize()
