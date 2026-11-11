@@ -5,6 +5,7 @@
 #include "core/utils/os_compatibility.hpp"
 #include "platform/locale/locale_manager.hpp"
 #include "platform/logger/logger.hpp"
+#include "platform/threading/dispatcher.hpp"
 #include "ui/layouts/layout_registration.hpp"
 #include "ui/menus/menu_registration.hpp"
 #include "ui/panels/panel_registration.hpp"
@@ -54,6 +55,10 @@ namespace app
         platform::logger::clog(
             "[bootstrap] initializing locale from ", (dataRoot / "locale").string());
         platform::locale::LocaleManager::get().init((dataRoot / "locale").string());
+
+        const auto profiles = dataRoot / "assets" / platform::threading::Dispatcher::kProfilesFile;
+        platform::logger::clog("[bootstrap] loading scalability profiles from ", profiles.string());
+        platform::threading::Dispatcher::getInstance().load(profiles);
 
         core::utils::InstallSignalHandlers();
         core::utils::disableCtrlCEcho();

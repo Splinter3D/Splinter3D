@@ -5,6 +5,7 @@
 #include "core/utils/data_root.hpp"
 #include "core/utils/os_compatibility.hpp"
 #include "platform/benchmark/benchmark.hpp"
+#include "platform/threading/dispatcher.hpp"
 
 #include <filesystem>
 #include <vector>
@@ -112,6 +113,7 @@ namespace app
             application_->shutdown();
             application_.reset();
         }
+        platform::threading::Dispatcher::getInstance().save();
 
         return wxApp::OnExit();
     }

@@ -82,3 +82,6 @@ __pycache__/
 
 # Docker
 !Dockerfile
+
+# Scalability profiles the Dispatcher learns per machine
+/assets/splinter3D.profiles.json

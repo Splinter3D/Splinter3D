@@ -1,4 +1,5 @@
 #include "core/event_bus/event_bus.hpp"
+#include "platform/threading/dispatcher.hpp"
 
 #include <catch2/catch_test_case_info.hpp>
 #include <catch2/reporters/catch_reporter_event_listener.hpp>
@@ -16,11 +17,13 @@ namespace
         void testCaseStarting(const Catch::TestCaseInfo&) override
         {
             core::event_bus::EventBus::getInstance().clear();
+            platform::threading::Dispatcher::getInstance().clear();
         }
 
         void testCaseEnded(const Catch::TestCaseStats&) override
         {
             core::event_bus::EventBus::getInstance().clear();
+            platform::threading::Dispatcher::getInstance().clear();
         }
     };
 } // namespace

@@ -2,6 +2,8 @@
 
 #include "application/service/scene_service.hpp"
 #include "application/workflow/batch_runner.hpp"
+#include "core/utils/data_root.hpp"
+#include "platform/threading/dispatcher.hpp"
 
 #include <algorithm>
 #include <filesystem>
@@ -9,6 +11,20 @@
 
 namespace app::cli
 {
+    namespace
+    {
+        std::filesystem::path profilesPath(const std::string& program)
+        {
+            std::error_code             ec;
+            const std::filesystem::path executable =
+                std::filesystem::absolute(std::filesystem::path(std::u8string(program.begin(), program.end())), ec);
+            std::filesystem::path dataRoot = core::utils::findDataRoot(ec ? std::filesystem::path() : executable);
+            if (dataRoot.empty())
+                dataRoot = std::filesystem::current_path();
+            return dataRoot / "assets" / platform::threading::Dispatcher::kProfilesFile;
+        }
+    } // namespace
+
     std::optional<int> runBatchIfRequested(const std::vector<std::string>& args)
     {
         const auto flag = std::find(args.begin(), args.end(), "--batch");
@@ -33,7 +49,10 @@ namespace app::cli
 
         application::service::SceneService scene;
         application::workflow::BatchRunner runner(scene, std::cout);
-        const auto                         result = runner.runFile(script);
+        auto&                              dispatcher = platform::threading::Dispatcher::getInstance();
+        dispatcher.load(profilesPath(args.front()));
+        const auto result = runner.runFile(script);
+        dispatcher.save();
         std::cout.flush();
 
         if (result.ok)
