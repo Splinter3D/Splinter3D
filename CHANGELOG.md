@@ -1,3 +1,18 @@
+## v0.2.1 (2026-11-11)
+
+### Fix
+
+- **ci**: remove gpu requirements in unit tests for macos
+- windows non ascii path handling
+- version check counted rc tag as inferior to stable
+- **ci**: avoid workflow failures during release
+
+## v0.2.0 (2026-11-10)
+
+### Fix
+
+- remove VCPKG_build_report.md (to be moved in research repo)
+
 ## v0.2.0-rc.8 (2026-11-10)
 
 ### Fix

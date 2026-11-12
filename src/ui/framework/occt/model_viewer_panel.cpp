@@ -11,6 +11,7 @@
 #include <AIS_ManipulatorMode.hxx>
 #include <AIS_Shape.hxx>
 #include <Aspect_DisplayConnection.hxx>
+#include <Aspect_GraphicDeviceDefinitionError.hxx>
 #include <BRep_Builder.hxx>
 #include <OpenGl_GraphicDriver.hxx>
 #include <Precision.hxx>
@@ -99,7 +100,15 @@ namespace ui::framework::occt
                     ? static_cast<wxGLCanvasImpl*>(canvas)->GetGLXFBConfig()[0]
                     : nullptr);
 #endif
-            view_->SetWindow(nativeWindow);
+            try
+            {
+                view_->SetWindow(nativeWindow);
+            }
+            catch (const Aspect_GraphicDeviceDefinitionError&)
+            {
+                graphicDriver->ChangeOptions().contextNoAccel = true;
+                view_->SetWindow(nativeWindow);
+            }
             view_->SetBackgroundColor(Quantity_NOC_DARKSLATEBLUE);
 
             context_ = new AIS_InteractiveContext(viewer_);
