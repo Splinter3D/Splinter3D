@@ -39,10 +39,11 @@ target_link_libraries(${SPLINTER3D_TARGET_NAME} PRIVATE ${SPLINTER3D_LIB_TARGET_
 add_custom_command(
     TARGET ${SPLINTER3D_TARGET_NAME}
     POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CMAKE_CURRENT_SOURCE_DIR}/assets"
-            "$<TARGET_FILE_DIR:${SPLINTER3D_TARGET_NAME}>/assets"
-    COMMENT "Copying runtime assets"
+    COMMAND ${CMAKE_COMMAND}
+            -DSRC="${CMAKE_CURRENT_SOURCE_DIR}/assets"
+            -DDST="$<TARGET_FILE_DIR:${SPLINTER3D_TARGET_NAME}>/assets"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/commands/CopyAssets.cmake"
+    COMMENT "Copying runtime assets (optional large STLs are not copied)"
 )
 
 #######################################

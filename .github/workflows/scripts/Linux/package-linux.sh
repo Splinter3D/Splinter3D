@@ -103,6 +103,8 @@ fi
 if [[ -d "${PROJECT_ROOT}/assets" ]]; then
     msg "Copying assets..."
     cp -r "${PROJECT_ROOT}/assets" "$STAGING_DIR/assets"
+    # Optional large STLs (scripts/fetch-assets.py) are never shipped
+    rm -rf "${STAGING_DIR:?}/assets/stl/large"
 fi
 
 # Copy documentation

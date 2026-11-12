@@ -96,6 +96,8 @@ chmod +x "$STAGING_DIR/Contents/MacOS/splinter3D"
 if [[ -d "${PROJECT_ROOT}/assets" ]]; then
     msg "Copying assets..."
     cp -r "${PROJECT_ROOT}/assets" "$STAGING_DIR/Contents/Resources/assets"
+    # Optional large STLs (scripts/fetch-assets.py) are never shipped
+    rm -rf "${STAGING_DIR:?}/Contents/Resources/assets/stl/large"
 fi
 
 # App icon (optional)

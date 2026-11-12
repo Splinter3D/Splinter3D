@@ -105,6 +105,8 @@ foreach ($d in $dlls) {
 # Copy locale and assets
 if (Test-Path (Join-Path $ProjectRoot 'locale')) { Copy-Item -Path (Join-Path $ProjectRoot 'locale') -Destination (Join-Path $staging 'locale') -Recurse -Force }
 if (Test-Path (Join-Path $ProjectRoot 'assets')) { Copy-Item -Path (Join-Path $ProjectRoot 'assets') -Destination (Join-Path $staging 'assets') -Recurse -Force }
+# Optional large STLs (scripts/fetch-assets.py) are never shipped
+Remove-Item -Path (Join-Path $staging 'assets/stl/large') -Recurse -Force -ErrorAction SilentlyContinue
 
 # Copy documentation
 foreach ($f in @('README.md','LICENSE*')) {

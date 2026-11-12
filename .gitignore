@@ -85,4 +85,10 @@ __pycache__/
 
 # Scalability profiles the Dispatcher learns per machine
 /assets/splinter3D.profiles.json
-/assets/stl/binary/lucy.stl
+
+# stl files except test ones and manifest
+/assets/stl
+!/assets/stl/**/cube.stl
+!/assets/stl/manifest.json
+!/assets/stl/binary/model.stl
+!/assets/stl/binary/mangolia_binary.stl

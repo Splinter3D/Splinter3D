@@ -13,7 +13,7 @@
 
 // Hidden ([.]): imports and displays a large model in a real viewer and prints
 // the timings. Run it by hand, e.g.
-//   SPLINTER3D_LARGE_STL=assets/stl/binary/lucy.stl build/bin/splinter3D_integration_tests "[perf]"
+//   SPLINTER3D_LARGE_STL=assets/stl/large/lucy.stl build/bin/splinter3D_integration_tests "[perf]"
 // It never runs in CTest (hidden tests are not discovered).
 
 TEST_CASE("Performance: importing and displaying a large model", "[.][perf]")
