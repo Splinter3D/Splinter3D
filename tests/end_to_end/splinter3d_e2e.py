@@ -41,6 +41,18 @@ class Run:
     stderr: str
 
 
+# Where the app under test keeps its scalability profiles: a throwaway file, so test
+# runs never teach the user's own assets/splinter3D.profiles.json anything.
+PROFILES = Path(tempfile.mkdtemp(prefix="splinter3d-e2e-")) / "profiles.json"
+
+
+def app_env(env: dict[str, str] | None = None) -> dict[str, str]:
+    """The environment to run the app with: env (or ours), profiles redirected."""
+    result = dict(os.environ if env is None else env)
+    result.setdefault("SPLINTER3D_PROFILES", str(PROFILES))
+    return result
+
+
 def run_app(*args: str, timeout: float = 60, env: dict[str, str] | None = None, cwd: Path | None = None) -> Run:
     completed = subprocess.run(
         [str(binary_path()), *args],
@@ -49,7 +61,7 @@ def run_app(*args: str, timeout: float = 60, env: dict[str, str] | None = None, 
         encoding="utf-8",
         errors="replace",
         timeout=timeout,
-        env=env,
+        env=app_env(env),
         cwd=cwd,
     )
     return Run(completed.returncode, completed.stdout, completed.stderr)

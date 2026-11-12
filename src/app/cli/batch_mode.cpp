@@ -21,7 +21,7 @@ namespace app::cli
             std::filesystem::path dataRoot = core::utils::findDataRoot(ec ? std::filesystem::path() : executable);
             if (dataRoot.empty())
                 dataRoot = std::filesystem::current_path();
-            return dataRoot / "assets" / platform::threading::Dispatcher::kProfilesFile;
+            return platform::threading::Dispatcher::profilesPath(dataRoot);
         }
     } // namespace
 

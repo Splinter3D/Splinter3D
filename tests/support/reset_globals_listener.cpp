@@ -18,6 +18,8 @@ namespace
         {
             core::event_bus::EventBus::getInstance().clear();
             platform::threading::Dispatcher::getInstance().clear();
+            // Tests learn from instant runs; the one testing the threshold sets it.
+            platform::threading::Dispatcher::getInstance().setMinLearnedDuration(platform::benchmark::Duration::zero());
         }
 
         void testCaseEnded(const Catch::TestCaseStats&) override

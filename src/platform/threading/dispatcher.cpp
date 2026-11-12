@@ -3,6 +3,7 @@
 #include "platform/logger/logger.hpp"
 
 #include <algorithm>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
@@ -25,6 +26,17 @@ namespace platform::threading
     Dispatcher::Dispatcher()
         : _pool(poolThreads())
     { }
+
+    std::filesystem::path Dispatcher::profilesPath(const std::filesystem::path& dataRoot)
+    {
+        if (const char* override = std::getenv("SPLINTER3D_PROFILES"); override != nullptr && *override != '\0')
+        {
+            // UTF-8, as every path string here.
+            const std::string utf8 = override;
+            return std::filesystem::path(std::u8string(utf8.begin(), utf8.end()));
+        }
+        return dataRoot / "assets" / kProfilesFile;
+    }
 
     std::size_t Dispatcher::nproc() const noexcept
     {
@@ -121,7 +133,9 @@ namespace platform::threading
 
         // Explore only when the cap leaves room for it; otherwise the attempt
         // would be clamped away and still use up a direction.
-        if (++entry.dispatches % kExploreEvery == 0 && preferred && *preferred <= cap && cap > 1)
+        // Counted on the profile's recorded runs, which are saved: short
+        // sessions (a batch script, a few imports) explore too.
+        if (entry.profile.runs() % kExploreEvery == kExploreEvery - 1 && preferred && *preferred <= cap && cap > 1)
         {
             bool up = entry.exploreUp;
             if (*preferred >= cap)
@@ -154,7 +168,8 @@ namespace platform::threading
                 _allocated -= ticket.budget;
                 --_active;
             }
-            if (succeeded && report)
+            // Too short a run says more about overhead than about scaling.
+            if (succeeded && report && report->time && *report->time >= _minLearned)
                 _operation(ticket.operation).profile.record(ticket.budget, *report, ticket.contended);
         }
         catch (...)
@@ -290,6 +305,12 @@ namespace platform::threading
         const std::lock_guard lock(_mutex);
         _operations.clear();
         _path.clear();
+    }
+
+    void Dispatcher::setMinLearnedDuration(benchmark::Duration duration)
+    {
+        const std::lock_guard lock(_mutex);
+        _minLearned = duration;
     }
 
     void Dispatcher::setProfile(std::string_view operation, ScalabilityProfile replacement)

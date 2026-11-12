@@ -6,6 +6,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <chrono>
 #include <cstddef>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <latch>
@@ -22,7 +23,7 @@ using tests::support::TempDir;
 namespace
 {
     // A profile whose runs with `workers` workers kept `cores` cores busy.
-    ScalabilityProfile profileOf(std::size_t workers, double cores)
+    ScalabilityProfile profileOf(std::size_t workers, double cores, std::size_t runs = 1)
     {
         // Fields assigned one by one: GCC's -Wmissing-field-initializers rejects
         // designated initializers that leave Report's other members out.
@@ -32,8 +33,22 @@ namespace
         report.cpuCores = cores;
 
         ScalabilityProfile profile;
-        profile.record(workers, report, false);
+        for (std::size_t i = 0; i < runs; ++i)
+            profile.record(workers, report, false);
         return profile;
+    }
+
+    // Sets (or, with an empty value, removes) an environment variable for the process.
+    void setEnvironment(const char* name, const char* value)
+    {
+#if defined(_WIN32)
+        _putenv_s(name, value != nullptr ? value : "");
+#else
+        if (value != nullptr)
+            ::setenv(name, value, 1);
+        else
+            ::unsetenv(name);
+#endif
     }
 
     // A submitted run releases its workers after fn returns; wait for that so
@@ -144,23 +159,34 @@ TEST_CASE("Dispatcher: throwing operation releases its budget and is not recorde
     REQUIRE_FALSE(dispatcher.profile("x"));
 }
 
-TEST_CASE("Dispatcher: every 8th run explores", "[platform][threading]")
+TEST_CASE("Dispatcher: every 8th recorded run explores", "[platform][threading]")
 {
     auto& dispatcher = Dispatcher::getInstance();
     if (dispatcher.total() < 3)
         SKIP("needs at least three cores");
 
-    const ScalabilityProfile profile   = profileOf(2, 1.25); // serial fraction 0.6
-    const std::size_t        preferred = *profile.preferredWorkers(dispatcher.total());
-    for (std::size_t i = 1; i <= Dispatcher::kExploreEvery; ++i)
-    {
-        dispatcher.setProfile("e", profile); // keep this test's own runs out of the estimate
-        const std::size_t budget = dispatcher.run("e", [] { return NPROC; });
-        if (i < Dispatcher::kExploreEvery)
-            REQUIRE(budget == preferred);
-        else
-            REQUIRE(budget == (preferred < dispatcher.total() ? preferred + 1 : preferred - 1));
-    }
+    // Serial fraction 0.6: 3 workers preferred (when there are 3 or more).
+    const std::size_t preferred = *profileOf(2, 1.25).preferredWorkers(dispatcher.total());
+    const auto        explored  = preferred < dispatcher.total() ? preferred + 1 : preferred - 1;
+
+    dispatcher.setProfile("e", profileOf(2, 1.25, Dispatcher::kExploreEvery - 2));
+    CHECK(dispatcher.run("e", [] { return NPROC; }) == preferred);
+    dispatcher.setProfile("e", profileOf(2, 1.25, Dispatcher::kExploreEvery - 1));
+    CHECK(dispatcher.run("e", [] { return NPROC; }) == explored);
+}
+
+TEST_CASE("Dispatcher: exploration survives restarts", "[platform][threading]")
+{
+    auto& dispatcher = Dispatcher::getInstance();
+    if (dispatcher.total() < 3)
+        SKIP("needs at least three cores");
+
+    // A profile loaded from disk with 7 runs: the first run of this session is
+    // the 8th, whatever happened (or didn't) in memory before.
+    dispatcher.clear();
+    dispatcher.setProfile("r", profileOf(2, 1.25, Dispatcher::kExploreEvery - 1));
+    const std::size_t preferred = *profileOf(2, 1.25).preferredWorkers(dispatcher.total());
+    CHECK(dispatcher.run("r", [] { return NPROC; }) != preferred);
 }
 
 TEST_CASE("Dispatcher: exploration skipped under a tighter cap keeps its direction", "[platform][threading]")
@@ -169,27 +195,46 @@ TEST_CASE("Dispatcher: exploration skipped under a tighter cap keeps its directi
     if (dispatcher.total() < 4)
         SKIP("needs at least four cores");
 
-    const ScalabilityProfile profile   = profileOf(2, 1.25); // serial fraction 0.6, preferred 3
-    const std::size_t        preferred = *profile.preferredWorkers(dispatcher.total());
+    const auto        profile   = profileOf(2, 1.25, Dispatcher::kExploreEvery - 1); // next run explores
+    const std::size_t preferred = *profile.preferredWorkers(dispatcher.total());     // 3
 
-    // Dispatch 8 (an exploration) runs nested in a parent capped at 2 workers, below the preferred 3.
-    auto dispatch = [&] {
-        dispatcher.setProfile("c", profile);
-        return dispatcher.run("c", [] { return NPROC; });
-    };
-    for (std::size_t i = 1; i < Dispatcher::kExploreEvery; ++i)
-        dispatch();
-
+    // Nested in a parent capped at 2 workers, below the preferred 3: no room to explore.
     dispatcher.setProfile("parent", profileOf(2, 2.0 / 1.8)); // serial fraction 0.8, preferred 2
+    dispatcher.setProfile("c", profile);
     dispatcher.run("parent", [&] {
         REQUIRE(NPROC == 2);
-        REQUIRE(dispatch() == 2);
+        CHECK(dispatcher.run("c", [] { return NPROC; }) == 2);
     });
 
     // The wasted exploration did not use up the upward direction.
-    for (std::size_t i = 1; i < Dispatcher::kExploreEvery; ++i)
-        REQUIRE(dispatch() == preferred);
-    REQUIRE(dispatch() == preferred + 1);
+    dispatcher.setProfile("c", profile);
+    CHECK(dispatcher.run("c", [] { return NPROC; }) == preferred + 1);
+}
+
+TEST_CASE("Dispatcher: runs too short to measure don't teach anything", "[platform][threading]")
+{
+    auto& dispatcher = Dispatcher::getInstance();
+    dispatcher.setMinLearnedDuration(Dispatcher::kMinLearnedDuration); // what the app uses
+    CHECK(Dispatcher::kMinLearnedDuration >= platform::benchmark::Duration(10.0));
+
+    dispatcher.run("short", [] { });
+    CHECK_FALSE(dispatcher.profile("short")); // overhead, not scalability
+
+    dispatcher.run("long", [] { std::this_thread::sleep_for(Dispatcher::kMinLearnedDuration * 1.5); });
+    REQUIRE(dispatcher.profile("long"));
+    CHECK(dispatcher.profile("long")->runs() == 1);
+}
+
+TEST_CASE("Dispatcher: profilesPath honours SPLINTER3D_PROFILES", "[platform][threading]")
+{
+    const std::filesystem::path root = "data";
+    setEnvironment("SPLINTER3D_PROFILES", nullptr);
+    CHECK(Dispatcher::profilesPath(root) == root / "assets" / Dispatcher::kProfilesFile);
+
+    setEnvironment("SPLINTER3D_PROFILES", "/tmp/elsewhere.json");
+    CHECK(Dispatcher::profilesPath(root) == std::filesystem::path("/tmp/elsewhere.json"));
+
+    setEnvironment("SPLINTER3D_PROFILES", nullptr);
 }
 
 TEST_CASE("Dispatcher: save writes nothing without profiles", "[platform][threading]")

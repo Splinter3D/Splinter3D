@@ -56,7 +56,7 @@ namespace app
             "[bootstrap] initializing locale from ", (dataRoot / "locale").string());
         platform::locale::LocaleManager::get().init((dataRoot / "locale").string());
 
-        const auto profiles = dataRoot / "assets" / platform::threading::Dispatcher::kProfilesFile;
+        const auto profiles = platform::threading::Dispatcher::profilesPath(dataRoot);
         platform::logger::clog("[bootstrap] loading scalability profiles from ", profiles.string());
         platform::threading::Dispatcher::getInstance().load(profiles);
 

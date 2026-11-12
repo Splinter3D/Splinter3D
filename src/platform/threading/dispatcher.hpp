@@ -42,6 +42,18 @@ namespace platform::threading
         /** @brief Name of the profiles file, kept in the assets folder (git-ignored). */
         static constexpr std::string_view kProfilesFile = "splinter3D.profiles.json";
 
+        /**
+         * @brief Runs shorter than this are not learned from: their CPU time
+         * is mostly measuring overhead, not how the work scales.
+         */
+        static constexpr benchmark::Duration kMinLearnedDuration{20.0};
+
+        /**
+         * @brief Where the profiles live: $SPLINTER3D_PROFILES if set (tests
+         * point it at a temporary file), else <dataRoot>/assets/kProfilesFile.
+         */
+        [[nodiscard]] static std::filesystem::path profilesPath(const std::filesystem::path& dataRoot);
+
         /** @brief Every kExploreEvery-th run of an operation tries one worker more or fewer. */
         static constexpr std::size_t kExploreEvery = 8;
 
@@ -134,6 +146,9 @@ namespace platform::threading
 
         /** @brief Test-only: replaces an operation's profile, keeping its run counter. */
         void setProfile(std::string_view operation, ScalabilityProfile replacement);
+
+        /** @brief Test-only: changes kMinLearnedDuration (tests learn from instant runs). */
+        void setMinLearnedDuration(benchmark::Duration duration);
 #endif
 
       private:
@@ -152,8 +167,7 @@ namespace platform::threading
         struct Operation
         {
             ScalabilityProfile profile;
-            std::size_t        dispatches = 0;
-            bool               exploreUp  = true;
+            bool               exploreUp = true;
         };
 
         // Holds a budget and this thread's context for the length of one run().
@@ -206,6 +220,7 @@ namespace platform::threading
         std::size_t                                   _allocated = 0;
         std::size_t                                   _active    = 0;
         std::filesystem::path                         _path;
+        benchmark::Duration                           _minLearned = kMinLearnedDuration;
         // Separate from _mutex: listeners run outside it. Held while calling
         // them, so unsubscribe() returns only once its listener is done.
         std::mutex                                _listenersMutex;
