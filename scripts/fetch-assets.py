@@ -64,6 +64,9 @@ def main() -> int:
     parser.add_argument("--force", action="store_true", help="re-download even if the file is valid")
     args = parser.parse_args()
 
+    if not MANIFEST.exists():
+        print(f"Manifest file {MANIFEST} not found", file=sys.stderr)
+        return 1
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     entries = [
         (ROOT / group["path"] / model["file"], model)
