@@ -33,15 +33,26 @@ def sha256_of(path: Path) -> str:
 def is_valid(path: Path, model: dict) -> bool:
     return path.is_file() and path.stat().st_size == model["size"] and sha256_of(path) == model["sha256"]
 
+def getBestUnit(size: int) -> tuple[str, float]:
+    # Hopefully nobody will ever upload a PB+ file
+    units = {"B": 1, "KB": 1024, "MB": 1024 ** 2, "GB": 1024 ** 3, "TB": 1024 ** 4}
+    best_unit = ("B", 1)
+    for unit, factor in units.items():
+        if size < factor:
+            break
+        best_unit = (unit, factor)
+    return best_unit[0], float(size) / float(best_unit[1])
 
 def download(url: str, target: Path, expected: int) -> None:
+    expected_unit, expected_value = getBestUnit(expected)
     partial = target.with_name(target.name + ".part")
     with urllib.request.urlopen(url) as response, partial.open("wb") as out:
         done = 0
-        while chunk := response.read(1 << 20):
+        while chunk := response.read(1 << 16):
             out.write(chunk)
             done += len(chunk)
-            print(f"\r  {done / 1e6:7.1f} / {expected / 1e6:.1f} MB", end="", flush=True)
+            done_unit, done_value = getBestUnit(done)
+            print("\r" + f"{done_value:7.1f} {done_unit:<2} / {expected_value:.1f} {expected_unit}   ".lstrip(), end="", flush=True)
     print()
     partial.replace(target)
 
@@ -81,13 +92,15 @@ def main() -> int:
         try:
             download(model["url"], target, model["size"])
         except OSError as error:
-            print(f"  download failed: {error}", file=sys.stderr)
+            print(f"download failed: {error}", file=sys.stderr)
             failed = True
             continue
         if not is_valid(target, model):
-            print("  checksum mismatch, removing file", file=sys.stderr)
+            print("checksum mismatch, removing file", file=sys.stderr)
             target.unlink()
             failed = True
+        else:
+            print(f"model {model['name']} downloaded and verified successfully")
     return 1 if failed else 0
 
 
