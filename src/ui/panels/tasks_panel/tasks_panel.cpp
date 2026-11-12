@@ -163,6 +163,19 @@ namespace ui::panels
 
     void TasksPanel::onPulse(wxTimerEvent&)
     {
+        if (!refreshRunningCards())
+            pulse_.Stop();
+    }
+
+#if defined(SPLINTER3D_TESTING)
+    void TasksPanel::RefreshRunningCards()
+    {
+        (void) refreshRunningCards();
+    }
+#endif
+
+    bool TasksPanel::refreshRunningCards()
+    {
         bool running = false;
         if (tasks_ != nullptr)
         {
@@ -180,8 +193,7 @@ namespace ui::panels
                     card.gauge->Pulse();
             }
         }
-        if (!running)
-            pulse_.Stop();
+        return running;
     }
 
     void TasksPanel::refreshLayout()

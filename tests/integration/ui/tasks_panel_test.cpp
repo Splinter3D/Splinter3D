@@ -146,7 +146,18 @@ TEST_CASE_METHOD(PanelFixture, "TasksPanel: progress dropped by the throttle sti
     REQUIRE(gauge != nullptr);
     REQUIRE(drainUntil([&] { return gauge->GetValue() == 30; }));
     shown.count_down();
-    CHECK(drainUntil([&] { return gauge->GetValue() == 60; }));
+
+    // Wait until the work reported 60% (live in the task's snapshot)...
+    const auto reported = [&] {
+        const auto snapshots = manager.snapshots();
+        return !snapshots.empty() && snapshots[0].progress && *snapshots[0].progress >= 0.6;
+    };
+    for (int i = 0; i < 5000 && !reported(); ++i)
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    REQUIRE(reported());
+    // ...then refresh as the panel's timer does: the dropped update shows anyway.
+    panel->RefreshRunningCards();
+    CHECK(gauge->GetValue() == 60);
     release.count_down();
     REQUIRE(drainUntil([&] { return manager.idle(); }));
 }

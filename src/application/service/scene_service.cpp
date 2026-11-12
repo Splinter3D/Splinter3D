@@ -14,10 +14,12 @@
 #include <TopoDS_Compound.hxx>
 #include <algorithm>
 #include <atomic>
+#include <chrono>
 #include <fstream>
 #include <optional>
 #include <random>
 #include <string>
+#include <thread>
 #include <utility>
 
 namespace application::service
@@ -319,10 +321,19 @@ namespace application::service
 
     bool commitSTLTemporary(const std::filesystem::path& temporary, const std::filesystem::path& path)
     {
-        std::error_code ec;
-        std::filesystem::rename(temporary, path, ec);
-        if (!ec)
-            return true;
+        // POSIX replaces atomically. Windows (MoveFileExW) refuses with a
+        // sharing violation while another export is replacing the same file,
+        // or something holds it open for a moment: retry for up to ~1 s.
+        constexpr int                       kAttempts = 100;
+        constexpr std::chrono::milliseconds kBackoff{10};
+        std::error_code                     ec;
+        for (int attempt = 0; attempt < kAttempts; ++attempt)
+        {
+            std::filesystem::rename(temporary, path, ec);
+            if (!ec)
+                return true;
+            std::this_thread::sleep_for(kBackoff);
+        }
         std::filesystem::remove(temporary, ec);
         return false;
     }

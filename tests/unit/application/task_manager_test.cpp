@@ -332,11 +332,14 @@ TEST_CASE("TaskManager: progress notifications are throttled", "[application][ta
     });
 
     const auto start = std::chrono::steady_clock::now();
+    // Reports as fast as it can for 300 ms: a fixed duration, not a number of
+    // sleeps (Windows rounds short sleeps up to 1-15 ms).
     tasks.submit(writeTask("busy", {1}, [](TaskContext& context) {
-        for (int i = 0; i < 2000; ++i)
+        const auto begin = std::chrono::steady_clock::now();
+        for (auto now = begin; now - begin < 300ms; now = std::chrono::steady_clock::now())
         {
-            context.setProgress(i / 2000.0);
-            std::this_thread::sleep_for(std::chrono::microseconds(100));
+            context.setProgress(std::chrono::duration<double>(now - begin) / 300ms);
+            std::this_thread::yield();
         }
     }));
     REQUIRE(ui.drainUntil([&] { return tasks.idle(); }, 30s));
@@ -535,12 +538,12 @@ TEST_CASE("TaskManager: destroyed while outside runs keep freeing workers", "[ap
     std::atomic<bool> stop = false;
     std::thread       outside([&] {
         while (!stop)
-            Dispatcher::getInstance().run("test.churn", [] {});
+            Dispatcher::getInstance().run("test.churn", [] { });
     });
     for (int i = 0; i < 50; ++i)
     {
         TaskManager tasks(ui.poster());
-        tasks.submit(writeTask("t", {1}, [](TaskContext&) {}));
+        tasks.submit(writeTask("t", {1}, [](TaskContext&) { }));
     } // each destroyed while releases keep coming
     stop = true;
     outside.join();

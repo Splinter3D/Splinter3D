@@ -33,6 +33,11 @@ namespace ui::panels
 
         [[nodiscard]] std::size_t cardCount() const noexcept;
 
+#if defined(SPLINTER3D_TESTING)
+        /** @brief Test-only: what the refresh timer does (tests don't run wx's event loop, so timers may not fire). */
+        void RefreshRunningCards();
+#endif
+
       private:
         struct Card
         {
@@ -50,7 +55,10 @@ namespace ui::panels
         void  removeCard(application::tasks::TaskId id);
         void  onButton(application::tasks::TaskId id);
         void  onPulse(wxTimerEvent& event);
-        void  refreshLayout();
+        // Re-reads running cards' progress (animates the indeterminate ones);
+        // false when none is running any more.
+        bool refreshRunningCards();
+        void refreshLayout();
 
         application::tasks::TaskManager* tasks_ = nullptr;
         std::vector<Card>                cards_; // submission order
