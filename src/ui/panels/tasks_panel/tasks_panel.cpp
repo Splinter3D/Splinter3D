@@ -4,7 +4,9 @@
 #include "ui/framework/wx/locale/locale.hpp"
 
 #include <algorithm>
+#include <utility>
 #include <wx/gauge.h>
+#include <wx/settings.h>
 
 using ui::framework::wx::locale::tr;
 
@@ -26,16 +28,24 @@ namespace ui::panels
         SetMinSize(wxSize(kWidth, -1));
 
         auto* root  = new wxBoxSizer(wxVERTICAL);
-        auto* title = new wxStaticText(this, wxID_ANY, "Tasks");
+        auto* title = new wxStaticText(this, wxID_ANY, tr("tasks.title"));
         title->SetFont(title->GetFont().Bold());
         root->Add(title, 0, wxALL, 8);
+
+        empty_ = new wxStaticText(this, wxID_ANY, tr("tasks.empty"));
+        empty_->SetForegroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT));
+        root->Add(empty_, 0, wxLEFT | wxRIGHT, 8);
 
         list_ = new wxBoxSizer(wxVERTICAL);
         root->Add(list_, 0, wxEXPAND | wxLEFT | wxRIGHT, 8);
         SetSizer(root);
 
         Bind(wxEVT_TIMER, &TasksPanel::onPulse, this, pulse_.GetId());
-        Hide(); // shown with the first card
+    }
+
+    void TasksPanel::SetOnBusyChanged(std::function<void(bool busy)> callback)
+    {
+        on_busy_changed_ = std::move(callback);
     }
 
     void TasksPanel::attach(application::tasks::TaskManager& tasks)
@@ -201,12 +211,12 @@ namespace ui::panels
 
     void TasksPanel::refreshLayout()
     {
-        const bool shouldShow = !cards_.empty();
-        if (IsShown() != shouldShow)
+        const bool busy = !cards_.empty();
+        if (empty_->IsShown() == busy)
         {
-            Show(shouldShow);
-            if (GetParent() != nullptr)
-                GetParent()->Layout();
+            empty_->Show(!busy);
+            if (on_busy_changed_)
+                on_busy_changed_(busy);
         }
         Layout();
     }

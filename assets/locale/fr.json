@@ -43,6 +43,8 @@
     }
   },
   "tasks": {
+    "title": "T\u00e2ches",
+    "empty": "Aucune t\u00e2che",
     "cancel": "Annuler",
     "dismiss": "Fermer",
     "failed": "\u00c9chec : {error}",

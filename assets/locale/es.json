@@ -43,6 +43,8 @@
     }
   },
   "tasks": {
+    "title": "Tareas",
+    "empty": "No hay tareas",
     "cancel": "Cancelar",
     "dismiss": "Descartar",
     "failed": "Error: {error}",

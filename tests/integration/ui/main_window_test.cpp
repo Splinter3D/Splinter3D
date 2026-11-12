@@ -6,6 +6,7 @@
 #include "ui/layouts/layout_registration.hpp"
 #include "ui/menus/menu_registration.hpp"
 #include "ui/panels/panel_registration.hpp"
+#include "ui/panels/side_dock/side_dock.hpp"
 #include "ui/panels/tasks_panel/tasks_panel.hpp"
 #include "ui/toolbars/toolbar_registration.hpp"
 #include "ui/toolbars/transform_toolbar/transform_toolbar.hpp"
@@ -177,6 +178,21 @@ TEST_CASE_METHOD(MainWindowFixture, "MainWindow: the tasks panel shows while a t
     CHECK(panel->IsShown());
     REQUIRE(settle());
     CHECK_FALSE(panel->IsShown());
+}
+
+TEST_CASE_METHOD(MainWindowFixture, "MainWindow: the tasks panel opened by hand stays open", "[integration][ui][main_window][tasks]")
+{
+    auto* dock  = findDescendant<ui::panels::SideDock>(window.get());
+    auto* panel = findDescendant<ui::panels::TasksPanel>(window.get());
+    REQUIRE(dock != nullptr);
+    REQUIRE(panel != nullptr);
+
+    dock->Open(panel);
+    CHECK(panel->IsShown());
+    REQUIRE(viewer->loadFile(kCube));
+    REQUIRE(settle());
+    tests::support::pumpEvents();
+    CHECK(panel->IsShown());
 }
 
 TEST_CASE_METHOD(MainWindowFixture, "MainWindow: closing with pending tasks asks first", "[integration][ui][main_window][tasks]")

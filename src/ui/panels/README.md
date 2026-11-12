@@ -110,11 +110,27 @@ around purely to show the pattern end-to-end. Safe to delete - along with
 its `Register(...)` call in `panel_registration.cpp` and its id in
 `ids.hpp` - once a first real panel exists.
 
+## Side dock
+
+`ui/panels/side_dock/` (`SideDock`, id `panels::kSideDock`) sits on the right
+of the viewer: a strip of toggle buttons, one per page, and the open page (at
+most one) beside it. `AddPage(page, icon, label)` adds a page (created as a
+child of the dock) and its icon button, the label as tooltip (or as text when
+the icon is null). A button opens its page or closes it.
+
+Pages can also open themselves: `RequestOpen(page)` opens it if nothing is
+open, and `ReleaseOpen(page)` closes it again - unless the user opened it by
+hand (the button or `Open()`), in which case it stays until closed by hand.
+Once the user has closed the dock by hand (the button or `Close()`), requests
+no longer open it; the user can still open it.
+
 ## Tasks panel
 
 `ui/panels/tasks_panel/` (`TasksPanel`, id `panels::kTasks`) lists the
 background tasks of an `application::tasks::TaskManager` as cards (name,
-progress bar, status, Cancel or Dismiss). `attach(manager)` makes it follow
-that manager. It hides itself when it has no card and shows itself (re-laying
-out its parent) when one appears. `MainWindow` places it on the right of the
-viewer and attaches it to `ModelViewerPanel::tasks()`.
+progress bar, status, Cancel or Dismiss), or a placeholder when there is none.
+`attach(manager)` makes it follow that manager; `SetOnBusyChanged` reports its
+first card appearing and its last one going. `MainWindow` adds it as a
+`SideDock` page and turns those reports into `RequestOpen` / `ReleaseOpen`, so
+it pops up while tasks run and closes after, unless opened by hand - and no
+longer pops up once the user has closed it.

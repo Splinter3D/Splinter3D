@@ -43,6 +43,8 @@
     }
   },
   "tasks": {
+    "title": "Tasks",
+    "empty": "No tasks",
     "cancel": "Cancel",
     "dismiss": "Dismiss",
     "failed": "Failed: {error}",

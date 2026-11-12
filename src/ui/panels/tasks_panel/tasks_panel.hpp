@@ -3,6 +3,7 @@
 #include "application/tasks/task.hpp"
 
 #include <cstddef>
+#include <functional>
 #include <vector>
 #include <wx/wx.h>
 
@@ -19,9 +20,10 @@ namespace ui::panels
      * @brief Lists background tasks as cards: name, progress bar, status,
      * and Cancel (queued/running) or Dismiss (failed).
      *
-     * Shows itself when the first card appears and hides when the last one
-     * goes, re-laying out its parent so the neighbouring viewer takes the
-     * space back. Driven by a TaskManager's listener, on the UI thread.
+     * Says when its first card appears and its last one goes (see
+     * SetOnBusyChanged) so its container can show and hide it; shows a
+     * placeholder while empty. Driven by a TaskManager's listener, on the UI
+     * thread.
      */
     class TasksPanel : public wxPanel
     {
@@ -30,6 +32,9 @@ namespace ui::panels
 
         /** @brief Follows tasks from now on (replacing its listener); tasks must outlive the panel's use of it. */
         void attach(application::tasks::TaskManager& tasks);
+
+        /** @brief Called with true when the first card appears, false when the last one goes. */
+        void SetOnBusyChanged(std::function<void(bool busy)> callback);
 
         [[nodiscard]] std::size_t cardCount() const noexcept;
 
@@ -62,7 +67,9 @@ namespace ui::panels
 
         application::tasks::TaskManager* tasks_ = nullptr;
         std::vector<Card>                cards_; // submission order
-        wxBoxSizer*                      list_ = nullptr;
+        wxBoxSizer*                      list_  = nullptr;
+        wxStaticText*                    empty_ = nullptr;
         wxTimer                          pulse_;
+        std::function<void(bool busy)>   on_busy_changed_;
     };
 } // namespace ui::panels

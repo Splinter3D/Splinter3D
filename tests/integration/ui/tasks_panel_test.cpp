@@ -1,6 +1,7 @@
 #include "application/tasks/task_manager.hpp"
 #include "support/manual_poster.hpp"
 #include "support/wx_helpers.hpp"
+#include "ui/panels/side_dock/side_dock.hpp"
 #include "ui/panels/tasks_panel/tasks_panel.hpp"
 
 #include <catch2/catch_test_macros.hpp>
@@ -19,6 +20,7 @@ using tests::support::findDescendant;
 using tests::support::ManualPoster;
 using tests::support::pumpEvents;
 using tests::support::ScopedFrame;
+using ui::panels::SideDock;
 using ui::panels::TasksPanel;
 
 namespace
@@ -48,15 +50,25 @@ namespace
         ManualPoster  ui;
         TaskManager   manager{ui.poster()};
         ScopedFrame<> frame{nullptr, wxID_ANY, "TasksPanel test", wxDefaultPosition, wxSize(640, 480)};
+        SideDock*     dock  = nullptr;
         TasksPanel*   panel = nullptr;
 
+        // Wired as MainWindow does: the dock opens the panel while it is busy.
         PanelFixture()
         {
-            panel       = new TasksPanel(frame.get());
+            dock        = new SideDock(frame.get());
+            panel       = new TasksPanel(dock);
             auto* sizer = new wxBoxSizer(wxHORIZONTAL);
             sizer->Add(new wxPanel(frame.get()), 1, wxEXPAND);
-            sizer->Add(panel, 0, wxEXPAND);
+            sizer->Add(dock, 0, wxEXPAND);
             frame->SetSizer(sizer);
+            dock->AddPage(panel, wxBitmap(), "Tasks");
+            panel->SetOnBusyChanged([this](bool busy) {
+                if (busy)
+                    dock->RequestOpen(panel);
+                else
+                    dock->ReleaseOpen(panel);
+            });
             panel->attach(manager);
             frame->Show();
             pumpEvents();
@@ -100,6 +112,36 @@ TEST_CASE_METHOD(PanelFixture, "TasksPanel: a running task shows a card; Cancel 
     REQUIRE(drainUntil([&] { return manager.idle(); }));
     pumpEvents();
     CHECK(panel->cardCount() == 0);
+    CHECK_FALSE(panel->IsShown());
+}
+
+TEST_CASE_METHOD(PanelFixture, "TasksPanel: opened by hand, it stays open once tasks are done", "[integration][ui][tasks]")
+{
+    dock->Open(panel);
+    REQUIRE(panel->IsShown());
+
+    manager.submit(workTask("Import cube.stl", [](TaskContext&) { }));
+    REQUIRE(drainUntil([&] { return manager.idle(); }));
+    pumpEvents();
+    CHECK(panel->cardCount() == 0);
+    CHECK(panel->IsShown());
+    CHECK(dock->IsOpenedManually());
+}
+
+TEST_CASE_METHOD(PanelFixture, "TasksPanel: closed by hand during a task, later tasks don't reopen it", "[integration][ui][tasks]")
+{
+    std::latch release(1);
+    manager.submit(workTask("Import cube.stl", [&](TaskContext&) { release.wait(); }));
+    REQUIRE(panel->IsShown());
+    dock->Close();
+    CHECK_FALSE(panel->IsShown());
+    release.count_down();
+    REQUIRE(drainUntil([&] { return manager.idle(); }));
+
+    manager.submit(workTask("Import other.stl", [](TaskContext&) { }));
+    CHECK_FALSE(panel->IsShown());
+    REQUIRE(drainUntil([&] { return manager.idle(); }));
+    pumpEvents();
     CHECK_FALSE(panel->IsShown());
 }
 

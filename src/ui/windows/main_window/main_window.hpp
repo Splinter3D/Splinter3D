@@ -17,8 +17,9 @@ namespace ui::dialogs
 
 namespace ui::panels
 {
+    class SideDock;
     class TasksPanel;
-}
+} // namespace ui::panels
 
 namespace ui::windows
 {
@@ -57,6 +58,7 @@ namespace ui::windows
         std::unique_ptr<ui::layouts::BaseLayout> layout_;
         ui::framework::occt::ModelViewerPanel*   model_viewer_      = nullptr;
         ui::toolbars::TransformToolbar*          transform_toolbar_ = nullptr;
+        ui::panels::SideDock*                    side_dock_         = nullptr;
         ui::panels::TasksPanel*                  tasks_panel_       = nullptr;
         // Asked before closing with tasks pending; true quits. Empty: a dialog asks.
         std::function<bool(std::size_t pending)>                 confirm_quit_;

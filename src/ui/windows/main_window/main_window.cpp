@@ -4,9 +4,11 @@
 #include "ui/dialogs/model_management_dialog.hpp"
 #include "ui/framework/wx/ids/ids.hpp"
 #include "ui/framework/wx/locale/locale.hpp"
+#include "ui/icons/Icons.hpp"
 #include "ui/layouts/layout_registry.hpp"
 #include "ui/menus/menu_registry.hpp"
 #include "ui/panels/panel_registry.hpp"
+#include "ui/panels/side_dock/side_dock.hpp"
 #include "ui/panels/tasks_panel/tasks_panel.hpp"
 #include "ui/toolbars/toolbar_registry.hpp"
 
@@ -131,13 +133,28 @@ namespace ui::windows
             model_viewer_ = dynamic_cast<ui::framework::occt::ModelViewerPanel*>(modelViewer);
         }
 
-        // Right of the viewer; hidden until a task shows up.
-        auto* tasksPanel = PanelRegistry::getInstance().Create(ui::framework::wx::ids::panels::kTasks, this);
-        tasks_panel_     = dynamic_cast<ui::panels::TasksPanel*>(tasksPanel);
-        if (tasks_panel_ != nullptr && layout_ != nullptr && model_viewer_ != nullptr)
+        // Right of the viewer: a strip of buttons opening side pages.
+        side_dock_ = dynamic_cast<ui::panels::SideDock*>(
+            PanelRegistry::getInstance().Create(ui::framework::wx::ids::panels::kSideDock, this));
+        if (side_dock_ != nullptr && layout_ != nullptr)
+            layout_->AddRight(side_dock_);
+
+        // Opens by itself while tasks run, unless already opened by hand.
+        if (side_dock_ != nullptr && model_viewer_ != nullptr)
         {
-            layout_->AddRight(tasks_panel_);
-            tasks_panel_->attach(model_viewer_->tasks());
+            auto* tasksPanel = PanelRegistry::getInstance().Create(ui::framework::wx::ids::panels::kTasks, side_dock_);
+            tasks_panel_     = dynamic_cast<ui::panels::TasksPanel*>(tasksPanel);
+            if (tasks_panel_ != nullptr)
+            {
+                side_dock_->AddPage(tasks_panel_, ui::icons::MakeIcon(ui::icons::tasksSvg), tr("tasks.title"));
+                tasks_panel_->SetOnBusyChanged([this](bool busy) {
+                    if (busy)
+                        side_dock_->RequestOpen(tasks_panel_);
+                    else
+                        side_dock_->ReleaseOpen(tasks_panel_);
+                });
+                tasks_panel_->attach(model_viewer_->tasks());
+            }
         }
 
         if (model_viewer_ != nullptr)
