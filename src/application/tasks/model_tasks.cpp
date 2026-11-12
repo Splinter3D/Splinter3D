@@ -61,8 +61,8 @@ namespace application::tasks
     {
         struct Result
         {
-            geometry::occt::Shape         shape;
-            platform::benchmark::Duration duration{};
+            geometry::occt::Shape       shape;
+            platform::benchmark::Report report{};
         };
 
         const std::string      baseName = geometry::occt::toUtf8(path.filename());
@@ -77,21 +77,21 @@ namespace application::tasks
         task.writes           = {id};
         task.work             = [path, result](TaskContext& context) {
             std::optional<platform::benchmark::Report> report;
-            result->shape    = platform::benchmark::measure(&report, platform::benchmark::Metrics::Time,
-                                                            [&] {
+            result->shape  = platform::benchmark::measure(&report, platform::benchmark::Metrics::NOFPS,
+                                                          [&] {
                                                              return geometry::occt::Shape::fromSTL(
                                                                  path, context.progressRange(),
                                                                  [](std::size_t first, std::size_t last, const std::function<void(std::size_t)>& body) {
                                                                      platform::threading::Dispatcher::getInstance().parallelFor(first, last, body);
                                                                  });
-                                                            });
-            result->duration = report->time.value_or(platform::benchmark::Duration::zero());
+                                                          });
+            result->report = report.value_or(platform::benchmark::Report{});
         };
         task.discard = [&scene, id] { scene.releaseId(id); };
         task.apply   = [&editor, id, baseName, path, result] {
             platform::logger::clog("[scene] imported '", baseName, "' from ", geometry::occt::toUtf8(path), " (",
-                                   platform::benchmark::formatMilliseconds(result->duration), ")");
-            editor.addModel(id, baseName, std::move(result->shape), result->duration);
+                                   result->report, ")");
+            editor.addModel(id, baseName, std::move(result->shape), result->report.time.value_or(platform::benchmark::Duration::zero()));
         };
         return task;
     }
