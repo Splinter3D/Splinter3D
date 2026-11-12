@@ -2,6 +2,7 @@
 
 #include "geometry/occt/path.hpp"
 #include "platform/logger/logger.hpp"
+#include "platform/threading/dispatcher.hpp"
 
 #include <BRepBuilderAPI_Copy.hxx>
 #include <BRepMesh_IncrementalMesh.hxx>
@@ -45,19 +46,46 @@ namespace application::service
         model.shape        = std::move(shape);
         model.loadDuration = loadDuration;
         std::erase(reserved_, model.id);
+        reservedNames_.erase(model.id);
         models_.push_back(std::move(model));
         return models_.size() - 1;
     }
 
-    ModelId SceneService::reserveId()
+    ModelId SceneService::reserveId(std::string pendingName)
     {
         reserved_.push_back(nextId_);
+        if (!pendingName.empty())
+            reservedNames_.emplace(nextId_, std::move(pendingName));
         return nextId_++;
+    }
+
+    std::string SceneService::reservedName(ModelId id) const
+    {
+        const auto found = reservedNames_.find(id);
+        return found != reservedNames_.end() ? found->second : std::string();
+    }
+
+    bool SceneService::setBRep(ModelId id, geometry::occt::Shape brep)
+    {
+        const auto index = indexOf(id);
+        if (!index)
+            return false;
+        if (auto& old = models_[*index].brep)
+            releaseInBackground(std::move(*old));
+        models_[*index].brep = std::move(brep);
+        return true;
+    }
+
+    const geometry::occt::Shape* SceneService::brep(ModelId id) const noexcept
+    {
+        const Model* model = find(id);
+        return model != nullptr && model->brep ? &*model->brep : nullptr;
     }
 
     void SceneService::releaseId(ModelId id)
     {
         std::erase(reserved_, id);
+        reservedNames_.erase(id);
     }
 
     const std::vector<ModelId>& SceneService::reservedIds() const noexcept
@@ -70,6 +98,8 @@ namespace application::service
         const auto index = indexOf(id);
         if (!index)
             return false;
+        if (auto& brep = models_[*index].brep)
+            releaseInBackground(std::move(*brep));
         models_.erase(models_.begin() + static_cast<std::ptrdiff_t>(*index));
         return true;
     }
@@ -108,6 +138,9 @@ namespace application::service
 
     void SceneService::clear() noexcept
     {
+        for (auto& model : models_)
+            if (model.brep)
+                releaseInBackground(std::move(*model.brep));
         models_.clear();
     }
 
@@ -115,6 +148,8 @@ namespace application::service
     {
         if (!isValidIndex(index))
             return false;
+        if (auto& brep = models_[static_cast<std::size_t>(index)].brep)
+            releaseInBackground(std::move(*brep));
         models_.erase(models_.begin() + index);
         return true;
     }
@@ -199,34 +234,51 @@ namespace application::service
 
         // Every model, each placed where the viewer shows it, in one compound.
         // Moved() only attaches a location to the shared geometry; the writer
-        // applies it to the triangles it outputs.
-        TopoDS_Compound compound;
+        // applies it to the triangles it outputs. Mesh models are written as
+        // they are; only shapes without a mesh (e.g. results of B-Rep
+        // operations) need meshing first.
         BRep_Builder    builder;
-        builder.MakeCompound(compound);
+        TopoDS_Compound exported;
+        TopoDS_Compound brepParts;
+        builder.MakeCompound(exported);
+        builder.MakeCompound(brepParts);
+        bool hasBRep = false;
         for (const auto& model : models)
-            builder.Add(compound,
-                        model.shape.value().Moved(TopLoc_Location(geometry::occt::toTrsf(model.transform))));
+        {
+            const TopoDS_Shape placed =
+                model.shape.value().Moved(TopLoc_Location(geometry::occt::toTrsf(model.transform)));
+            if (!model.shape.mesh().IsNull())
+                builder.Add(exported, placed);
+            else
+            {
+                builder.Add(brepParts, placed);
+                hasBRep = true;
+            }
+        }
 
         Message_ProgressScope scope(progress, "Export STL", 2);
+        const auto            meshing = scope.Next();
+        if (hasBRep)
+        {
+            // Meshing replaces the faces' triangulations, and the shapes are
+            // shared with the scene and the viewer (and other exports, on
+            // other threads): work on a deep copy, meshes included.
+            BRepBuilderAPI_Copy copier(brepParts, /*copyGeom=*/true, /*copyMesh=*/true);
+            const TopoDS_Shape  copy = copier.Shape();
 
-        // Meshing replaces the faces' triangulations, and the shapes are shared
-        // with the scene and the viewer (and other exports, on other threads):
-        // work on a deep copy, meshes included, so nothing outside changes.
-        BRepBuilderAPI_Copy copier(compound, /*copyGeom=*/true, /*copyMesh=*/true);
-        const TopoDS_Shape  exported = copier.Shape();
-
-        // StlAPI_Writer only exports faces that already carry a triangulation.
-        // The viewer happens to create one when it displays a shape, but export
-        // must not depend on that: mesh here (a no-op if already meshed finely
-        // enough). 0.01 is relative to each edge's size.
-        IMeshTools_Parameters parameters;
-        parameters.Deflection = 0.01;
-        parameters.Relative   = true;
-        parameters.Angle      = 0.5;
-        parameters.InParallel = false;
-        BRepMesh_IncrementalMesh mesher(exported, parameters, scope.Next());
-        if (scope.UserBreak())
-            return std::nullopt;
+            // StlAPI_Writer only exports faces that already carry a
+            // triangulation: mesh them (a no-op where fine enough). 0.01 is
+            // relative to each edge's size.
+            IMeshTools_Parameters parameters;
+            parameters.Deflection = 0.01;
+            parameters.Relative   = true;
+            parameters.Angle      = 0.5;
+            parameters.InParallel = false;
+            BRepMesh_IncrementalMesh mesher(copy, parameters, meshing);
+            if (scope.UserBreak())
+                return std::nullopt;
+            builder.Add(exported, copy);
+        }
 
         // Unique, so two exports to the same path never write the same file.
         static std::atomic<std::uint64_t> counter{0};
@@ -246,6 +298,23 @@ namespace application::service
             return std::nullopt;
         }
         return temporary;
+    }
+
+    void releaseInBackground(geometry::occt::Shape shape)
+    {
+        if (shape.isNull())
+            return;
+        try
+        {
+            auto holder = std::make_shared<geometry::occt::Shape>(std::move(shape));
+            // post(), not submit(): freeing memory takes no CPU budget, and
+            // must not make tasks wait for workers.
+            platform::threading::Dispatcher::getInstance().post([holder]() mutable { holder.reset(); });
+        }
+        catch (...)
+        {
+            // Out of memory: it is freed here, on this thread, instead.
+        }
     }
 
     bool commitSTLTemporary(const std::filesystem::path& temporary, const std::filesystem::path& path)

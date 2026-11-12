@@ -488,3 +488,22 @@ TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: an import finishing mid-orbit
     CHECK(panel->CameraEye() == panned);
     sendMouse(canvas, wxEVT_LEFT_UP, 100, 100);
 }
+
+TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: importing never converts to a B-Rep", "[integration][ui][viewer][tasks]")
+{
+    std::vector<std::string> names;
+    panel->tasks().setListener([&](const application::tasks::TaskSnapshot& snapshot, bool removed) {
+        if (!removed)
+            names.push_back(snapshot.name);
+    });
+    REQUIRE(panel->loadFile(kCube));
+    REQUIRE(settle());
+    panel->setTransform(0, 1, 0, 0, 0, 0, 0);
+    tests::support::TempDir tmp;
+    REQUIRE(panel->exportFile(tmp.path() / "out.stl"));
+    REQUIRE(settle());
+
+    for (const auto& name : names)
+        CHECK(name.rfind("Convert", 0) != 0);
+    CHECK(panel->GetModelIds().size() == 1);
+}

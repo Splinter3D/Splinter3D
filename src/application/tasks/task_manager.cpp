@@ -29,7 +29,21 @@ namespace application::tasks
 
     TaskManager::TaskManager(Poster poster)
         : _poster(std::move(poster))
-    { }
+    {
+        if (!_poster)
+            return; // synchronous: nothing ever waits for workers
+        // Called on the releasing (worker) thread: only post a reschedule.
+        _capacityToken = platform::threading::Dispatcher::getInstance().onCapacityFreed(
+            [this, shared = _shared, poster = _poster] {
+                if (shared->rescheduleQueued.exchange(true))
+                    return;
+                poster([this, shared] {
+                    shared->rescheduleQueued = false;
+                    if (!shared->stopped)
+                        _schedule();
+                });
+            });
+    }
 
     TaskManager::~TaskManager()
     {
@@ -103,6 +117,12 @@ namespace application::tasks
 
     void TaskManager::cancelAllAndWait()
     {
+        // First: once this returns, the listener neither runs nor posts again.
+        if (_capacityToken != 0)
+        {
+            platform::threading::Dispatcher::getInstance().unsubscribe(_capacityToken);
+            _capacityToken = 0;
+        }
         for (auto& entry : _entries)
             if (entry.context)
                 entry.context->cancel();
@@ -137,6 +157,16 @@ namespace application::tasks
         return std::any_of(_entries.begin(), _entries.end(), [&](const Entry& entry) {
             return (entry.state != TaskState::Failed && mentions(entry.task.writes)) ||
                    (entry.state == TaskState::Queued && mentions(entry.task.reads));
+        });
+    }
+
+    bool TaskManager::hasPending(std::string_view operation, service::ModelId id) const
+    {
+        return std::any_of(_entries.begin(), _entries.end(), [&](const Entry& entry) {
+            // A cancelling task won't produce anything: it doesn't count.
+            return (entry.state == TaskState::Queued || entry.state == TaskState::Running) &&
+                   entry.task.operation == operation &&
+                   std::find(entry.task.writes.begin(), entry.task.writes.end(), id) != entry.task.writes.end();
         });
     }
 

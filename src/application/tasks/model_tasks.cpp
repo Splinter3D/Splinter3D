@@ -3,6 +3,7 @@
 #include "geometry/occt/path.hpp"
 #include "platform/benchmark/benchmark.hpp"
 #include "platform/logger/logger.hpp"
+#include "platform/threading/dispatcher.hpp"
 
 #include <algorithm>
 #include <memory>
@@ -15,8 +16,10 @@ namespace application::tasks
 {
     namespace
     {
-        constexpr const char* kImportOperation = "model.import";
-        constexpr const char* kExportOperation = "model.export";
+        constexpr const char* kImportOperation      = "model.import";
+        constexpr const char* kLargeImportOperation = "model.import.large";
+        constexpr const char* kExportOperation      = "model.export";
+        constexpr const char* kConvertOperation     = "model.convert";
 
         // Every model, plus those earlier imports will add: a task on "the
         // whole scene" must come after them.
@@ -30,8 +33,10 @@ namespace application::tasks
 
         std::string nameOf(const service::SceneService& scene, service::ModelId id)
         {
-            const auto* model = scene.find(id);
-            return model != nullptr ? model->name : "model";
+            if (const auto* model = scene.find(id))
+                return model->name;
+            const std::string pending = scene.reservedName(id); // still being imported
+            return pending.empty() ? "model" : pending;
         }
 
         // Fails the task if the model went away before its turn came.
@@ -47,6 +52,11 @@ namespace application::tasks
         }
     } // namespace
 
+    std::string importOperation(std::uintmax_t bytes)
+    {
+        return bytes >= kLargeImportBytes ? kLargeImportOperation : kImportOperation;
+    }
+
     Task importTask(service::SceneService& scene, SceneEditor& editor, std::filesystem::path path)
     {
         struct Result
@@ -55,18 +65,26 @@ namespace application::tasks
             platform::benchmark::Duration duration{};
         };
 
-        const service::ModelId id       = scene.reserveId();
         const std::string      baseName = geometry::occt::toUtf8(path.filename());
+        const service::ModelId id       = scene.reserveId(baseName);
         auto                   result   = std::make_shared<Result>();
 
         Task task;
-        task.name      = "Import " + baseName;
-        task.operation = kImportOperation;
-        task.writes    = {id};
-        task.work      = [path, result](TaskContext& context) {
+        task.name = "Import " + baseName;
+        std::error_code ec;
+        const auto      bytes = std::filesystem::file_size(path, ec);
+        task.operation        = importOperation(ec ? 0 : bytes);
+        task.writes           = {id};
+        task.work             = [path, result](TaskContext& context) {
             std::optional<platform::benchmark::Report> report;
             result->shape    = platform::benchmark::measure(&report, platform::benchmark::Metrics::Time,
-                                                            [&] { return geometry::occt::Shape::fromSTL(path, context.progressRange()); });
+                                                            [&] {
+                                                             return geometry::occt::Shape::fromSTL(
+                                                                 path, context.progressRange(),
+                                                                 [](std::size_t first, std::size_t last, const std::function<void(std::size_t)>& body) {
+                                                                     platform::threading::Dispatcher::getInstance().parallelFor(first, last, body);
+                                                                 });
+                                                            });
             result->duration = report->time.value_or(platform::benchmark::Duration::zero());
         };
         task.discard = [&scene, id] { scene.releaseId(id); };
@@ -91,7 +109,10 @@ namespace application::tasks
             snapshot->clear();
             for (const auto& model : scene.models())
                 if (std::find(reads.begin(), reads.end(), model.id) != reads.end())
+                {
                     snapshot->push_back(model);
+                    snapshot->back().brep.reset(); // not needed, and must not outlive the model
+                }
             if (snapshot->empty())
                 return "no model loaded";
             return std::nullopt;
@@ -157,5 +178,65 @@ namespace application::tasks
         task.writes = wholeScene(scene);
         task.apply  = [&editor] { editor.clear(); };
         return task;
+    }
+
+    Task convertTask(const service::SceneService& scene, SceneEditor& editor, service::ModelId id)
+    {
+        const std::string name   = nameOf(scene, id);
+        auto              mesh   = std::make_shared<geometry::occt::Shape>();
+        auto              result = std::make_shared<geometry::occt::Shape>();
+
+        Task task;
+        task.name      = "Convert " + name;
+        task.operation = kConvertOperation;
+        task.reads     = {id};
+        task.writes    = {brepResource(id)};
+        task.prepare   = [&scene, id, name, mesh]() -> std::optional<std::string> {
+            const auto* model = scene.find(id);
+            if (model == nullptr)
+                return "model \"" + name + "\" no longer exists";
+            *mesh = model->shape; // a handle copy: the triangulation is shared, not copied
+            return std::nullopt;
+        };
+        task.work = [mesh, result](TaskContext& context) {
+            *result = mesh->mesh().IsNull() ? *mesh // already a B-Rep (e.g. a cut's result)
+                                            : geometry::occt::Shape::toBRep(*mesh, context.progressRange());
+        };
+        task.apply = [&scene, &editor, id, result] {
+            if (scene.find(id) != nullptr)
+                editor.setBRep(id, std::move(*result));
+            else // removed while converting
+                service::releaseInBackground(std::move(*result));
+        };
+        task.discard = [result] { service::releaseInBackground(std::move(*result)); };
+        return task;
+    }
+
+    std::function<std::optional<std::string>()> requireBRep(const service::SceneService& scene, service::ModelId id)
+    {
+        return [&scene, id, name = nameOf(scene, id)]() -> std::optional<std::string> {
+            if (scene.find(id) == nullptr)
+                return "model \"" + name + "\" no longer exists";
+            if (scene.brep(id) == nullptr)
+                return "model \"" + name + "\" could not be converted";
+            return std::nullopt;
+        };
+    }
+
+    std::vector<TaskId> submitWithBRep(TaskManager&                  tasks,
+                                       const service::SceneService&  scene,
+                                       SceneEditor&                  editor,
+                                       std::vector<service::ModelId> models,
+                                       Task                          operation)
+    {
+        std::vector<TaskId> submitted;
+        for (const auto id : models)
+        {
+            if (scene.brep(id) == nullptr && !tasks.hasPending(kConvertOperation, brepResource(id)))
+                submitted.push_back(tasks.submit(convertTask(scene, editor, id)));
+            operation.reads.push_back(brepResource(id)); // after the conversion, whichever it is
+        }
+        submitted.push_back(tasks.submit(std::move(operation)));
+        return submitted;
     }
 } // namespace application::tasks

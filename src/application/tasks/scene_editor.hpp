@@ -25,6 +25,8 @@ namespace application::tasks
         virtual void removeModel(service::ModelId id)                                              = 0;
         virtual void setTransform(service::ModelId id, const geometry::occt::Transform& transform) = 0;
         virtual void clear()                                                                       = 0;
+        // Caches a model's B-Rep; what is displayed does not change.
+        virtual void setBRep(service::ModelId id, geometry::occt::Shape brep) = 0;
 
       protected:
         SceneEditor()                              = default;
@@ -45,6 +47,7 @@ namespace application::tasks
         void removeModel(service::ModelId id) override;
         void setTransform(service::ModelId id, const geometry::occt::Transform& transform) override;
         void clear() override;
+        void setBRep(service::ModelId id, geometry::occt::Shape brep) override;
 
       private:
         service::SceneService& _scene;

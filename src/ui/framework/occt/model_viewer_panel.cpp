@@ -51,6 +51,9 @@ namespace ui::framework::occt
     {
         // wxString -> path without going through the narrow locale encoding
         // (ToStdString()), which loses non-ASCII characters on Windows.
+        // AIS_InteractiveContext::Display()'s "no selection mode".
+        constexpr int kNoSelection = -1;
+
         std::filesystem::path toPath(const wxString& value)
         {
             const std::string utf8 = value.utf8_string();
@@ -157,10 +160,15 @@ namespace ui::framework::occt
             std::optional<platform::benchmark::Report> report;
             platform::benchmark::measure(&report, platform::benchmark::ALL, [&] {
                 auto presentation = new AIS_Shape(scene_.models()[index].shape.value());
+                // A mesh face has no surface to mesh again: draw its triangulation as is.
+                presentation->Attributes()->SetAutoTriangulation(false);
                 presentations_.push_back({presentation});
 
-                context_->Display(presentation, false);
-                context_->SetDisplayMode(presentation, AIS_Shaded, false);
+                // Straight to shaded, with no selection mode: displaying in the
+                // default (wireframe) mode first builds a hidden presentation of
+                // every edge, and models are never picked (only the gizmo is),
+                // so they need no selection structures either.
+                context_->Display(presentation, AIS_Shaded, kNoSelection, false);
                 context_->UpdateCurrentViewer();
                 // A background import can land mid-orbit or mid-drag: don't
                 // yank the camera away from the user then.
@@ -192,6 +200,11 @@ namespace ui::framework::occt
             if (const auto index = scene_.indexOf(id))
                 removeAt(static_cast<int>(*index));
             modelsChanged();
+        }
+
+        void setBRep(application::service::ModelId id, geometry::occt::Shape brep) override
+        {
+            scene_.setBRep(id, std::move(brep)); // the mesh stays what is shown
         }
 
         void setTransform(application::service::ModelId id, const geometry::occt::Transform& transform) override
@@ -252,7 +265,7 @@ namespace ui::framework::occt
             auto& entry   = presentations_[static_cast<std::size_t>(modelIndex)];
             entry.visible = visible;
             if (visible)
-                context_->Display(entry.shape, false);
+                context_->Display(entry.shape, AIS_Shaded, kNoSelection, false);
             else
                 context_->Erase(entry.shape, false);
             view_->Redraw();
@@ -290,13 +303,13 @@ namespace ui::framework::occt
                 if (entry.visible)
                     context_->Erase(entry.shape, false);
 
-            context_->Display(presentations_[target].shape, false);
+            context_->Display(presentations_[target].shape, AIS_Shaded, kNoSelection, false);
             view_->FitAll(0.1, true);
 
             for (const auto& entry : presentations_)
             {
                 if (entry.visible)
-                    context_->Display(entry.shape, false);
+                    context_->Display(entry.shape, AIS_Shaded, kNoSelection, false);
                 else
                     context_->Erase(entry.shape, false);
             }

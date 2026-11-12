@@ -501,3 +501,49 @@ TEST_CASE("TaskManager: synchronous mode discards a failed task", "[application]
     tasks.submit(std::move(task));
     CHECK(discards == 1);
 }
+
+TEST_CASE("TaskManager: workers freed by work outside it start its waiting tasks", "[application][tasks]")
+{
+    ManualPoster ui;
+    TaskManager  tasks(ui.poster());
+    std::latch   holding(1);
+    std::latch   release(1);
+
+    // Hold every worker with a plain run(), as code outside any TaskManager could.
+    std::thread outside([&] {
+        Dispatcher::getInstance().run("test.outside", [&] {
+            holding.count_down();
+            release.wait();
+        });
+    });
+    holding.wait();
+    REQUIRE(Dispatcher::getInstance().freeWorkers() == 0);
+
+    bool         ran     = false;
+    const TaskId waiting = tasks.submit(writeTask("waiting", {1}, [&](TaskContext&) { ran = true; }));
+    REQUIRE(tasks.snapshot(waiting)->status == "Queued · waiting for workers");
+
+    release.count_down(); // no TaskManager event follows: only the freed workers can wake it
+    outside.join();
+    REQUIRE(ui.drainUntil([&] { return tasks.idle(); }));
+    CHECK(ran);
+}
+
+TEST_CASE("TaskManager: destroyed while outside runs keep freeing workers", "[application][tasks]")
+{
+    ManualPoster      ui;
+    std::atomic<bool> stop = false;
+    std::thread       outside([&] {
+        while (!stop)
+            Dispatcher::getInstance().run("test.churn", [] {});
+    });
+    for (int i = 0; i < 50; ++i)
+    {
+        TaskManager tasks(ui.poster());
+        tasks.submit(writeTask("t", {1}, [](TaskContext&) {}));
+    } // each destroyed while releases keep coming
+    stop = true;
+    outside.join();
+    ui.drainUntil([] { return false; }, std::chrono::milliseconds(50)); // stale reschedules: must do nothing
+    SUCCEED("no callback reached a destroyed TaskManager");
+}

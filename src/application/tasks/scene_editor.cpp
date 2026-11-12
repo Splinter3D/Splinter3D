@@ -26,6 +26,11 @@ namespace application::tasks
         _scene.setTransformById(id, transform);
     }
 
+    void SceneServiceEditor::setBRep(service::ModelId id, geometry::occt::Shape brep)
+    {
+        _scene.setBRep(id, std::move(brep));
+    }
+
     void SceneServiceEditor::clear()
     {
         _scene.clear();

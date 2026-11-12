@@ -39,8 +39,11 @@ TEST_CASE("Shape::fromSTL: imports the cube fixture", "[geometry][shape]")
     const auto shape = geometry::occt::Shape::fromSTL(kAssets / "stl" / format / "cube.stl");
 
     REQUIRE_FALSE(shape.isNull());
-    // A cube is 6 quads, i.e. 12 triangular facets.
-    REQUIRE(countFaces(shape.value()) == 12);
+    // A mesh: one face carrying every facet (a cube is 6 quads, i.e. 12 triangles).
+    REQUIRE(countFaces(shape.value()) == 1);
+    REQUIRE_FALSE(shape.mesh().IsNull());
+    CHECK(shape.triangleCount() == 12);
+    CHECK_FALSE(shape.mesh()->IsDoublePrecision()); // STL stores floats: nothing lost, half the memory
 }
 
 TEST_CASE("Shape::fromSTL: rejects an empty path", "[geometry][shape]")
@@ -66,7 +69,7 @@ TEST_CASE("Shape: wraps and exposes an existing TopoDS_Shape", "[geometry][shape
     CHECK_FALSE(wrapped.isNull());
 }
 
-TEST_CASE("Shape::fromSTL: the progress-aware read builds the same shape as StlAPI_Reader", "[geometry][shape]")
+TEST_CASE("Shape::toBRep: builds what StlAPI_Reader builds", "[geometry][shape]")
 {
     const std::string file = GENERATE("ascii/cube.stl", "binary/model.stl");
     CAPTURE(file);
@@ -77,16 +80,33 @@ TEST_CASE("Shape::fromSTL: the progress-aware read builds the same shape as StlA
     REQUIRE(reader.Read(expected, path.string().c_str()));
 
     occ::handle<tests::support::ProgressProbe> probe = new tests::support::ProgressProbe();
-    const auto shape = geometry::occt::Shape::fromSTL(path, probe->Start());
+    const auto                                 brep  = geometry::occt::Shape::toBRep(geometry::occt::Shape::fromSTL(path), probe->Start());
 
-    REQUIRE(countFaces(shape.value()) == countFaces(expected));
+    REQUIRE(countFaces(brep.value()) == countFaces(expected));
+    CHECK(brep.mesh().IsNull()); // a face per triangle, no longer a mesh face
     Bnd_Box expectedBox;
     Bnd_Box actualBox;
     BRepBndLib::Add(expected, expectedBox);
-    BRepBndLib::Add(shape.value(), actualBox);
+    BRepBndLib::Add(brep.value(), actualBox);
     using Catch::Matchers::WithinAbs;
-    CHECK_THAT(actualBox.CornerMin().Distance(expectedBox.CornerMin()), WithinAbs(0.0, 1e-9));
-    CHECK_THAT(actualBox.CornerMax().Distance(expectedBox.CornerMax()), WithinAbs(0.0, 1e-9));
+    // Float vertices: equal to within single precision.
+    CHECK_THAT(actualBox.CornerMin().Distance(expectedBox.CornerMin()), WithinAbs(0.0, 1e-4));
+    CHECK_THAT(actualBox.CornerMax().Distance(expectedBox.CornerMax()), WithinAbs(0.0, 1e-4));
+    CHECK(probe->maxPosition >= 0.99);
+}
+
+TEST_CASE("Shape::toBRep: stops when cancelled", "[geometry][shape]")
+{
+    const auto                                 mesh  = geometry::occt::Shape::fromSTL(kAssets / "stl" / "binary" / "model.stl");
+    occ::handle<tests::support::ProgressProbe> probe = new tests::support::ProgressProbe();
+    probe->cancel                                    = true;
+    REQUIRE_THROWS_AS(geometry::occt::Shape::toBRep(mesh, probe->Start()), std::runtime_error);
+}
+
+TEST_CASE("Shape::toBRep: refuses a shape that is not a mesh", "[geometry][shape]")
+{
+    const auto brep = geometry::occt::Shape::toBRep(geometry::occt::Shape::fromSTL(kAssets / "stl" / "ascii" / "cube.stl"));
+    REQUIRE_THROWS_AS(geometry::occt::Shape::toBRep(brep), std::invalid_argument);
 }
 
 TEST_CASE("Shape::fromSTL: reports progress up to completion", "[geometry][shape]")
@@ -99,7 +119,7 @@ TEST_CASE("Shape::fromSTL: reports progress up to completion", "[geometry][shape
 TEST_CASE("Shape::fromSTL: stops when cancelled", "[geometry][shape]")
 {
     occ::handle<tests::support::ProgressProbe> probe = new tests::support::ProgressProbe();
-    probe->cancel = true;
+    probe->cancel                                    = true;
     REQUIRE_THROWS_AS(geometry::occt::Shape::fromSTL(kAssets / "stl" / "binary" / "model.stl", probe->Start()),
                       std::runtime_error);
 }

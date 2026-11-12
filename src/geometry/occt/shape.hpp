@@ -2,8 +2,12 @@
 
 // Must come before any OCCT header (see the file).
 #include "geometry/occt/windows_prelude.hpp"
+// clang-format off: keep the prelude first
+#include "geometry/occt/stl_reader.hpp"
+// clang-format on
 
 #include <Message_ProgressRange.hxx>
+#include <Poly_Triangulation.hxx>
 #include <TopoDS_Shape.hxx>
 #include <filesystem>
 #include <utility>
@@ -31,8 +35,10 @@ namespace geometry::occt
         { }
 
         /**
-         * @brief Imports a shape from an STL file: one triangular face per
-         * facet, nodes shared (what StlAPI_Reader builds).
+         * @brief Imports an STL file as a mesh (see fromMesh()), its vertices
+         * merged as RWStl does and stored in single precision (as in the file).
+         * Single-block binary files are read by readBinarySTL(), spread with
+         * parallelFor; anything else by RWStl.
          *
          * @param path The path to the STL file.
          * @param progress Receives the progress of reading then building; a
@@ -42,7 +48,31 @@ namespace geometry::occt
          * if the file can't be read or the import was cancelled.
          */
         static Shape fromSTL(const std::filesystem::path& path,
-                             const Message_ProgressRange& progress = Message_ProgressRange());
+                             const Message_ProgressRange& progress    = Message_ProgressRange(),
+                             const ParallelFor&           parallelFor = {});
+
+        /**
+         * @brief A mesh shape: one face, with no surface, carrying the whole
+         * triangulation. Cheap to build, display and export; operations that
+         * need real topology (booleans, analysis) use toBRep() first.
+         */
+        static Shape fromMesh(occ::handle<Poly_Triangulation> mesh);
+
+        /** @brief The triangulation of a mesh shape (fromMesh()); null for any other shape. */
+        [[nodiscard]] occ::handle<Poly_Triangulation> mesh() const;
+
+        /** @brief Triangles over every face's triangulation. */
+        [[nodiscard]] int triangleCount() const;
+
+        /**
+         * @brief Builds the B-Rep of a mesh shape: one planar face per
+         * triangle, vertices and edges shared (what StlAPI_Reader builds).
+         * Slow and large on big meshes (Lucy, 28 M triangles: ~4.5 min, ~15 GB).
+         *
+         * @throws std::invalid_argument if `mesh` is not a mesh shape,
+         * std::runtime_error if cancelled (user break on progress) or failed.
+         */
+        static Shape toBRep(const Shape& mesh, const Message_ProgressRange& progress = Message_ProgressRange());
 
         // Returns true if the shape is null
         [[nodiscard]] bool isNull() const noexcept

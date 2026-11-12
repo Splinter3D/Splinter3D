@@ -320,3 +320,36 @@ TEST_CASE("Dispatcher: submit's then runs once the budget is released", "[platfo
     REQUIRE(freeInThen == dispatcher.total());
     REQUIRE(waitIdle(dispatcher));
 }
+
+TEST_CASE("Dispatcher: post runs on the pool without taking workers", "[platform][threading]")
+{
+    auto&           dispatcher = Dispatcher::getInstance();
+    std::latch      ran(1);
+    std::size_t     freeInside = 0;
+    std::thread::id thread;
+    dispatcher.post([&] {
+        freeInside = dispatcher.freeWorkers();
+        thread     = std::this_thread::get_id();
+        ran.count_down();
+    });
+    ran.wait();
+    CHECK(freeInside == dispatcher.total()); // housekeeping, not an operation: no budget
+    CHECK(thread != std::this_thread::get_id());
+}
+
+TEST_CASE("Dispatcher: onCapacityFreed fires when a top-level run gives its workers back", "[platform][threading]")
+{
+    auto&            dispatcher = Dispatcher::getInstance();
+    std::atomic<int> freed      = 0;
+    const auto       token      = dispatcher.onCapacityFreed([&] { ++freed; });
+
+    dispatcher.run("c.outer", [&] {
+        dispatcher.run("c.inner", [] { }); // nested: shares the outer budget, frees nothing
+        CHECK(freed == 0);
+    });
+    CHECK(freed == 1);
+
+    dispatcher.unsubscribe(token);
+    dispatcher.run("c.after", [] { });
+    CHECK(freed == 1);
+}

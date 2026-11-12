@@ -57,6 +57,24 @@ namespace platform::threading
         });
     }
 
+    void Dispatcher::post(std::function<void()> fn)
+    {
+        _pool.post([fn = std::move(fn)] {
+            try
+            {
+                fn();
+            }
+            catch (const std::exception& error)
+            {
+                platform::logger::cerr("[dispatcher] posted work threw: ", error.what());
+            }
+            catch (...)
+            {
+                platform::logger::cerr("[dispatcher] posted work threw a non-standard exception");
+            }
+        });
+    }
+
     std::size_t Dispatcher::freeWorkers() const noexcept
     {
         const std::lock_guard lock(_mutex);
@@ -142,6 +160,38 @@ namespace platform::threading
         catch (...)
         {
             // Out of memory while recording: the run still happened, only its sample is lost.
+        }
+        if (!ticket.nested)
+            _capacityFreed();
+    }
+
+    std::uint64_t Dispatcher::onCapacityFreed(CapacityListener listener)
+    {
+        const std::lock_guard lock(_listenersMutex);
+        const std::uint64_t   token = _nextToken++;
+        _listeners.emplace(token, std::move(listener));
+        return token;
+    }
+
+    void Dispatcher::unsubscribe(std::uint64_t token)
+    {
+        const std::lock_guard lock(_listenersMutex);
+        _listeners.erase(token);
+    }
+
+    void Dispatcher::_capacityFreed() noexcept
+    {
+        const std::lock_guard lock(_listenersMutex);
+        for (const auto& [token, listener] : _listeners)
+        {
+            try
+            {
+                listener();
+            }
+            catch (...)
+            {
+                // A listener's failure must not break the run that freed the workers.
+            }
         }
     }
 

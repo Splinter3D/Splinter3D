@@ -7,6 +7,7 @@
 #include "worker_pool.hpp"
 
 #include <cstddef>
+#include <cstdint>
 #include <exception>
 #include <filesystem>
 #include <functional>
@@ -66,6 +67,30 @@ namespace platform::threading
          * after fn threw); it must not throw.
          */
         void submit(std::string operation, std::function<void()> fn, std::function<void()> then = {});
+
+        /**
+         * @brief Runs fn on a pool thread outside any operation: no budget is
+         * taken and nothing is recorded. For housekeeping (e.g. freeing big
+         * objects off the UI thread), not for work that should share the
+         * CPU fairly. fn should not throw; if it does, it is logged and dropped.
+         */
+        void post(std::function<void()> fn);
+
+        /** @brief Told that workers became free (see onCapacityFreed()). */
+        using CapacityListener = std::function<void()>;
+
+        /**
+         * @brief Calls listener whenever a top-level run gives its workers
+         * back (nested runs free nothing), on the releasing thread, outside
+         * any lock: anything waiting for workers can try again, whoever held
+         * them. Keep it short; post to another thread for real work.
+         *
+         * @return A token for unsubscribe().
+         */
+        std::uint64_t onCapacityFreed(CapacityListener listener);
+
+        /** @brief Stops calling the listener; once this returns, it is not running any more either. */
+        void unsubscribe(std::uint64_t token);
 
         /** @brief Workers no top-level run holds right now; 0 when saturated. */
         [[nodiscard]] std::size_t freeWorkers() const noexcept;
@@ -174,13 +199,19 @@ namespace platform::threading
         Ticket     _acquire(std::string_view operation);
         void       _release(Ticket& ticket, const std::optional<benchmark::Report>& report, bool succeeded) noexcept;
         Operation& _operation(std::string_view operation);
+        void       _capacityFreed() noexcept;
 
         mutable std::mutex                            _mutex;
         std::map<std::string, Operation, std::less<>> _operations;
         std::size_t                                   _allocated = 0;
         std::size_t                                   _active    = 0;
         std::filesystem::path                         _path;
-        WorkerPool                                    _pool;
+        // Separate from _mutex: listeners run outside it. Held while calling
+        // them, so unsubscribe() returns only once its listener is done.
+        std::mutex                                _listenersMutex;
+        std::map<std::uint64_t, CapacityListener> _listeners;
+        std::uint64_t                             _nextToken = 1;
+        WorkerPool                                _pool;
 
         friend class core::utils::Singleton<Dispatcher>;
     };

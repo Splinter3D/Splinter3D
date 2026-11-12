@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <map>
 #include <optional>
 #include <string>
 #include <vector>
@@ -38,11 +39,14 @@ namespace application::service
 
         struct Model
         {
-            ModelId                       id = 0;
-            std::string                   name;
-            geometry::occt::Shape         shape;
-            geometry::occt::Transform     transform;
-            platform::benchmark::Duration loadDuration{};
+            ModelId                   id = 0;
+            std::string               name;
+            geometry::occt::Shape     shape;
+            geometry::occt::Transform transform;
+            // Its B-Rep (a face per triangle), built on demand by a conversion
+            // task for operations that need real topology. Empty until then.
+            std::optional<geometry::occt::Shape> brep;
+            platform::benchmark::Duration        loadDuration{};
         };
 
         /**
@@ -74,13 +78,22 @@ namespace application::service
          * @brief Takes the next model id without adding a model, so work that
          * will add one later (a background import) can be referred to now.
          */
-        [[nodiscard]] ModelId reserveId();
+        [[nodiscard]] ModelId reserveId(std::string pendingName = {});
+
+        /** @brief The name a reserved id was given (its file, while importing); empty if none. */
+        [[nodiscard]] std::string reservedName(ModelId id) const;
 
         /**
          * @brief Ids reserved but not added yet (imports still running, or
          * that failed), so a task on "every model" can wait for them too.
          */
         [[nodiscard]] const std::vector<ModelId>& reservedIds() const noexcept;
+
+        /** @brief Caches the B-Rep of a model (see Model::brep); false if there is no such model. */
+        bool setBRep(ModelId id, geometry::occt::Shape brep);
+
+        /** @brief The model's cached B-Rep, or nullptr if not converted (or no such model). */
+        [[nodiscard]] const geometry::occt::Shape* brep(ModelId id) const noexcept;
 
         /** @brief Gives up a reserved id that will never be added (a failed or cancelled import). */
         void releaseId(ModelId id);
@@ -144,9 +157,10 @@ namespace application::service
         [[nodiscard]] bool        isValidIndex(int index) const noexcept;
         [[nodiscard]] std::string uniqueName(const std::string& base) const;
 
-        std::vector<Model>   models_;
-        ModelId              nextId_ = 1;
-        std::vector<ModelId> reserved_;
+        std::vector<Model>             models_;
+        ModelId                        nextId_ = 1;
+        std::vector<ModelId>           reserved_;
+        std::map<ModelId, std::string> reservedNames_;
     };
 
     /**
@@ -159,6 +173,12 @@ namespace application::service
      *
      * @return false if models is empty, the write failed or it was cancelled.
      */
+    /**
+     * @brief Frees shape on a pool thread. A converted B-Rep holds millions of
+     * OCCT objects; freeing it on the UI thread would freeze it for seconds.
+     */
+    void releaseInBackground(geometry::occt::Shape shape);
+
     /**
      * @brief The slow half of exportSTL(): meshes and writes a uniquely named
      * temporary file next to path, and returns it (empty on failure or

@@ -6,11 +6,13 @@
 #include <chrono>
 #include <condition_variable>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <mutex>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace application::tasks
@@ -25,6 +27,9 @@ namespace application::tasks
      * Dispatcher has a free worker. Reads don't block later writes: prepare()
      * snapshots what work() needs. A task without work whose models are free
      * applies inside submit() and never shows up (an instant edit).
+     *
+     * Workers freed by any top-level Dispatcher run (its own tasks or not)
+     * wake the tasks waiting for workers (Dispatcher::onCapacityFreed()).
      *
      * Without a Poster (synchronous mode, for batch scripts) submit() runs
      * every step inline, in order, and returns once the task is over.
@@ -76,6 +81,9 @@ namespace application::tasks
          */
         [[nodiscard]] bool wouldWait(service::ModelId id) const;
 
+        /** @brief Whether a queued or running (not cancelling) task of this operation writes `id`. */
+        [[nodiscard]] bool hasPending(std::string_view operation, service::ModelId id) const;
+
         /** @brief A pending or Failed task; empty once it is done, cancelled or dismissed. */
         [[nodiscard]] std::optional<TaskSnapshot> snapshot(TaskId id) const;
         [[nodiscard]] std::vector<TaskSnapshot>   snapshots() const;
@@ -101,7 +109,8 @@ namespace application::tasks
             std::condition_variable  settled;
             std::size_t              inFlight = 0;     // submitted works whose callbacks are not posted yet
             bool                     stopped  = false; // UI thread only
-            std::atomic<std::size_t> launching{0};     // submitted works not yet holding their workers
+            std::atomic<std::size_t> launching{0};
+            std::atomic<bool>        rescheduleQueued{false}; // one posted reschedule covers a burst of releases     // submitted works not yet holding their workers
         };
 
         Entry*                     _find(TaskId id);
@@ -125,8 +134,9 @@ namespace application::tasks
         Poster                  _poster;
         Listener                _listener;
         std::vector<Entry>      _entries; // submission order
-        TaskId                  _nextId     = 1;
-        bool                    _scheduling = false;
-        std::shared_ptr<Shared> _shared     = std::make_shared<Shared>();
+        TaskId                  _nextId        = 1;
+        bool                    _scheduling    = false;
+        std::shared_ptr<Shared> _shared        = std::make_shared<Shared>();
+        std::uint64_t           _capacityToken = 0; // Dispatcher::onCapacityFreed() subscription
     };
 } // namespace application::tasks
