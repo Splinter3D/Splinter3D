@@ -1,5 +1,6 @@
 #include "task_manager.hpp"
 
+#include "platform/locale/locale_manager.hpp"
 #include "platform/threading/dispatcher.hpp"
 
 #include <algorithm>
@@ -234,7 +235,8 @@ namespace application::tasks
         switch (entry.state)
         {
             case TaskState::Queued:
-                snapshot.status = entry.waitingFor.empty() ? "Queued" : "Queued · " + entry.waitingFor;
+                snapshot.status = entry.waitingFor.empty() ? platform::locale::tr("tasks.status.queued")
+                                                           : platform::locale::tr("tasks.status.queued_waiting", {{"reason", entry.waitingFor}});
                 break;
             case TaskState::Running:
                 if (entry.context)
@@ -244,7 +246,7 @@ namespace application::tasks
                 }
                 break;
             case TaskState::Cancelling:
-                snapshot.status = "Cancelling…";
+                snapshot.status = platform::locale::tr("tasks.status.cancelling");
                 break;
             case TaskState::Failed:
                 snapshot.error = entry.error;
@@ -284,12 +286,12 @@ namespace application::tasks
 
                 std::string waitingFor;
                 if (const Entry* blocker = _blocker(entry))
-                    waitingFor = "waiting for \"" + blocker->task.name + "\"";
+                    waitingFor = platform::locale::tr("tasks.status.waiting_for_task", {{"name", blocker->task.name}});
                 // Until a launched task holds its workers, freeWorkers() still
                 // counts them: wait for it (it reschedules once it has them).
                 else if (entry.task.work && (_shared->launching.load() > 0 ||
                                              platform::threading::Dispatcher::getInstance().freeWorkers() == 0))
-                    waitingFor = "waiting for workers";
+                    waitingFor = platform::locale::tr("tasks.status.waiting_for_workers");
 
                 if (!waitingFor.empty())
                 {
@@ -543,7 +545,7 @@ namespace application::tasks
         }
         catch (...)
         {
-            return std::string("unknown error");
+            return platform::locale::tr("tasks.error.unknown");
         }
     }
 
@@ -577,7 +579,7 @@ namespace application::tasks
         }
         catch (...)
         {
-            _fail(*_find(id), "unknown error");
+            _fail(*_find(id), platform::locale::tr("tasks.error.unknown"));
             return;
         }
         _remove(id);

@@ -1,0 +1,122 @@
+{
+  "play": "Spielen",
+  "settings": {
+    "title": "Einstellungen",
+    "language": "Sprache: {lang}",
+    "test": "Test {} {{test}}",
+    "nested_flattening": {
+      "test": "Verschachteltes Test {{test}}"
+    }
+  },
+  "quit": "Beenden",
+  "menu": {
+    "file": {
+      "title": "&Datei",
+      "new": "&Neu\tCtrl+N",
+      "open": "&\u00d6ffnen\tCtrl+O",
+      "save": "&Speichern\tCtrl+S",
+      "import": "&Importieren...",
+      "export": "&Exportieren...",
+      "exit": "&Beenden\tAlt+F4"
+    },
+    "about": {
+      "text": "wxWidgets-Demo\nAlle wichtigen Widgets an einem Ort.",
+      "title": "\u00dcber"
+    }
+  },
+  "window": {
+    "status": {
+      "ready": "Splinter3D - bereit"
+    },
+    "quit": {
+      "title": "Splinter3D beenden",
+      "message": "{count} Aufgabe(n) laufen noch oder warten. Abbrechen und beenden?",
+      "confirm": "Beenden",
+      "keep": "Weiterarbeiten"
+    }
+  },
+  "toolbar": {
+    "transform": {
+      "move": "Verschieben",
+      "rotate": "Drehen",
+      "all_models": "Alle Modelle"
+    }
+  },
+  "tasks": {
+    "cancel": "Abbrechen",
+    "dismiss": "Schlie\u00dfen",
+    "failed": "Fehlgeschlagen: {error}",
+    "model_fallback": "Modell",
+    "name": {
+      "import": "{name} importieren",
+      "export": "{name} exportieren",
+      "move": "{name} verschieben",
+      "remove": "{name} entfernen",
+      "clear": "Szene leeren",
+      "convert": "{name} konvertieren"
+    },
+    "status": {
+      "queued": "In Warteschlange",
+      "queued_waiting": "In Warteschlange \u00b7 {reason}",
+      "waiting_for_task": "wartet auf \u201e{name}\u201c",
+      "waiting_for_workers": "wartet auf Worker",
+      "cancelling": "Wird abgebrochen\u2026"
+    },
+    "error": {
+      "no_model": "kein Modell geladen",
+      "model_gone": "Modell \u201e{name}\u201c existiert nicht mehr",
+      "model_not_converted": "Modell \u201e{name}\u201c konnte nicht konvertiert werden",
+      "export_cancelled": "Export abgebrochen",
+      "export_failed": "Export nach {path} nicht m\u00f6glich",
+      "unknown": "unbekannter Fehler"
+    }
+  },
+  "dialogs": {
+    "models": {
+      "title": "Modelle",
+      "column": "Modell"
+    },
+    "info": "Info",
+    "warning": "Warnung",
+    "error": "Fehler",
+    "question": "Frage",
+    "input": "Eingabe",
+    "number": "Zahl:",
+    "open_file": "Datei \u00f6ffnen",
+    "all_files": "Alle Dateien (*.*)|*.*",
+    "please_wait": "Bitte warten"
+  },
+  "viewer": {
+    "import": {
+      "title": "3D-Modell importieren"
+    },
+    "export": {
+      "title": "3D-Modell exportieren"
+    },
+    "filter": {
+      "stl": "STL-Dateien (*.stl)|*.stl|Alle Dateien (*.*)|*.*"
+    },
+    "error": {
+      "create": "Neues Modell konnte nicht erstellt werden: {error}",
+      "import": "Modell konnte nicht importiert werden: {error}",
+      "export_empty": "Export nicht m\u00f6glich: kein Modell geladen.",
+      "init": "Modellbetrachter konnte nicht initialisiert werden: {error}"
+    }
+  },
+  "showcase": {
+    "button": "Schaltfl\u00e4che",
+    "button_tooltip": "Eine einfache Schaltfl\u00e4che",
+    "check_box": "Kontrollk\u00e4stchen",
+    "option_a": "Option A",
+    "option_b": "Option B",
+    "option_c": "Option C",
+    "combo_placeholder": "Option ausw\u00e4hlen",
+    "item_1": "Element 1",
+    "item_2": "Element 2",
+    "item_3": "Element 3",
+    "radio_box": "Optionsfeld",
+    "text_hint": "Hier eingeben",
+    "toggle_button": "Umschalter",
+    "example": "ExamplePanel - Registry-Pipeline OK"
+  }
+}

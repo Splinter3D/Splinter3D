@@ -1,4 +1,5 @@
 #include "core/event_bus/event_bus.hpp"
+#include "platform/locale/locale_manager.hpp"
 #include "platform/threading/dispatcher.hpp"
 
 #include <catch2/catch_test_case_info.hpp>
@@ -20,6 +21,9 @@ namespace
             platform::threading::Dispatcher::getInstance().clear();
             // Tests learn from instant runs; the one testing the threshold sets it.
             platform::threading::Dispatcher::getInstance().setMinLearnedDuration(platform::benchmark::Duration::zero());
+            // UI strings come from assets/locale/*.json; tests assert the English ones.
+            platform::locale::LocaleManager::get().init(SPLINTER3D_TEST_LOCALE_DIR);
+            platform::locale::LocaleManager::get().setLanguage("en");
         }
 
         void testCaseEnded(const Catch::TestCaseStats&) override

@@ -1,10 +1,13 @@
 #include "model_management_dialog.hpp"
 
+#include "ui/framework/wx/locale/locale.hpp"
 #include "ui/icons/Icons.hpp"
 
 #include <algorithm>
 #include <wx/button.h>
 #include <wx/sizer.h>
+
+using ui::framework::wx::locale::tr;
 
 namespace ui::dialogs
 {
@@ -15,11 +18,11 @@ namespace ui::dialogs
         std::function<void(int, bool)>         setVisibility,
         std::function<void(int)>               remove,
         std::function<void(int)>               focus)
-        : FloatingMenu(parent, "Models", wxSize(420, 320)), names_(std::move(names)), visibility_(std::move(visibility)), set_visibility_(std::move(setVisibility)), remove_(std::move(remove)), focus_(std::move(focus))
+        : FloatingMenu(parent, tr("dialogs.models.title"), wxSize(420, 320)), names_(std::move(names)), visibility_(std::move(visibility)), set_visibility_(std::move(setVisibility)), remove_(std::move(remove)), focus_(std::move(focus))
     {
         list_ = new wxListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
                                wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_NO_HEADER);
-        list_->InsertColumn(0, "Model", wxLIST_FORMAT_LEFT, 320);
+        list_->InsertColumn(0, tr("dialogs.models.column"), wxLIST_FORMAT_LEFT, 320);
         list_->InsertColumn(1, "", wxLIST_FORMAT_CENTER, ui::icons::svgIconColWidth); // eye
         list_->InsertColumn(2, "", wxLIST_FORMAT_CENTER, ui::icons::svgIconColWidth); // trash
         list_->Bind(wxEVT_SIZE, [this](wxSizeEvent& e) { ResizeColumns(); e.Skip(); });

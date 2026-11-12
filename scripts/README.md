@@ -10,7 +10,7 @@ Developer tooling: building the project, formatting code, checking versions/loca
 - `style.sh` - formats (or checks) all `.cpp`/`.hpp` files under `src/` and `include/` with `clang-format`, via `style.sh.d/run.sh`.
 - `style.sh.d/run.sh` - implementation sourced by `style.sh`; not meant to be called directly.
 - `check-versions.sh` - verifies that `vcpkg.json`'s `version-semver` matches the latest git tag (or a given tag), and can fix it in place.
-- `check-locales.py` - verifies that every JSON file in `locale/` exposes the same keys and `{placeholder}` sets as the reference (first) locale file.
+- `check-locales.py` - verifies that every JSON file in `assets/locale/` exposes the same keys and `{placeholder}` sets as the reference (first) locale file.
 - `bootstrap-pre-commit.sh` - installs `pre-commit` if missing, registers the `pre-commit`/`pre-push` git hooks, and runs all hooks once against the repo.
 
 ## Usage
@@ -49,7 +49,7 @@ Used by `prepare-release-pr.yml` (see `.github/workflows/README.md`) to keep `vc
 python3 scripts/check-locales.py
 ```
 
-Run from the repository root. Exits non-zero if any `locale/*.json` file has missing/extra keys, a type mismatch, or a placeholder mismatch relative to the first file (alphabetically) in `locale/`.
+Run from the repository root. Exits non-zero if any `assets/locale/*.json` file has missing/extra keys, a type mismatch, or a placeholder mismatch relative to the first file (alphabetically) in `assets/locale/`.
 
 ### Pre-commit hooks
 

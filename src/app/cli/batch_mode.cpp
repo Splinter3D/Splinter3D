@@ -3,6 +3,7 @@
 #include "application/service/scene_service.hpp"
 #include "application/workflow/batch_runner.hpp"
 #include "core/utils/data_root.hpp"
+#include "platform/locale/locale_manager.hpp"
 #include "platform/threading/dispatcher.hpp"
 
 #include <algorithm>
@@ -13,7 +14,7 @@ namespace app::cli
 {
     namespace
     {
-        std::filesystem::path profilesPath(const std::string& program)
+        std::filesystem::path dataRootOf(const std::string& program)
         {
             std::error_code             ec;
             const std::filesystem::path executable =
@@ -21,7 +22,7 @@ namespace app::cli
             std::filesystem::path dataRoot = core::utils::findDataRoot(ec ? std::filesystem::path() : executable);
             if (dataRoot.empty())
                 dataRoot = std::filesystem::current_path();
-            return platform::threading::Dispatcher::profilesPath(dataRoot);
+            return dataRoot;
         }
     } // namespace
 
@@ -50,7 +51,11 @@ namespace app::cli
         application::service::SceneService scene;
         application::workflow::BatchRunner runner(scene, std::cout);
         auto&                              dispatcher = platform::threading::Dispatcher::getInstance();
-        dispatcher.load(profilesPath(args.front()));
+        const auto                         dataRoot   = dataRootOf(args.front());
+        // Scripts and their output are machine-read: keep the messages in English.
+        platform::locale::LocaleManager::get().init((dataRoot / "assets" / "locale").string());
+        platform::locale::LocaleManager::get().setLanguage("en");
+        dispatcher.load(platform::threading::Dispatcher::profilesPath(dataRoot));
         const auto result = runner.runFile(script);
         dispatcher.save();
         std::cout.flush();

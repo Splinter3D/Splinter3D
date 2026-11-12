@@ -2,6 +2,7 @@
 
 #include "geometry/occt/path.hpp"
 #include "platform/benchmark/benchmark.hpp"
+#include "platform/locale/locale_manager.hpp"
 #include "platform/logger/logger.hpp"
 #include "platform/threading/dispatcher.hpp"
 
@@ -36,7 +37,7 @@ namespace application::tasks
             if (const auto* model = scene.find(id))
                 return model->name;
             const std::string pending = scene.reservedName(id); // still being imported
-            return pending.empty() ? "model" : pending;
+            return pending.empty() ? platform::locale::tr("tasks.model_fallback") : pending;
         }
 
         // Fails the task if the model went away before its turn came.
@@ -46,7 +47,7 @@ namespace application::tasks
         {
             return [&scene, id, name = std::move(name)]() -> std::optional<std::string> {
                 if (scene.find(id) == nullptr)
-                    return "model \"" + name + "\" no longer exists";
+                    return platform::locale::tr("tasks.error.model_gone", {{"name", name}});
                 return std::nullopt;
             };
         }
@@ -70,7 +71,7 @@ namespace application::tasks
         auto                   result   = std::make_shared<Result>();
 
         Task task;
-        task.name = "Import " + baseName;
+        task.name = platform::locale::tr("tasks.name.import", {{"name", baseName}});
         std::error_code ec;
         const auto      bytes = std::filesystem::file_size(path, ec);
         task.operation        = importOperation(ec ? 0 : bytes);
@@ -101,7 +102,7 @@ namespace application::tasks
         auto snapshot = std::make_shared<std::vector<service::SceneService::Model>>();
 
         Task task;
-        task.name      = "Export " + geometry::occt::toUtf8(path.filename());
+        task.name      = platform::locale::tr("tasks.name.export", {{"name", geometry::occt::toUtf8(path.filename())}});
         task.operation = kExportOperation;
         task.reads     = wholeScene(scene);
         // Only the models asked for: one added by a later task is not part of this export.
@@ -114,7 +115,7 @@ namespace application::tasks
                     snapshot->back().brep.reset(); // not needed, and must not outlive the model
                 }
             if (snapshot->empty())
-                return "no model loaded";
+                return platform::locale::tr("tasks.error.no_model");
             return std::nullopt;
         };
         // The file is written beside path in the background, and only
@@ -126,13 +127,13 @@ namespace application::tasks
             if (*temporary)
                 return;
             if (context.cancelled())
-                throw std::runtime_error("export cancelled");
-            throw std::runtime_error("could not export to " + geometry::occt::toUtf8(path));
+                throw std::runtime_error(platform::locale::tr("tasks.error.export_cancelled"));
+            throw std::runtime_error(platform::locale::tr("tasks.error.export_failed", {{"path", geometry::occt::toUtf8(path)}}));
         };
         task.apply = [path, temporary] {
             const auto written = std::exchange(*temporary, std::nullopt);
             if (!written || !service::commitSTLTemporary(*written, path))
-                throw std::runtime_error("could not export to " + geometry::occt::toUtf8(path));
+                throw std::runtime_error(platform::locale::tr("tasks.error.export_failed", {{"path", geometry::occt::toUtf8(path)}}));
         };
         task.discard = [temporary] {
             if (*temporary)
@@ -152,7 +153,7 @@ namespace application::tasks
         const std::string name = nameOf(scene, id);
 
         Task task;
-        task.name    = "Move " + name;
+        task.name    = platform::locale::tr("tasks.name.move", {{"name", name}});
         task.writes  = {id};
         task.prepare = requireModel(scene, id, name);
         task.apply   = [&editor, id, transform] { editor.setTransform(id, transform); };
@@ -164,7 +165,7 @@ namespace application::tasks
         const std::string name = nameOf(scene, id);
 
         Task task;
-        task.name    = "Remove " + name;
+        task.name    = platform::locale::tr("tasks.name.remove", {{"name", name}});
         task.writes  = {id};
         task.prepare = requireModel(scene, id, name);
         task.apply   = [&editor, id] { editor.removeModel(id); };
@@ -174,7 +175,7 @@ namespace application::tasks
     Task clearTask(const service::SceneService& scene, SceneEditor& editor)
     {
         Task task;
-        task.name   = "Clear scene";
+        task.name   = platform::locale::tr("tasks.name.clear");
         task.writes = wholeScene(scene);
         task.apply  = [&editor] { editor.clear(); };
         return task;
@@ -187,14 +188,14 @@ namespace application::tasks
         auto              result = std::make_shared<geometry::occt::Shape>();
 
         Task task;
-        task.name      = "Convert " + name;
+        task.name      = platform::locale::tr("tasks.name.convert", {{"name", name}});
         task.operation = kConvertOperation;
         task.reads     = {id};
         task.writes    = {brepResource(id)};
         task.prepare   = [&scene, id, name, mesh]() -> std::optional<std::string> {
             const auto* model = scene.find(id);
             if (model == nullptr)
-                return "model \"" + name + "\" no longer exists";
+                return platform::locale::tr("tasks.error.model_gone", {{"name", name}});
             *mesh = model->shape; // a handle copy: the triangulation is shared, not copied
             return std::nullopt;
         };
@@ -216,9 +217,9 @@ namespace application::tasks
     {
         return [&scene, id, name = nameOf(scene, id)]() -> std::optional<std::string> {
             if (scene.find(id) == nullptr)
-                return "model \"" + name + "\" no longer exists";
+                return platform::locale::tr("tasks.error.model_gone", {{"name", name}});
             if (scene.brep(id) == nullptr)
-                return "model \"" + name + "\" could not be converted";
+                return platform::locale::tr("tasks.error.model_not_converted", {{"name", name}});
             return std::nullopt;
         };
     }

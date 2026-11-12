@@ -1,9 +1,12 @@
 #include "tasks_panel.hpp"
 
 #include "application/tasks/task_manager.hpp"
+#include "ui/framework/wx/locale/locale.hpp"
 
 #include <algorithm>
 #include <wx/gauge.h>
+
+using ui::framework::wx::locale::tr;
 
 namespace ui::panels
 {
@@ -73,7 +76,7 @@ namespace ui::panels
         auto* name  = new wxStaticText(card.panel, wxID_ANY, wxString::FromUTF8(snapshot.name), wxDefaultPosition,
                                        wxDefaultSize, wxST_ELLIPSIZE_END);
         name->SetFont(name->GetFont().Bold());
-        card.button = new wxButton(card.panel, wxID_ANY, "Cancel", wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT);
+        card.button = new wxButton(card.panel, wxID_ANY, tr("tasks.cancel"), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT);
         row->Add(name, 1, wxALIGN_CENTER_VERTICAL);
         row->Add(card.button, 0, wxLEFT, 6);
 
@@ -103,7 +106,7 @@ namespace ui::panels
             case TaskState::Queued:
                 card.gauge->Show();
                 card.gauge->SetValue(0);
-                card.button->SetLabel("Cancel");
+                card.button->SetLabel(tr("tasks.cancel"));
                 card.button->Show();
                 card.status->SetLabel(wxString::FromUTF8(snapshot.status));
                 break;
@@ -111,7 +114,7 @@ namespace ui::panels
                 card.gauge->Show();
                 if (snapshot.progress)
                     card.gauge->SetValue(static_cast<int>(*snapshot.progress * kGaugeRange + 0.5));
-                card.button->SetLabel("Cancel");
+                card.button->SetLabel(tr("tasks.cancel"));
                 card.button->Show();
                 card.status->SetLabel(snapshot.progress ? wxString::Format("%d%%", card.gauge->GetValue())
                                                         : wxString::FromUTF8(snapshot.status));
@@ -122,9 +125,9 @@ namespace ui::panels
                 break;
             case TaskState::Failed:
                 card.gauge->Hide();
-                card.button->SetLabel("Dismiss");
+                card.button->SetLabel(tr("tasks.dismiss"));
                 card.button->Show();
-                card.status->SetLabel(wxString::FromUTF8("Failed: " + snapshot.error));
+                card.status->SetLabel(tr("tasks.failed", {{"error", wxString::FromUTF8(snapshot.error)}}));
                 break;
             default:
                 break;

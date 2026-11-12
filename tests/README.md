@@ -36,7 +36,7 @@ SPLINTER3D_BIN=build/bin/splinter3D python3 -m unittest discover -s tests/end_to
 - **`cmake/8-Tests.cmake`** (only when `ENABLE_TESTS=ON`) - one executable per suite folder (`splinter3D_unit_tests`, `splinter3D_integration_tests`), built from every `.cpp` under it plus `tests/support/*.cpp`; Catch2 tests are registered with CTest at test time (`DISCOVERY_MODE PRE_TEST`), so listing them never needs a display. A suite folder without `.cpp` files is skipped.
 - **Catch2** comes from the `tests` feature of `vcpkg.json`, installed only for test builds.
 - **`SPLINTER3D_TESTING`** is defined on `splinter3D_lib` (PUBLIC) in test builds only. Test-only APIs are wrapped in `#if defined(SPLINTER3D_TESTING)` - currently `EventBus::clear()` and `EventBus::subscriberCount<Event>()`.
-- **Compile definitions** available to tests: `SPLINTER3D_TEST_ASSETS_DIR` (the repo's `assets/`) and `SPLINTER3D_TEST_LOCALE_DIR` (the repo's `locale/`).
+- **Compile definitions** available to tests: `SPLINTER3D_TEST_ASSETS_DIR` (the repo's `assets/`) and `SPLINTER3D_TEST_LOCALE_DIR` (the repo's `assets/locale/`).
 - **Coverage** (`ENABLE_COVERAGE=ON`, via `--coverage`) - Clang source-based coverage (`-fprofile-instr-generate -fcoverage-mapping`) or GCC `--coverage`, see `apply_coverage()` in `cmake/3-Warnings.cmake`.
 - `scripts/Build/ConfigureBuild/Configure.py` always passes `ENABLE_TESTS`, `ENABLE_COVERAGE`, `ENABLE_DEBUG` and `VCPKG_MANIFEST_FEATURES` explicitly (ON or OFF): CMake caches options, so a release build run after a test or debug build in the same `build/` would otherwise silently keep them.
 
@@ -56,7 +56,7 @@ tests/
 │   └── application/   SceneService, BatchRunner
 ├── integration/
 │   ├── support/wx_environment.cpp  Catch2 listener: starts wxWidgets once per run (see below)
-│   ├── platform/      the real locale/*.json files through LocaleManager
+│   ├── platform/      the real assets/locale/*.json files through LocaleManager
 │   └── ui/            EventManager, TransformToolbar, ModelViewerPanel (real OCCT viewer),
 │                      MainWindow wiring, layouts + registries, theme, tr(), window lifecycle
 └── end_to_end/

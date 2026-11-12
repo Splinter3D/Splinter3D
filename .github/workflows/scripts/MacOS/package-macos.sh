@@ -107,12 +107,6 @@ if [[ -f "$ICON_SRC" ]]; then
     cp "$ICON_SRC" "$STAGING_DIR/Contents/Resources/Splinter3D.icns"
 fi
 
-if [[ -d "${PROJECT_ROOT}/locale" ]]; then
-    msg "Copying locale files..."
-    cp -r "${PROJECT_ROOT}/locale" "$STAGING_DIR/Contents/Resources/locale"
-    find "$STAGING_DIR/Contents/Resources/locale" -name "*.po" -delete 2>/dev/null || true
-fi
-
 # Metadata and docs placed at the root of the DMG next to the app
 DOCS_DIR="$STAGING_DIR/../${PACKAGE_DIRNAME}-docs"
 rm -rf "$DOCS_DIR"

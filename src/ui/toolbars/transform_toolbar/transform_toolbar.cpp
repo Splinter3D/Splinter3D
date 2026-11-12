@@ -1,5 +1,7 @@
 #include "transform_toolbar.hpp"
 
+#include "ui/framework/wx/locale/locale.hpp"
+
 #include <cmath>
 #include <memory>
 #include <numbers>
@@ -7,14 +9,14 @@
 #include <wx/dcbuffer.h>
 #include <wx/graphics.h>
 
+using ui::framework::wx::locale::tr;
+
 namespace ui::toolbars
 {
     namespace
     {
         constexpr int kIconSize   = 28;
         constexpr int kButtonSide = 64;
-
-        const wxString kAllModelsLabel = "All models";
 
         // Draws a small filled triangle pointing away from (originX,
         // originY) in the given direction, tip located at (originX,
@@ -136,10 +138,10 @@ namespace ui::toolbars
 
         const wxColour iconColour = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT);
 
-        move_button_ = MakeToggle(MakeMoveIcon(iconColour), "Move");
+        move_button_ = MakeToggle(MakeMoveIcon(iconColour), tr("toolbar.transform.move"));
         buttonsRow->Add(move_button_, 0, wxALIGN_CENTER_VERTICAL | wxALL, 6);
 
-        rotate_button_ = MakeToggle(MakeRotateIcon(iconColour), "Rotate");
+        rotate_button_ = MakeToggle(MakeRotateIcon(iconColour), tr("toolbar.transform.rotate"));
         buttonsRow->Add(rotate_button_, 0, wxALIGN_CENTER_VERTICAL | wxALL, 6);
 
         move_panel_ = MakeFieldsPanel("mm", -100000.0, 100000.0, 0.5, 2,
@@ -220,7 +222,7 @@ namespace ui::toolbars
         for (wxComboBox* combo : {move_target_combo_, rotate_target_combo_})
         {
             combo->Clear();
-            combo->Append(kAllModelsLabel);
+            combo->Append(tr("toolbar.transform.all_models"));
             combo->Append(modelNames);
 
             const int previousIndex = combo->FindString(previous);
@@ -289,9 +291,9 @@ namespace ui::toolbars
         auto* panel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
                                   wxBORDER_SIMPLE);
 
-        outTarget = new wxComboBox(panel, wxID_ANY, kAllModelsLabel, wxDefaultPosition,
+        outTarget = new wxComboBox(panel, wxID_ANY, tr("toolbar.transform.all_models"), wxDefaultPosition,
                                    wxSize(160, -1), 0, nullptr, wxCB_READONLY);
-        outTarget->Append(kAllModelsLabel);
+        outTarget->Append(tr("toolbar.transform.all_models"));
         outTarget->SetSelection(0);
 
         auto*        fieldsSizer = new wxBoxSizer(wxHORIZONTAL);

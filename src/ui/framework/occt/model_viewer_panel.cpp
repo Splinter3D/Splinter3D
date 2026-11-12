@@ -5,6 +5,7 @@
 #include "platform/benchmark/benchmark.hpp"
 #include "platform/logger/logger.hpp"
 #include "ui/dialogs/dialogs.hpp"
+#include "ui/framework/wx/locale/locale.hpp"
 
 #include <AIS_DisplayMode.hxx>
 #include <AIS_InteractiveContext.hxx>
@@ -44,6 +45,8 @@
 #if defined(__WXGTK__)
 #include <wx/gtk/glcanvas.h>
 #endif
+
+using ui::framework::wx::locale::tr;
 
 namespace ui::framework::occt
 {
@@ -621,14 +624,14 @@ namespace ui::framework::occt
         }
         catch (const std::exception& error)
         {
-            wxLogError("Unable to create a new model: %s", error.what());
+            wxLogError("%s", tr("viewer.error.create", {{"error", wxString::FromUTF8(error.what())}}));
         }
     }
 
     void ModelViewerPanel::openFile()
     {
         const auto path = ui::dialogs::openFile(
-            this, "Import 3D model", "STL files (*.stl)|*.stl|All files (*.*)|*.*");
+            this, tr("viewer.import.title"), tr("viewer.filter.stl"));
         if (!path)
             return;
 
@@ -639,10 +642,10 @@ namespace ui::framework::occt
     {
         wxFileDialog dialog(
             this,
-            "Export 3D model",
+            tr("viewer.export.title"),
             "",
             "model.stl",
-            "STL files (*.stl)|*.stl|All files (*.*)|*.*",
+            tr("viewer.filter.stl"),
             wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
         if (dialog.ShowModal() != wxID_OK)
             return;
@@ -660,7 +663,7 @@ namespace ui::framework::occt
         }
         catch (const std::exception& error)
         {
-            wxLogError("Unable to import the model: %s", error.what());
+            wxLogError("%s", tr("viewer.error.import", {{"error", wxString::FromUTF8(error.what())}}));
             return false;
         }
     }
@@ -673,7 +676,7 @@ namespace ui::framework::occt
                                                 [this](application::service::ModelId id) { return tasks_.wouldWait(id); });
         if (scene_.empty() && !importPending)
         {
-            wxLogError("Unable to export: no model loaded.");
+            wxLogError("%s", tr("viewer.error.export_empty"));
             return false;
         }
         tasks_.submit(application::tasks::exportTask(scene_, path));
@@ -820,7 +823,7 @@ namespace ui::framework::occt
         }
         catch (const std::exception& error)
         {
-            wxLogError("Unable to initialize the model viewer: %s", error.what());
+            wxLogError("%s", tr("viewer.error.init", {{"error", wxString::FromUTF8(error.what())}}));
         }
     }
 

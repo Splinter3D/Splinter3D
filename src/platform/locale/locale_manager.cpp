@@ -173,4 +173,22 @@ namespace platform::locale
         return "en";
     }
 
+    std::string tr(
+        const std::string&                                         key,
+        std::initializer_list<std::pair<std::string, std::string>> args)
+    {
+        std::string text = LocaleManager::get().gettext(key);
+
+        for (const auto& [name, value] : args)
+        {
+            const std::string placeholder = "{" + name + "}";
+
+            for (std::size_t at = text.find(placeholder); at != std::string::npos;
+                 at             = text.find(placeholder, at + value.size()))
+                text.replace(at, placeholder.size(), value);
+        }
+
+        return text;
+    }
+
 } // namespace platform::locale

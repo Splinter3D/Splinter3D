@@ -34,7 +34,6 @@ RUN arch="$(uname -m | sed -e s/x86_64/x64/ -e s/aarch64/arm64/)" && \
 
 COPY --chown=appuser:appuser ./src /app/src
 COPY --chown=appuser:appuser ./cmake /app/cmake
-COPY --chown=appuser:appuser ./locale /app/locale
 COPY --chown=appuser:appuser ./assets /app/assets
 COPY --chown=appuser:appuser ./scripts /app/scripts
 COPY --chown=appuser:appuser ./vcpkg.json /app/vcpkg.json

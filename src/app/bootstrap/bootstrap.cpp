@@ -53,8 +53,8 @@ namespace app
             dataRoot = std::filesystem::current_path();
 
         platform::logger::clog(
-            "[bootstrap] initializing locale from ", (dataRoot / "locale").string());
-        platform::locale::LocaleManager::get().init((dataRoot / "locale").string());
+            "[bootstrap] initializing locale from ", (dataRoot / "assets" / "locale").string());
+        platform::locale::LocaleManager::get().init((dataRoot / "assets" / "locale").string());
 
         const auto profiles = platform::threading::Dispatcher::profilesPath(dataRoot);
         platform::logger::clog("[bootstrap] loading scalability profiles from ", profiles.string());

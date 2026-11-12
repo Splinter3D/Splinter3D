@@ -1,5 +1,9 @@
 #include "example_panel.hpp"
 
+#include "ui/framework/wx/locale/locale.hpp"
+
+using ui::framework::wx::locale::tr;
+
 namespace ui::panels
 {
     ExamplePanel::ExamplePanel(wxWindow* parent)
@@ -7,7 +11,7 @@ namespace ui::panels
     {
         auto* sizer = new wxBoxSizer(wxVERTICAL);
         auto* label = new wxStaticText(this, wxID_ANY,
-                                       "ExamplePanel - registry pipeline OK");
+                                       tr("showcase.example"));
         sizer->Add(label, 0, wxALL | wxALIGN_CENTER, 20);
         SetSizer(sizer);
     }

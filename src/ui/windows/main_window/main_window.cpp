@@ -3,6 +3,7 @@
 #include "core/utils/data_root.hpp"
 #include "ui/dialogs/model_management_dialog.hpp"
 #include "ui/framework/wx/ids/ids.hpp"
+#include "ui/framework/wx/locale/locale.hpp"
 #include "ui/layouts/layout_registry.hpp"
 #include "ui/menus/menu_registry.hpp"
 #include "ui/panels/panel_registry.hpp"
@@ -15,6 +16,8 @@
 #include <wx/image.h>
 #include <wx/msgdlg.h>
 #include <wx/stdpaths.h>
+
+using ui::framework::wx::locale::tr;
 
 namespace ui::windows
 {
@@ -81,7 +84,7 @@ namespace ui::windows
 
         auto* menuBar = new wxMenuBar();
 
-        InitMenuBarEntry(menuBar, ui::framework::wx::ids::menus::kFile, "&File");
+        InitMenuBarEntry(menuBar, ui::framework::wx::ids::menus::kFile, tr("menu.file.title"));
 
         SetMenuBar(menuBar);
     }
@@ -89,7 +92,7 @@ namespace ui::windows
     void MainWindow::InitStatusBar()
     {
         CreateStatusBar();
-        SetStatusText("Splinter3D - ready");
+        SetStatusText(tr("window.status.ready"));
     }
 
     void MainWindow::InitLayout()
@@ -231,10 +234,9 @@ namespace ui::windows
                 else
                 {
                     wxMessageDialog dialog(
-                        this,
-                        wxString::Format("%zu task(s) still running or queued. Cancel them and quit?", pending),
-                        "Quit Splinter3D", wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION);
-                    dialog.SetYesNoLabels("Quit", "Keep working");
+                        this, tr("window.quit.message", {{"count", wxString::Format("%zu", pending)}}),
+                        tr("window.quit.title"), wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION);
+                    dialog.SetYesNoLabels(tr("window.quit.confirm"), tr("window.quit.keep"));
                     quit = dialog.ShowModal() == wxID_YES;
                 }
                 if (!quit)
