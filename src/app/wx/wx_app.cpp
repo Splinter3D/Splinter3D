@@ -31,7 +31,12 @@ namespace app
         constexpr int kFrameTickMs  = 16; // ~60 Hz
     } // namespace
 
-    WxApp::WxApp()  = default;
+    // wx creates the app before Initialize() starts GTK, so this is early enough.
+    WxApp::WxApp()
+    {
+        core::utils::preferX11Backend();
+    }
+
     WxApp::~WxApp() = default;
 
     bool WxApp::OnInit()
