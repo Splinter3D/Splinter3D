@@ -1,11 +1,45 @@
 {
   "play": "Jugar",
   "settings": {
-    "title": "Configuraci\u00f3n",
-    "language": "Idioma: {lang}",
-    "test": "Prueba {} {{test}}",
-    "nested_flattening": {
-      "test": "Prueba Anidada {{test}}"
+    "title": "Ajustes",
+    "section": {
+      "general": "General",
+      "import": "Importaci\u00f3n",
+      "keys": "Atajos de teclado"
+    },
+    "general": {
+      "language": "Idioma",
+      "language_system": "Idioma del sistema",
+      "restart": "Se aplica al reiniciar Splinter3D."
+    },
+    "languages": {
+      "en": "English",
+      "fr": "Fran\u00e7ais",
+      "de": "Deutsch",
+      "es": "Espa\u00f1ol"
+    },
+    "tasks": {
+      "auto_open": "Abrir el panel de tareas cuando empieza una tarea"
+    },
+    "import": {
+      "precision": "Precisi\u00f3n de las mallas",
+      "precision_single": "Simple (float)",
+      "precision_double": "Doble",
+      "precision_note": "La precisi\u00f3n simple reduce la memoria a la mitad (los archivos STL guardan floats); la doble conserva la precisi\u00f3n a trav\u00e9s de las transformaciones.",
+      "compute_brep": "Calcular B-Reps al importar",
+      "compute_brep_note": "Convierte cada modelo importado en segundo plano; lento y costoso en memoria con mallas grandes."
+    },
+    "keys": {
+      "new": "Nuevo",
+      "open": "Abrir",
+      "save": "Guardar",
+      "model_management": "Gesti\u00f3n de modelos",
+      "fullscreen": "Pantalla completa",
+      "quit": "Salir",
+      "press": "Pulse las teclas\u2026",
+      "none": "Ninguno",
+      "reset_tooltip": "Volver al atajo predeterminado",
+      "conflict": "Este atajo tambi\u00e9n lo usa otra acci\u00f3n."
     }
   },
   "quit": "Salir",
@@ -26,7 +60,7 @@
   },
   "window": {
     "status": {
-      "ready": "Splinter3D - listo"
+      "ready": "Splinter3D {version} - listo"
     },
     "quit": {
       "title": "Salir de Splinter3D",
@@ -55,7 +89,9 @@
       "move": "Mover {name}",
       "remove": "Eliminar {name}",
       "clear": "Vaciar la escena",
-      "convert": "Convertir {name}"
+      "convert": "Convertir {name}",
+      "precision_double": "Convertir {name} a doble precisi\u00f3n",
+      "precision_single": "Convertir {name} a precisi\u00f3n simple"
     },
     "status": {
       "queued": "En cola",
@@ -103,6 +139,17 @@
       "import": "No se pudo importar el modelo: {error}",
       "export_empty": "No se puede exportar: no hay ning\u00fan modelo cargado.",
       "init": "No se pudo inicializar el visor de modelos: {error}"
+    },
+    "precision": {
+      "message": "{count} modelo(s) cargado(s) est\u00e1n guardados en otra precisi\u00f3n. \u00bfConvertirlos tambi\u00e9n a precisi\u00f3n {precision}?"
+    },
+    "convert_loaded": {
+      "title": "Modelos cargados",
+      "convert": "Convertir",
+      "keep": "Dejar como est\u00e1"
+    },
+    "brep": {
+      "message": "{count} modelo(s) cargado(s) a\u00fan no tienen B-Rep. \u00bfCalcularlas tambi\u00e9n ahora? Puede ser lento con mallas grandes."
     }
   },
   "showcase": {

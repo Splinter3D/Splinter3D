@@ -92,6 +92,13 @@ namespace application::service
         /** @brief Caches the B-Rep of a model (see Model::brep); false if there is no such model. */
         bool setBRep(ModelId id, geometry::occt::Shape brep);
 
+        /**
+         * @brief Replaces a model's shape with the same geometry stored
+         * differently (e.g. another mesh precision): its placement and B-Rep
+         * stay. False if there is no such model.
+         */
+        bool setShape(ModelId id, geometry::occt::Shape shape);
+
         /** @brief The model's cached B-Rep, or nullptr if not converted (or no such model). */
         [[nodiscard]] const geometry::occt::Shape* brep(ModelId id) const noexcept;
 

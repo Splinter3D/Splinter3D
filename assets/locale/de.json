@@ -2,10 +2,44 @@
   "play": "Spielen",
   "settings": {
     "title": "Einstellungen",
-    "language": "Sprache: {lang}",
-    "test": "Test {} {{test}}",
-    "nested_flattening": {
-      "test": "Verschachteltes Test {{test}}"
+    "section": {
+      "general": "Allgemein",
+      "import": "Import",
+      "keys": "Tastenk\u00fcrzel"
+    },
+    "general": {
+      "language": "Sprache",
+      "language_system": "Systemsprache",
+      "restart": "Wird nach einem Neustart von Splinter3D wirksam."
+    },
+    "languages": {
+      "en": "English",
+      "fr": "Fran\u00e7ais",
+      "de": "Deutsch",
+      "es": "Espa\u00f1ol"
+    },
+    "tasks": {
+      "auto_open": "Aufgabenbereich \u00f6ffnen, wenn eine Aufgabe startet"
+    },
+    "import": {
+      "precision": "Netzgenauigkeit",
+      "precision_single": "Einfach (float)",
+      "precision_double": "Doppelt",
+      "precision_note": "Einfache Genauigkeit halbiert den Speicher (STL-Dateien speichern floats); doppelte erh\u00e4lt die Genauigkeit \u00fcber Transformationen hinweg.",
+      "compute_brep": "B-Reps beim Import berechnen",
+      "compute_brep_note": "Konvertiert jedes importierte Modell im Hintergrund; bei gro\u00dfen Netzen langsam und speicherintensiv."
+    },
+    "keys": {
+      "new": "Neu",
+      "open": "\u00d6ffnen",
+      "save": "Speichern",
+      "model_management": "Modellverwaltung",
+      "fullscreen": "Vollbild",
+      "quit": "Beenden",
+      "press": "Tasten dr\u00fccken\u2026",
+      "none": "Keine",
+      "reset_tooltip": "Zur\u00fcck zum Standardk\u00fcrzel",
+      "conflict": "Dieses K\u00fcrzel wird auch von einer anderen Aktion verwendet."
     }
   },
   "quit": "Beenden",
@@ -26,7 +60,7 @@
   },
   "window": {
     "status": {
-      "ready": "Splinter3D - bereit"
+      "ready": "Splinter3D {version} - bereit"
     },
     "quit": {
       "title": "Splinter3D beenden",
@@ -55,7 +89,9 @@
       "move": "{name} verschieben",
       "remove": "{name} entfernen",
       "clear": "Szene leeren",
-      "convert": "{name} konvertieren"
+      "convert": "{name} konvertieren",
+      "precision_double": "{name} in doppelte Genauigkeit konvertieren",
+      "precision_single": "{name} in einfache Genauigkeit konvertieren"
     },
     "status": {
       "queued": "In Warteschlange",
@@ -103,6 +139,17 @@
       "import": "Modell konnte nicht importiert werden: {error}",
       "export_empty": "Export nicht m\u00f6glich: kein Modell geladen.",
       "init": "Modellbetrachter konnte nicht initialisiert werden: {error}"
+    },
+    "precision": {
+      "message": "{count} geladene(s) Modell(e) sind in einer anderen Genauigkeit gespeichert. Ebenfalls in {precision} konvertieren?"
+    },
+    "convert_loaded": {
+      "title": "Geladene Modelle",
+      "convert": "Konvertieren",
+      "keep": "Unver\u00e4ndert lassen"
+    },
+    "brep": {
+      "message": "{count} geladene(s) Modell(e) haben noch keine B-Rep. Jetzt ebenfalls berechnen? Bei gro\u00dfen Netzen kann das dauern."
     }
   },
   "showcase": {

@@ -5,8 +5,15 @@
 #include <unordered_map>
 #include <utility>
 
+namespace platform::settings
+{
+    class SettingsRegistry;
+}
+
 namespace platform::locale
 {
+    /// The language setting: "default" (the system's) or a language code.
+    inline constexpr const char* kLanguageSetting = "general.language";
 
     /**
      * @brief Loads assets/locale/<language>.json files and translates dotted keys.
@@ -31,6 +38,13 @@ namespace platform::locale
             const std::string& language);
 
         std::string getLanguage() const;
+
+        /**
+         * @brief Declares the language setting in settings and switches to the
+         * language it holds (other than "default"). Later changes apply on the
+         * next start: strings are read when windows are built.
+         */
+        void useSettings(settings::SettingsRegistry& settings);
 
         std::string gettext(
             const std::string& key) const;

@@ -1,5 +1,6 @@
 #include "core/event_bus/event_bus.hpp"
 #include "platform/locale/locale_manager.hpp"
+#include "platform/settings/settings_registry.hpp"
 #include "platform/threading/dispatcher.hpp"
 
 #include <catch2/catch_test_case_info.hpp>
@@ -24,6 +25,8 @@ namespace
             // UI strings come from assets/locale/*.json; tests assert the English ones.
             platform::locale::LocaleManager::get().init(SPLINTER3D_TEST_LOCALE_DIR);
             platform::locale::LocaleManager::get().setLanguage("en");
+            // Defaults only, and never the user's settings file.
+            platform::settings::SettingsRegistry::getInstance().clear();
         }
 
         void testCaseEnded(const Catch::TestCaseStats&) override

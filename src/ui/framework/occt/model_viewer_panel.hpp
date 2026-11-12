@@ -3,6 +3,7 @@
 #include "application/service/scene_service.hpp"
 #include "application/tasks/task_manager.hpp"
 #include "geometry/occt/transform.hpp"
+#include "platform/settings/settings_registry.hpp"
 
 #include <array>
 #include <filesystem>
@@ -17,6 +18,10 @@
 
 namespace ui::framework::occt
 {
+    // Settings the viewer declares (see platform::settings::SettingsRegistry).
+    inline constexpr const char* kMeshPrecisionSetting = "import.mesh_precision"; // "single" or "double"
+    inline constexpr const char* kComputeBRepSetting   = "import.compute_brep";   // convert each import to a B-Rep
+
     class ModelViewerPanel final : public wxPanel
     {
       public:
@@ -35,7 +40,8 @@ namespace ui::framework::occt
 
         // Starts importing an STL file in the background (a task); the model
         // appears once it is read. Returns false only if the viewer could not
-        // start; import errors show on the task's card.
+        // start; import errors show on the task's card. Its mesh precision and
+        // whether a B-Rep conversion follows come from the settings.
         bool loadFile(const std::filesystem::path& path);
 
         // Starts writing the scene to an STL file in the background (a task).
@@ -81,6 +87,13 @@ namespace ui::framework::occt
         // or out of range.
         [[nodiscard]] TransformValues GetTransform(int targetIndex) const;
 
+        // What changing an import setting asks about the models already loaded.
+        enum class LoadedModelsQuestion
+        {
+            Precision, // store their meshes in the new precision too?
+            BRep,      // compute their B-Reps too?
+        };
+
         // Which interactive 3D gizmo (if any) should be shown in the
         // viewport, mirroring the toolbar's active tool.
         enum class GizmoTool
@@ -112,10 +125,26 @@ namespace ui::framework::occt
 
         // Test-only: where the camera is.
         [[nodiscard]] std::array<double, 3> CameraEye() const;
+
+        // Test-only: replaces the "convert loaded models too?" dialog shown
+        // when an import setting changes (true = convert).
+        void SetConfirmConvertLoaded(std::function<bool(LoadedModelsQuestion question, std::size_t models)> confirm);
+
+        // Test-only: the models as the scene holds them.
+        [[nodiscard]] const application::service::SceneService& Scene() const noexcept;
 #endif
 
       private:
         void notifyModelStateChanged();
+
+        // The mesh precision setting changed: offers to convert the loaded
+        // meshes stored the other way.
+        void onPrecisionChanged(const std::string& value);
+        // B-Reps on import turned on: offers to convert the loaded models
+        // that have none.
+        void onComputeBRepChanged(const std::string& value);
+        // Asks whether to apply an import setting to `models` loaded models.
+        bool confirmConvertLoaded(LoadedModelsQuestion question, std::size_t models, const wxString& message);
 
         // Commits a gizmo drag position, or previews it while a task still
         // changes the model (see pending_drag_).
@@ -147,6 +176,9 @@ namespace ui::framework::occt
         // Last gizmo drag position on a model a task is still changing: only
         // previewed, queued as a move on mouse up.
         std::optional<std::pair<application::service::ModelId, geometry::occt::Transform>> pending_drag_;
+        std::function<bool(LoadedModelsQuestion, std::size_t models)>                      confirm_convert_loaded_;
+        platform::settings::Subscription                                                   precision_subscription_;
+        platform::settings::Subscription                                                   brep_subscription_;
         // Declared last, destroyed first: its tasks reference scene_ and viewer_.
         application::tasks::TaskManager tasks_;
     };

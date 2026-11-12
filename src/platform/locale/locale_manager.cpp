@@ -1,5 +1,7 @@
 #include "locale_manager.hpp"
 
+#include "platform/settings/settings_registry.hpp"
+
 #include <algorithm>
 #include <cstdlib>
 #include <fstream>
@@ -34,6 +36,14 @@ namespace platform::locale
     std::string LocaleManager::getLanguage() const
     {
         return m_currentLanguage;
+    }
+
+    void LocaleManager::useSettings(settings::SettingsRegistry& settings)
+    {
+        settings.add({kLanguageSetting, "settings.section.general", "settings.general.language", "settings.general.restart", settings::Kind::Choice, "default", {{"default", "settings.general.language_system"}, {"en", "settings.languages.en"}, {"fr", "settings.languages.fr"}, {"de", "settings.languages.de"}, {"es", "settings.languages.es"}}});
+        const std::string language = settings.get(kLanguageSetting);
+        if (language != "default")
+            setLanguage(language);
     }
 
     std::string LocaleManager::gettext(

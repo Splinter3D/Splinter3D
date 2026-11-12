@@ -1,87 +1,100 @@
 #include "shortcut_events.hpp"
 
 #include "ui/framework/wx/ids/ids.hpp"
+#include "ui/widgets/key_bind_button/key_bind_button.hpp"
 
+#include <string>
 #include <utility>
+#include <wx/accel.h>
+#include <wx/menu.h>
 
 namespace ui::framework::wx
 {
     namespace events
     {
+        namespace
+        {
+            struct Shortcut
+            {
+                const char* key;          // setting key
+                const char* defaultValue; // wxAcceleratorEntry raw string
+                const char* label;        // locale key
+                int         command;      // menu command sent; 0: model management
+            };
+
+            constexpr Shortcut kShortcuts[] = {
+                {"keys.new", "Ctrl+N", "settings.keys.new", ids::file::kNew},
+                {"keys.open", "Ctrl+O", "settings.keys.open", ids::file::kOpen},
+                {"keys.save", "Ctrl+S", "settings.keys.save", ids::file::kSave},
+                {"keys.model_management", "Ctrl+Shift+O", "settings.keys.model_management", 0},
+                {"keys.fullscreen", "F11", "settings.keys.fullscreen", ids::view::kToggleFullscreen},
+                {"keys.quit", "Ctrl+Q", "settings.keys.quit", ids::file::kExit},
+            };
+
+            bool parse(const std::string& value, wxAcceleratorEntry& entry)
+            {
+                return !value.empty() && entry.FromString(wxString::FromUTF8(value));
+            }
+        } // namespace
+
         void ShortcutEvents::bind()
         {
-            bindCommonShortcuts();
-            bindFullscreenShortcut();
+            using platform::settings::Kind;
+            auto& settings = platform::settings::SettingsRegistry::getInstance();
+            for (const auto& shortcut : kShortcuts)
+                subscriptions_.push_back(settings.add(
+                    {shortcut.key, "settings.section.keys", shortcut.label, "", Kind::KeyBind, shortcut.defaultValue, {}},
+                    [this](const std::string&) { syncMenus(); }));
+
+            frame_->Bind(wxEVT_CHAR_HOOK, &ShortcutEvents::onKey, this);
+            syncMenus();
         }
 
-        void ShortcutEvents::bindCommonShortcuts()
+        void ShortcutEvents::onKey(wxKeyEvent& event)
         {
-            frame_->Bind(
-                wxEVT_CHAR_HOOK,
-                [this](wxKeyEvent& event) {
-                    const int key = event.GetKeyCode();
+            // A key being recorded in the settings is not a shortcut.
+            if (const auto* recorder = dynamic_cast<ui::widgets::KeyBindButton*>(wxWindow::FindFocus());
+                recorder != nullptr && recorder->IsCapturing())
+            {
+                event.Skip();
+                return;
+            }
 
-                    // Ctrl + S
-                    if (event.ControlDown() && key == 'S')
-                    {
-                        wxCommandEvent saveEvent(
-                            wxEVT_MENU,
-                            ids::file::kSave);
-
-                        frame_->ProcessWindowEvent(saveEvent);
-                        return;
-                    }
-
-                    // Ctrl + O
-                    if (event.ControlDown() && key == 'O')
-                    {
-                        if (event.ShiftDown())
-                        {
-                            if (on_model_management_)
-                                on_model_management_();
-                            return;
-                        }
-
-                        wxCommandEvent openEvent(
-                            wxEVT_MENU,
-                            ids::file::kOpen);
-
-                        frame_->ProcessWindowEvent(openEvent);
-                        return;
-                    }
-
-                    // Ctrl + Q
-                    if (event.ControlDown() && key == 'Q')
-                    {
-                        wxCommandEvent exitEvent(
-                            wxEVT_MENU,
-                            ids::file::kExit);
-
-                        frame_->ProcessWindowEvent(exitEvent);
-                        return;
-                    }
-
-                    event.Skip();
-                });
+            const auto& settings = platform::settings::SettingsRegistry::getInstance();
+            for (const auto& shortcut : kShortcuts)
+            {
+                if (!ui::widgets::matchesKeyBind(event, settings.get(shortcut.key)))
+                    continue;
+                if (shortcut.command == 0)
+                {
+                    if (on_model_management_)
+                        on_model_management_();
+                    return;
+                }
+                wxCommandEvent command(wxEVT_MENU, shortcut.command);
+                frame_->ProcessWindowEvent(command);
+                return;
+            }
+            event.Skip();
         }
 
-        void ShortcutEvents::bindFullscreenShortcut()
+        void ShortcutEvents::syncMenus()
         {
-            frame_->Bind(
-                wxEVT_CHAR_HOOK,
-                [this](wxKeyEvent& event) {
-                    if (event.GetKeyCode() == WXK_F11)
-                    {
-                        wxCommandEvent fullscreenEvent(
-                            wxEVT_MENU,
-                            ids::view::kToggleFullscreen);
-
-                        frame_->ProcessWindowEvent(fullscreenEvent);
-                        return;
-                    }
-
-                    event.Skip();
-                });
+            wxMenuBar* menuBar = frame_->GetMenuBar();
+            if (menuBar == nullptr)
+                return;
+            const auto& settings = platform::settings::SettingsRegistry::getInstance();
+            for (const auto& shortcut : kShortcuts)
+            {
+                wxMenuItem* item = shortcut.command != 0 ? menuBar->FindItem(shortcut.command) : nullptr;
+                if (item == nullptr)
+                    continue;
+                wxString           label = item->GetItemLabel().BeforeFirst('\t');
+                wxAcceleratorEntry entry;
+                if (parse(settings.get(shortcut.key), entry))
+                    label += "\t" + entry.ToRawString();
+                item->SetItemLabel(label);
+            }
         }
 
     } // namespace events

@@ -8,6 +8,7 @@
 #include "ui/layouts/layout_registry.hpp"
 #include "ui/menus/menu_registry.hpp"
 #include "ui/panels/panel_registry.hpp"
+#include "ui/panels/settings_panel/settings_panel.hpp"
 #include "ui/panels/side_dock/side_dock.hpp"
 #include "ui/panels/tasks_panel/tasks_panel.hpp"
 #include "ui/toolbars/toolbar_registry.hpp"
@@ -94,7 +95,7 @@ namespace ui::windows
     void MainWindow::InitStatusBar()
     {
         CreateStatusBar();
-        SetStatusText(tr("window.status.ready"));
+        SetStatusText(tr("window.status.ready", {{"version", wxString::Format("%s", SPLINTER3D_VERSION)}}));
     }
 
     void MainWindow::InitLayout()
@@ -139,7 +140,10 @@ namespace ui::windows
         if (side_dock_ != nullptr && layout_ != nullptr)
             layout_->AddRight(side_dock_);
 
-        // Opens by itself while tasks run, unless already opened by hand.
+        // Opens by itself while tasks run (unless turned off in the settings),
+        // unless already opened by hand.
+        platform::settings::SettingsRegistry::getInstance().add(
+            {kTasksAutoOpenSetting, "settings.section.general", "settings.tasks.auto_open", "", platform::settings::Kind::Toggle, "1", {}});
         if (side_dock_ != nullptr && model_viewer_ != nullptr)
         {
             auto* tasksPanel = PanelRegistry::getInstance().Create(ui::framework::wx::ids::panels::kTasks, side_dock_);
@@ -148,13 +152,21 @@ namespace ui::windows
             {
                 side_dock_->AddPage(tasks_panel_, ui::icons::MakeIcon(ui::icons::tasksSvg), tr("tasks.title"));
                 tasks_panel_->SetOnBusyChanged([this](bool busy) {
-                    if (busy)
+                    if (busy && platform::settings::SettingsRegistry::getInstance().isOn(kTasksAutoOpenSetting))
                         side_dock_->RequestOpen(tasks_panel_);
                     else
                         side_dock_->ReleaseOpen(tasks_panel_);
                 });
                 tasks_panel_->attach(model_viewer_->tasks());
             }
+        }
+
+        if (side_dock_ != nullptr)
+        {
+            settings_panel_ = dynamic_cast<ui::panels::SettingsPanel*>(
+                PanelRegistry::getInstance().Create(ui::framework::wx::ids::panels::kSettings, side_dock_));
+            if (settings_panel_ != nullptr)
+                side_dock_->AddPage(settings_panel_, ui::icons::MakeIcon(ui::icons::settingsSvg), tr("settings.title"));
         }
 
         if (model_viewer_ != nullptr)

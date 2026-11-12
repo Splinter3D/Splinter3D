@@ -2,10 +2,44 @@
   "play": "Play",
   "settings": {
     "title": "Settings",
-    "language": "Language: {lang}",
-    "test": "Test {} {{test}}",
-    "nested_flattening": {
-      "test": "Nested Test {{test}}"
+    "section": {
+      "general": "General",
+      "import": "Import",
+      "keys": "Keyboard shortcuts"
+    },
+    "general": {
+      "language": "Language",
+      "language_system": "System default",
+      "restart": "Applies after restarting Splinter3D."
+    },
+    "languages": {
+      "en": "English",
+      "fr": "Fran\u00e7ais",
+      "de": "Deutsch",
+      "es": "Espa\u00f1ol"
+    },
+    "tasks": {
+      "auto_open": "Open the tasks panel when a task starts"
+    },
+    "import": {
+      "precision": "Mesh precision",
+      "precision_single": "Single (float)",
+      "precision_double": "Double",
+      "precision_note": "Single halves the memory (STL files hold floats); double keeps precision through transformations.",
+      "compute_brep": "Compute B-Reps on import",
+      "compute_brep_note": "Converts each imported model in the background; slow and memory-heavy on large meshes."
+    },
+    "keys": {
+      "new": "New",
+      "open": "Open",
+      "save": "Save",
+      "model_management": "Model management",
+      "fullscreen": "Fullscreen",
+      "quit": "Quit",
+      "press": "Press keys\u2026",
+      "none": "None",
+      "reset_tooltip": "Back to the default shortcut",
+      "conflict": "This shortcut is also used by another action."
     }
   },
   "quit": "Quit",
@@ -26,7 +60,7 @@
   },
   "window": {
     "status": {
-      "ready": "Splinter3D - ready"
+      "ready": "Splinter3D {version} - ready"
     },
     "quit": {
       "title": "Quit Splinter3D",
@@ -55,7 +89,9 @@
       "move": "Move {name}",
       "remove": "Remove {name}",
       "clear": "Clear scene",
-      "convert": "Convert {name}"
+      "convert": "Convert {name}",
+      "precision_double": "Convert {name} to double precision",
+      "precision_single": "Convert {name} to single precision"
     },
     "status": {
       "queued": "Queued",
@@ -103,6 +139,17 @@
       "import": "Unable to import the model: {error}",
       "export_empty": "Unable to export: no model loaded.",
       "init": "Unable to initialize the model viewer: {error}"
+    },
+    "precision": {
+      "message": "{count} loaded model(s) are stored in another precision. Convert them to {precision} too?"
+    },
+    "convert_loaded": {
+      "title": "Loaded models",
+      "convert": "Convert",
+      "keep": "Keep as is"
+    },
+    "brep": {
+      "message": "{count} loaded model(s) have no B-Rep yet. Compute them now too? This can be slow on large meshes."
     }
   },
   "showcase": {

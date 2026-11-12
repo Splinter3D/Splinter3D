@@ -21,6 +21,7 @@ namespace application::tasks
         constexpr const char* kLargeImportOperation = "model.import.large";
         constexpr const char* kExportOperation      = "model.export";
         constexpr const char* kConvertOperation     = "model.convert";
+        constexpr const char* kPrecisionOperation   = "model.precision";
 
         // Every model, plus those earlier imports will add: a task on "the
         // whole scene" must come after them.
@@ -58,7 +59,10 @@ namespace application::tasks
         return bytes >= kLargeImportBytes ? kLargeImportOperation : kImportOperation;
     }
 
-    Task importTask(service::SceneService& scene, SceneEditor& editor, std::filesystem::path path)
+    Task importTask(service::SceneService&           scene,
+                    SceneEditor&                     editor,
+                    std::filesystem::path            path,
+                    geometry::occt::Shape::Precision precision)
     {
         struct Result
         {
@@ -76,7 +80,7 @@ namespace application::tasks
         const auto      bytes = std::filesystem::file_size(path, ec);
         task.operation        = importOperation(ec ? 0 : bytes);
         task.writes           = {id};
-        task.work             = [path, result](TaskContext& context) {
+        task.work             = [path, result, precision](TaskContext& context) {
             std::optional<platform::benchmark::Report> report;
             result->shape  = platform::benchmark::measure(&report, platform::benchmark::Metrics::NOFPS,
                                                           [&] {
@@ -84,7 +88,8 @@ namespace application::tasks
                                                                  path, context.progressRange(),
                                                                  [](std::size_t first, std::size_t last, const std::function<void(std::size_t)>& body) {
                                                                      platform::threading::Dispatcher::getInstance().parallelFor(first, last, body);
-                                                                 });
+                                                                 },
+                                                                 precision);
                                                           });
             result->report = report.value_or(platform::benchmark::Report{});
         };
@@ -213,6 +218,54 @@ namespace application::tasks
         return task;
     }
 
+    Task precisionTask(const service::SceneService&     scene,
+                       SceneEditor&                     editor,
+                       service::ModelId                 id,
+                       geometry::occt::Shape::Precision precision)
+    {
+        const std::string name   = nameOf(scene, id);
+        auto              shape  = std::make_shared<geometry::occt::Shape>();
+        auto              result = std::make_shared<std::optional<geometry::occt::Shape>>();
+
+        Task task;
+        task.name      = platform::locale::tr(precision == geometry::occt::Shape::Precision::Double ? "tasks.name.precision_double"
+                                                                                                    : "tasks.name.precision_single",
+                                              {{"name", name}});
+        task.operation = kPrecisionOperation;
+        task.writes    = {id};
+        task.prepare   = [&scene, id, name, shape]() -> std::optional<std::string> {
+            const auto* model = scene.find(id);
+            if (model == nullptr)
+                return platform::locale::tr("tasks.error.model_gone", {{"name", name}});
+            *shape = model->shape; // a handle copy
+            return std::nullopt;
+        };
+        task.work = [shape, result, precision](TaskContext&) {
+            if (shape->precision() && shape->precision() != precision)
+                *result = geometry::occt::Shape::withPrecision(*shape, precision);
+        };
+        task.apply = [&editor, id, result] {
+            if (*result)
+                editor.setShape(id, std::move(**result));
+        };
+        return task;
+    }
+
+    std::optional<TaskId> submitConversion(TaskManager&                 tasks,
+                                           const service::SceneService& scene,
+                                           SceneEditor&                 editor,
+                                           service::ModelId             id)
+    {
+        if (!needsConversion(tasks, scene, id))
+            return std::nullopt;
+        return tasks.submit(convertTask(scene, editor, id));
+    }
+
+    bool needsConversion(const TaskManager& tasks, const service::SceneService& scene, service::ModelId id)
+    {
+        return scene.brep(id) == nullptr && !tasks.hasPending(kConvertOperation, brepResource(id));
+    }
+
     std::function<std::optional<std::string>()> requireBRep(const service::SceneService& scene, service::ModelId id)
     {
         return [&scene, id, name = nameOf(scene, id)]() -> std::optional<std::string> {
@@ -233,8 +286,8 @@ namespace application::tasks
         std::vector<TaskId> submitted;
         for (const auto id : models)
         {
-            if (scene.brep(id) == nullptr && !tasks.hasPending(kConvertOperation, brepResource(id)))
-                submitted.push_back(tasks.submit(convertTask(scene, editor, id)));
+            if (const auto conversion = submitConversion(tasks, scene, editor, id))
+                submitted.push_back(*conversion);
             operation.reads.push_back(brepResource(id)); // after the conversion, whichever it is
         }
         submitted.push_back(tasks.submit(std::move(operation)));

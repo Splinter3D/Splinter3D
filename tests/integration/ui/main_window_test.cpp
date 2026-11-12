@@ -1,4 +1,5 @@
 #include "application/tasks/task.hpp"
+#include "platform/settings/settings_registry.hpp"
 #include "support/temp_dir.hpp"
 #include "support/wx_helpers.hpp"
 #include "ui/framework/occt/model_viewer_panel.hpp"
@@ -6,10 +7,12 @@
 #include "ui/layouts/layout_registration.hpp"
 #include "ui/menus/menu_registration.hpp"
 #include "ui/panels/panel_registration.hpp"
+#include "ui/panels/settings_panel/settings_panel.hpp"
 #include "ui/panels/side_dock/side_dock.hpp"
 #include "ui/panels/tasks_panel/tasks_panel.hpp"
 #include "ui/toolbars/toolbar_registration.hpp"
 #include "ui/toolbars/transform_toolbar/transform_toolbar.hpp"
+#include "ui/widgets/key_bind_button/key_bind_button.hpp"
 #include "ui/windows/main_window/main_window.hpp"
 
 #include <catch2/catch_test_macros.hpp>
@@ -55,6 +58,11 @@ namespace
             toolbar = findDescendant<TransformToolbar>(window.get());
             REQUIRE(viewer != nullptr);
             REQUIRE(toolbar != nullptr);
+            // A real dialog would block the test until someone clicks it.
+            viewer->SetConfirmConvertLoaded([](ModelViewerPanel::LoadedModelsQuestion, std::size_t) {
+                FAIL_CHECK("unexpected \"convert loaded models?\" dialog");
+                return false;
+            });
         }
 
         // Waits until every task the viewer started is over.
@@ -220,4 +228,46 @@ TEST_CASE_METHOD(MainWindowFixture, "MainWindow: closing with pending tasks asks
     CHECK(viewer->tasks().pending() == 0);
     CHECK_FALSE(std::filesystem::exists(output));
     CHECK_FALSE(tests::support::hasTemporaryFiles(tmp.path()));
+}
+
+TEST_CASE_METHOD(MainWindowFixture, "MainWindow: tasks don't open the dock when auto-opening is off", "[integration][ui][main_window][tasks][settings]")
+{
+    auto* panel = findDescendant<ui::panels::TasksPanel>(window.get());
+    REQUIRE(panel != nullptr);
+    platform::settings::SettingsRegistry::getInstance().set(ui::windows::kTasksAutoOpenSetting, "0");
+
+    REQUIRE(viewer->loadFile(kCube));
+    CHECK_FALSE(panel->IsShown());
+    REQUIRE(settle());
+}
+
+TEST_CASE_METHOD(MainWindowFixture, "MainWindow: the dock has a settings page listing every setting", "[integration][ui][main_window][settings]")
+{
+    auto* dock     = findDescendant<ui::panels::SideDock>(window.get());
+    auto* settings = findDescendant<ui::panels::SettingsPanel>(window.get());
+    REQUIRE(dock != nullptr);
+    REQUIRE(settings != nullptr);
+    REQUIRE(dock->GetButton(settings) != nullptr);
+
+    dock->Open(settings);
+    tests::support::pumpEvents();
+    // Declared by the viewer, the window and the shortcuts (bound after the panels).
+    auto& registry = platform::settings::SettingsRegistry::getInstance();
+    for (const char* key : {ui::framework::occt::kMeshPrecisionSetting, ui::framework::occt::kComputeBRepSetting,
+                            ui::windows::kTasksAutoOpenSetting, "keys.save"})
+    {
+        CAPTURE(key);
+        CHECK(registry.find(key) != nullptr);
+    }
+    CHECK(findDescendant<ui::widgets::KeyBindButton>(settings) != nullptr);
+}
+
+TEST_CASE_METHOD(MainWindowFixture, "MainWindow: the File menu shows the current shortcuts", "[integration][ui][main_window][settings]")
+{
+    wxMenuItem* save = window->GetMenuBar()->FindItem(ids::file::kSave);
+    REQUIRE(save != nullptr);
+    CHECK(save->GetItemLabel().AfterFirst('\t') == "Ctrl+S");
+
+    platform::settings::SettingsRegistry::getInstance().set("keys.save", "Ctrl+Shift+E");
+    CHECK(save->GetItemLabel().AfterFirst('\t') == "Ctrl+Shift+E");
 }

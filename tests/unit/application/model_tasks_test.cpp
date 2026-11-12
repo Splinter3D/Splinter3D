@@ -379,3 +379,49 @@ TEST_CASE("Model tasks: an export never holds the model's B-Rep", "[application]
     CHECK(brep->GetRefCount() == owned); // the export's snapshot left it out
     REQUIRE(ui.drainUntil([&] { return manager.idle(); }));
 }
+
+TEST_CASE_METHOD(SyncFixture, "Model tasks: import stores the mesh in the precision asked", "[application][tasks]")
+{
+    manager.submit(tasks::importTask(scene, editor, kCube, Shape::Precision::Double));
+    REQUIRE(scene.size() == 1);
+    CHECK(scene.models()[0].shape.precision() == Shape::Precision::Double);
+}
+
+TEST_CASE_METHOD(SyncFixture, "Model tasks: precision converts a model's mesh, keeping its placement and B-Rep", "[application][tasks]")
+{
+    manager.submit(tasks::importTask(scene, editor, kCube));
+    const auto id = scene.models()[0].id;
+    manager.submit(tasks::convertTask(scene, editor, id));
+    Transform moved;
+    moved.moveX = 5.0;
+    manager.submit(tasks::moveTask(scene, editor, id, moved));
+
+    const auto task = tasks::precisionTask(scene, editor, id, Shape::Precision::Double);
+    CHECK(task.name == "Convert cube.stl to double precision");
+    const auto converted = manager.submit(task);
+    CHECK(failure(converted).empty());
+    CHECK(scene.models()[0].shape.precision() == Shape::Precision::Double);
+    CHECK(scene.models()[0].transform.moveX == 5.0);
+    CHECK(scene.brep(id) != nullptr);
+
+    manager.submit(tasks::precisionTask(scene, editor, id, Shape::Precision::Single));
+    CHECK(scene.models()[0].shape.precision() == Shape::Precision::Single);
+}
+
+TEST_CASE("Model tasks: submitConversion converts once, after a pending import", "[application][tasks]")
+{
+    tests::support::ManualPoster ui;
+    SceneService                 scene;
+    SceneServiceEditor           editor(scene);
+    TaskManager                  manager(ui.poster());
+
+    const auto import = tasks::importTask(scene, editor, kCube);
+    const auto id     = import.writes.front();
+    manager.submit(import);
+    CHECK(tasks::submitConversion(manager, scene, editor, id).has_value());       // queued behind the import
+    CHECK_FALSE(tasks::submitConversion(manager, scene, editor, id).has_value()); // already pending
+    REQUIRE(ui.drainUntil([&] { return manager.idle(); }));
+
+    CHECK(scene.brep(id) != nullptr);
+    CHECK_FALSE(tasks::submitConversion(manager, scene, editor, id).has_value()); // already converted
+}

@@ -40,6 +40,7 @@
 #include <vector>
 #include <wx/dcclient.h>
 #include <wx/log.h>
+#include <wx/msgdlg.h>
 #include <wx/sizer.h>
 #include <wx/stdpaths.h>
 #if defined(__WXGTK__)
@@ -61,6 +62,21 @@ namespace ui::framework::occt
         {
             const std::string utf8 = value.utf8_string();
             return std::filesystem::path(std::u8string(utf8.begin(), utf8.end()));
+        }
+
+        using MeshPrecision = geometry::occt::Shape::Precision;
+
+        MeshPrecision toPrecision(const std::string& value)
+        {
+            return value == "double" ? MeshPrecision::Double : MeshPrecision::Single;
+        }
+
+        void declareSettings()
+        {
+            using platform::settings::Kind;
+            auto& settings = platform::settings::SettingsRegistry::getInstance();
+            settings.add({kMeshPrecisionSetting, "settings.section.import", "settings.import.precision", "settings.import.precision_note", Kind::Choice, "single", {{"single", "settings.import.precision_single"}, {"double", "settings.import.precision_double"}}});
+            settings.add({kComputeBRepSetting, "settings.section.import", "settings.import.compute_brep", "settings.import.compute_brep_note", Kind::Toggle, "0", {}});
         }
     } // namespace
 
@@ -208,6 +224,18 @@ namespace ui::framework::occt
         void setBRep(application::service::ModelId id, geometry::occt::Shape brep) override
         {
             scene_.setBRep(id, std::move(brep)); // the mesh stays what is shown
+        }
+
+        void setShape(application::service::ModelId id, geometry::occt::Shape shape) override
+        {
+            const auto index = scene_.indexOf(id);
+            if (!index || !scene_.setShape(id, std::move(shape)))
+                return;
+            // Same geometry: the placement (the presentation's location) stays.
+            const auto& presentation = presentations_[*index].shape;
+            presentation->SetShape(scene_.models()[*index].shape.value());
+            context_->Redisplay(presentation, false);
+            view_->Redraw();
         }
 
         void setTransform(application::service::ModelId id, const geometry::occt::Transform& transform) override
@@ -602,6 +630,12 @@ namespace ui::framework::occt
         canvas_->SetBackgroundStyle(wxBG_STYLE_PAINT);
         canvas_->Bind(wxEVT_ERASE_BACKGROUND, [](wxEraseEvent&) { });
         SetBackgroundStyle(wxBG_STYLE_PAINT);
+
+        declareSettings();
+        precision_subscription_ = platform::settings::SettingsRegistry::getInstance().subscribe(
+            kMeshPrecisionSetting, [this](const std::string& value) { onPrecisionChanged(value); });
+        brep_subscription_ = platform::settings::SettingsRegistry::getInstance().subscribe(
+            kComputeBRepSetting, [this](const std::string& value) { onComputeBRepChanged(value); });
     }
 
     ModelViewerPanel::~ModelViewerPanel()
@@ -626,6 +660,53 @@ namespace ui::framework::occt
         {
             wxLogError("%s", tr("viewer.error.create", {{"error", wxString::FromUTF8(error.what())}}));
         }
+    }
+
+    void ModelViewerPanel::onPrecisionChanged(const std::string& value)
+    {
+        const MeshPrecision                        precision = toPrecision(value);
+        std::vector<application::service::ModelId> stale;
+        for (const auto& model : scene_.models())
+            if (const auto current = model.shape.precision(); current && *current != precision)
+                stale.push_back(model.id);
+        if (stale.empty() || !initialized_)
+            return;
+
+        const wxString precisionName =
+            tr(precision == MeshPrecision::Double ? "settings.import.precision_double" : "settings.import.precision_single");
+        const wxString message = tr("viewer.precision.message",
+                                    {{"count", wxString::Format("%zu", stale.size())}, {"precision", precisionName}});
+        if (!confirmConvertLoaded(LoadedModelsQuestion::Precision, stale.size(), message))
+            return;
+        for (const auto id : stale)
+            tasks_.submit(application::tasks::precisionTask(scene_, *viewer_, id, precision));
+    }
+
+    void ModelViewerPanel::onComputeBRepChanged(const std::string& value)
+    {
+        if (value != "1" || !initialized_)
+            return;
+        std::vector<application::service::ModelId> missing;
+        for (const auto& model : scene_.models())
+            if (application::tasks::needsConversion(tasks_, scene_, model.id))
+                missing.push_back(model.id);
+        if (missing.empty())
+            return;
+
+        const wxString message = tr("viewer.brep.message", {{"count", wxString::Format("%zu", missing.size())}});
+        if (!confirmConvertLoaded(LoadedModelsQuestion::BRep, missing.size(), message))
+            return;
+        for (const auto id : missing)
+            application::tasks::submitConversion(tasks_, scene_, *viewer_, id);
+    }
+
+    bool ModelViewerPanel::confirmConvertLoaded(LoadedModelsQuestion question, std::size_t models, const wxString& message)
+    {
+        if (confirm_convert_loaded_)
+            return confirm_convert_loaded_(question, models);
+        wxMessageDialog dialog(this, message, tr("viewer.convert_loaded.title"), wxYES_NO | wxYES_DEFAULT | wxICON_QUESTION);
+        dialog.SetYesNoLabels(tr("viewer.convert_loaded.convert"), tr("viewer.convert_loaded.keep"));
+        return dialog.ShowModal() == wxID_YES;
     }
 
     void ModelViewerPanel::openFile()
@@ -658,7 +739,19 @@ namespace ui::framework::occt
         try
         {
             initializeViewer();
-            tasks_.submit(application::tasks::importTask(scene_, *viewer_, path));
+            const auto& settings = platform::settings::SettingsRegistry::getInstance();
+            auto        task     = application::tasks::importTask(scene_, *viewer_, path,
+                                                                  toPrecision(settings.get(kMeshPrecisionSetting)));
+            if (settings.isOn(kComputeBRepSetting))
+            {
+                // Once the model is in (a failed import converts nothing).
+                const auto id = task.writes.front();
+                task.apply    = [this, id, apply = std::move(task.apply)] {
+                    apply();
+                    application::tasks::submitConversion(tasks_, scene_, *viewer_, id);
+                };
+            }
+            tasks_.submit(std::move(task));
             return true;
         }
         catch (const std::exception& error)
@@ -908,6 +1001,17 @@ namespace ui::framework::occt
     std::array<double, 3> ModelViewerPanel::CameraEye() const
     {
         return initialized_ ? viewer_->cameraEye() : std::array<double, 3>{};
+    }
+
+    void ModelViewerPanel::SetConfirmConvertLoaded(
+        std::function<bool(LoadedModelsQuestion question, std::size_t models)> confirm)
+    {
+        confirm_convert_loaded_ = std::move(confirm);
+    }
+
+    const application::service::SceneService& ModelViewerPanel::Scene() const noexcept
+    {
+        return scene_;
     }
 #endif
 

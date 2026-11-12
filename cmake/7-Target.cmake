@@ -21,6 +21,18 @@ endif()
 apply_compiler_warnings(${SPLINTER3D_LIB_TARGET_NAME})
 apply_coverage(${SPLINTER3D_LIB_TARGET_NAME})
 
+# The application version: vcpkg.json's "version-semver", which the release workflow keeps in
+# step with the tags (scripts/check-versions.sh). Read by core/utils/version.hpp.
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg.json")
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg.json" SPLINTER3D_MANIFEST)
+string(REGEX MATCH "\"version-semver\"[ \t\r\n]*:[ \t\r\n]*\"([^\"]+)\"" _ "${SPLINTER3D_MANIFEST}")
+if(NOT CMAKE_MATCH_1)
+    message(FATAL_ERROR "vcpkg.json has no \"version-semver\"")
+endif()
+set(SPLINTER3D_VERSION "${CMAKE_MATCH_1}")
+message(STATUS "INFO: Splinter3D version ${SPLINTER3D_VERSION}")
+target_compile_definitions(${SPLINTER3D_LIB_TARGET_NAME} PUBLIC SPLINTER3D_VERSION="${SPLINTER3D_VERSION}")
+
 ########################################
 
 if(WIN32)

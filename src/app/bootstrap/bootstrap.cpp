@@ -3,8 +3,10 @@
 #include "app/app.hpp"
 #include "core/utils/data_root.hpp"
 #include "core/utils/os_compatibility.hpp"
+#include "core/utils/user_dirs.hpp"
 #include "platform/locale/locale_manager.hpp"
 #include "platform/logger/logger.hpp"
+#include "platform/settings/settings_registry.hpp"
 #include "platform/threading/dispatcher.hpp"
 #include "ui/layouts/layout_registration.hpp"
 #include "ui/menus/menu_registration.hpp"
@@ -56,7 +58,24 @@ namespace app
             "[bootstrap] initializing locale from ", (dataRoot / "assets" / "locale").string());
         platform::locale::LocaleManager::get().init((dataRoot / "assets" / "locale").string());
 
-        const auto profiles = platform::threading::Dispatcher::profilesPath(dataRoot);
+        // Per user, outside the install (which may be read-only): e.g.
+        // ~/Library/Application Support/Splinter3D/settings.cfg.
+        // $SPLINTER3D_SETTINGS overrides it (the end-to-end tests point it at a temporary file).
+        auto&                 settings     = platform::settings::SettingsRegistry::getInstance();
+        std::filesystem::path settingsPath = core::utils::environmentPath("SPLINTER3D_SETTINGS");
+        if (const auto userDir = core::utils::userDataDir(); settingsPath.empty() && !userDir.empty())
+            settingsPath = userDir / "settings.cfg";
+        if (!settingsPath.empty())
+        {
+            platform::logger::clog("[bootstrap] loading settings from ", settingsPath.string());
+            settings.load(settingsPath);
+        }
+        else
+            platform::logger::clog("[bootstrap] no per-user folder: settings will not be saved");
+        platform::locale::LocaleManager::get().useSettings(settings);
+
+        const auto profiles =
+            platform::threading::Dispatcher::locateProfiles(core::utils::userLocalDataDir(), dataRoot);
         platform::logger::clog("[bootstrap] loading scalability profiles from ", profiles.string());
         platform::threading::Dispatcher::getInstance().load(profiles);
 

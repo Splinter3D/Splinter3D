@@ -1,4 +1,6 @@
+#include "platform/locale/locale_manager.hpp"
 #include "platform/preference/preference_manager.hpp"
+#include "platform/settings/settings_registry.hpp"
 #include "support/temp_dir.hpp"
 #include "support/wx_helpers.hpp"
 #include "ui/framework/wx/events/event_manager.hpp"
@@ -79,6 +81,39 @@ TEST_CASE_METHOD(EventManagerFixture, "EventManager: keyboard shortcuts trigger 
     CHECK(fired.empty());
 }
 
+TEST_CASE_METHOD(EventManagerFixture, "EventManager: shortcuts follow their settings", "[integration][ui][events]")
+{
+    auto& settings = platform::settings::SettingsRegistry::getInstance();
+    REQUIRE(settings.find("keys.save") != nullptr);
+    settings.set("keys.save", "Ctrl+E");
+
+    pressKey('S', true);
+    CHECK(fired.empty());
+    pressKey('E', true);
+    CHECK(fired == std::vector<std::string>{"save"});
+
+    settings.reset("keys.save");
+    fired.clear();
+    pressKey('S', true);
+    CHECK(fired == std::vector<std::string>{"save"});
+}
+
+#if defined(__WXOSX__)
+TEST_CASE_METHOD(EventManagerFixture, "EventManager: on macOS, Control+key is not Command+key", "[integration][ui][events]")
+{
+    wxKeyEvent control(wxEVT_CHAR_HOOK);
+    control.m_keyCode = 'S';
+    control.SetRawControlDown(true);
+    control.SetEventObject(frame.get());
+    frame->ProcessWindowEvent(control);
+    CHECK(fired.empty()); // Save is Command+S
+
+    platform::settings::SettingsRegistry::getInstance().set("keys.save", "RawCtrl+S");
+    frame->ProcessWindowEvent(control);
+    CHECK(fired == std::vector<std::string>{"save"});
+}
+#endif
+
 TEST_CASE_METHOD(EventManagerFixture, "EventManager: editing a transform field notifies", "[integration][ui][events]")
 {
     spin->SetValue(12.5);
@@ -102,11 +137,12 @@ TEST_CASE_METHOD(EventManagerFixture, "EventManager: theme menu applies and pers
     CHECK_FALSE(platform::preference::PreferenceManager::load().darkMode);
 }
 
-TEST_CASE_METHOD(EventManagerFixture, "EventManager: language menu persists the choice", "[integration][ui][events]")
+TEST_CASE_METHOD(EventManagerFixture, "EventManager: language menu sets the language setting", "[integration][ui][events]")
 {
+    const auto& settings = platform::settings::SettingsRegistry::getInstance();
     sendMenuCommand(frame.get(), ids::language::kFrench);
-    CHECK(platform::preference::PreferenceManager::load().language == "fr");
+    CHECK(settings.get(platform::locale::kLanguageSetting) == "fr");
 
     sendMenuCommand(frame.get(), ids::language::kDefault);
-    CHECK(platform::preference::PreferenceManager::load().language == "default");
+    CHECK(settings.get(platform::locale::kLanguageSetting) == "default");
 }

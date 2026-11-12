@@ -195,6 +195,7 @@ namespace ui::framework::wx
             constexpr int kModelViewer     = app::kBase + 602;
             constexpr int kTasks           = app::kBase + 603;
             constexpr int kSideDock        = app::kBase + 604;
+            constexpr int kSettings        = app::kBase + 605;
 
         } // namespace panels
 

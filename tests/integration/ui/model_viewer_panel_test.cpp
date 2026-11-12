@@ -1,6 +1,7 @@
 #include "application/tasks/task.hpp"
 #include "geometry/occt/shape.hpp"
 #include "platform/logger/logger.hpp"
+#include "platform/settings/settings_registry.hpp"
 #include "support/temp_dir.hpp"
 #include "support/wx_helpers.hpp"
 #include "ui/framework/occt/model_viewer_panel.hpp"
@@ -41,6 +42,11 @@ namespace
             frame.showAndWait();
 
             panel->SetOnModelStateChanged([this](bool hasModel) { states.push_back(hasModel); });
+            // A real dialog would block the test until someone clicks it.
+            panel->SetConfirmConvertLoaded([](ModelViewerPanel::LoadedModelsQuestion, std::size_t) {
+                FAIL_CHECK("unexpected \"convert loaded models?\" dialog");
+                return false;
+            });
         }
 
         // A task that holds `id` until cancelled: anything later on that model queues behind it.
@@ -506,4 +512,115 @@ TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: importing never converts to a
     for (const auto& name : names)
         CHECK(name.rfind("Convert", 0) != 0);
     CHECK(panel->GetModelIds().size() == 1);
+}
+
+TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: imports in the mesh precision setting", "[integration][ui][viewer][settings]")
+{
+    auto& settings = platform::settings::SettingsRegistry::getInstance();
+    settings.set(ui::framework::occt::kMeshPrecisionSetting, "double");
+    REQUIRE(panel->loadFile(kCube));
+    REQUIRE(settle());
+    REQUIRE(panel->Scene().size() == 1);
+    CHECK(panel->Scene().models()[0].shape.precision() == geometry::occt::Shape::Precision::Double);
+}
+
+TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: computes the B-Rep on import when set", "[integration][ui][viewer][settings]")
+{
+    auto& settings = platform::settings::SettingsRegistry::getInstance();
+    REQUIRE(panel->loadFile(kCube));
+    REQUIRE(settle());
+    CHECK(panel->Scene().brep(panel->GetModelIds()[0]) == nullptr); // off by default
+
+    std::size_t asked = 0;
+    panel->SetConfirmConvertLoaded([&](ModelViewerPanel::LoadedModelsQuestion, std::size_t models) {
+        asked = models;
+        return false; // only new imports
+    });
+    settings.set(ui::framework::occt::kComputeBRepSetting, "1");
+    CHECK(asked == 1);
+    REQUIRE(panel->loadFile(kCube));
+    REQUIRE(settle());
+    REQUIRE(panel->Scene().size() == 2);
+    CHECK(panel->Scene().brep(panel->GetModelIds()[0]) == nullptr);
+    CHECK(panel->Scene().brep(panel->GetModelIds()[1]) != nullptr);
+}
+
+TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: changing the precision offers to convert loaded models", "[integration][ui][viewer][settings]")
+{
+    auto& settings = platform::settings::SettingsRegistry::getInstance();
+    settings.reset(ui::framework::occt::kMeshPrecisionSetting); // the registry outlives each section's run
+    REQUIRE(panel->loadFile(kCube));
+    REQUIRE(settle());
+    const auto& model = panel->Scene().models()[0];
+
+    std::size_t asked   = 0;
+    bool        convert = false;
+    panel->SetConfirmConvertLoaded([&](ModelViewerPanel::LoadedModelsQuestion question, std::size_t models) {
+        CHECK(question == ModelViewerPanel::LoadedModelsQuestion::Precision);
+        asked = models;
+        return convert;
+    });
+
+    SECTION("kept as is")
+    {
+        settings.set(ui::framework::occt::kMeshPrecisionSetting, "double");
+        REQUIRE(settle());
+        CHECK(asked == 1);
+        CHECK(model.shape.precision() == geometry::occt::Shape::Precision::Single);
+    }
+    SECTION("converted, placement kept")
+    {
+        panel->setTransform(0, 4.0, 0, 0, 0, 0, 0);
+        convert = true;
+        settings.set(ui::framework::occt::kMeshPrecisionSetting, "double");
+        REQUIRE(settle());
+        CHECK(asked == 1);
+        CHECK(panel->Scene().models()[0].shape.precision() == geometry::occt::Shape::Precision::Double);
+        CHECK(panel->GetTransform(0).moveX == 4.0);
+
+        asked = 0;
+        settings.set(ui::framework::occt::kMeshPrecisionSetting, "double"); // unchanged: nothing asked
+        CHECK(asked == 0);
+    }
+}
+
+TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: turning B-Reps on import on offers to convert loaded models", "[integration][ui][viewer][settings]")
+{
+    auto& settings = platform::settings::SettingsRegistry::getInstance();
+    settings.reset(ui::framework::occt::kComputeBRepSetting); // the registry outlives each section's run
+    REQUIRE(panel->loadFile(kCube));
+    REQUIRE(panel->loadFile(kCube));
+    REQUIRE(settle());
+    const auto ids = panel->GetModelIds();
+    REQUIRE(ids.size() == 2);
+
+    std::size_t asked   = 0;
+    bool        convert = false;
+    panel->SetConfirmConvertLoaded([&](ModelViewerPanel::LoadedModelsQuestion question, std::size_t models) {
+        CHECK(question == ModelViewerPanel::LoadedModelsQuestion::BRep);
+        asked = models;
+        return convert;
+    });
+
+    SECTION("kept as is")
+    {
+        settings.set(ui::framework::occt::kComputeBRepSetting, "1");
+        REQUIRE(settle());
+        CHECK(asked == 2);
+        CHECK(panel->Scene().brep(ids[0]) == nullptr);
+    }
+    SECTION("converted; models that have one aren't asked about again")
+    {
+        convert = true;
+        settings.set(ui::framework::occt::kComputeBRepSetting, "1");
+        REQUIRE(settle());
+        CHECK(asked == 2);
+        CHECK(panel->Scene().brep(ids[0]) != nullptr);
+        CHECK(panel->Scene().brep(ids[1]) != nullptr);
+
+        asked = 0;
+        settings.set(ui::framework::occt::kComputeBRepSetting, "0"); // turning it off asks nothing
+        settings.set(ui::framework::occt::kComputeBRepSetting, "1"); // nothing left to convert
+        CHECK(asked == 0);
+    }
 }

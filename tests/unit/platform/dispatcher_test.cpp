@@ -1,3 +1,4 @@
+#include "core/utils/version.hpp"
 #include "platform/threading/dispatcher.hpp"
 #include "support/temp_dir.hpp"
 
@@ -10,6 +11,7 @@
 #include <filesystem>
 #include <fstream>
 #include <latch>
+#include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -227,14 +229,48 @@ TEST_CASE("Dispatcher: runs too short to measure don't teach anything", "[platfo
 
 TEST_CASE("Dispatcher: profilesPath honours SPLINTER3D_PROFILES", "[platform][threading]")
 {
-    const std::filesystem::path root = "data";
+    const std::filesystem::path dir = "user";
     setEnvironment("SPLINTER3D_PROFILES", nullptr);
-    CHECK(Dispatcher::profilesPath(root) == root / "assets" / Dispatcher::kProfilesFile);
+    CHECK(Dispatcher::profilesPath(dir) == dir / Dispatcher::kProfilesFile);
 
     setEnvironment("SPLINTER3D_PROFILES", "/tmp/elsewhere.json");
-    CHECK(Dispatcher::profilesPath(root) == std::filesystem::path("/tmp/elsewhere.json"));
+    CHECK(Dispatcher::profilesPath(dir) == std::filesystem::path("/tmp/elsewhere.json"));
+    CHECK(Dispatcher::locateProfiles(dir, "data") == std::filesystem::path("/tmp/elsewhere.json"));
 
     setEnvironment("SPLINTER3D_PROFILES", nullptr);
+}
+
+TEST_CASE("Dispatcher: locateProfiles moves profiles out of the install", "[platform][threading]")
+{
+    setEnvironment("SPLINTER3D_PROFILES", nullptr);
+    const TempDir dir;
+    const auto    dataRoot = dir.path() / "install";
+    const auto    userDir  = dir.path() / "user" / "Splinter3D"; // created on the way
+    const auto    legacy   = dataRoot / "assets" / Dispatcher::kProfilesFile;
+    std::filesystem::create_directories(legacy.parent_path());
+    std::ofstream(legacy) << "{\"old\": true}";
+
+    SECTION("moved when the user folder has none")
+    {
+        const auto path = Dispatcher::locateProfiles(userDir, dataRoot);
+        CHECK(path == userDir / Dispatcher::kProfilesFile);
+        REQUIRE(std::filesystem::exists(path));
+        CHECK_FALSE(std::filesystem::exists(legacy));
+        std::ifstream     in(path);
+        const std::string content((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+        CHECK(content == "{\"old\": true}");
+    }
+    SECTION("the user folder's own profiles win")
+    {
+        std::filesystem::create_directories(userDir);
+        std::ofstream(userDir / Dispatcher::kProfilesFile) << "{}";
+        CHECK(Dispatcher::locateProfiles(userDir, dataRoot) == userDir / Dispatcher::kProfilesFile);
+        CHECK(std::filesystem::exists(legacy)); // left alone
+    }
+    SECTION("no user folder: the old location")
+    {
+        CHECK(Dispatcher::locateProfiles({}, dataRoot) == legacy);
+    }
 }
 
 TEST_CASE("Dispatcher: save writes nothing without profiles", "[platform][threading]")
@@ -305,11 +341,35 @@ TEST_CASE("Dispatcher: bad profile files are ignored", "[platform][threading]")
     }
 
     const std::string ok = profileOf(2, 2.0).toJson().dump();
-    writeFile(path, R"({"version": 1, "operations": {"ok": )" + ok +
-                        R"(, "bad": {"byWorkers": {"2": {"runs": "x"}}}}})");
+    writeFile(path, R"({"version": 1, "appVersion": ")" + std::string(core::utils::kVersion) + R"(", "operations": {"ok": )" +
+                        ok + R"(, "bad": {"byWorkers": {"2": {"runs": "x"}}}}})");
     REQUIRE_NOTHROW(dispatcher.load(path));
     REQUIRE(dispatcher.profile("ok"));
     REQUIRE_FALSE(dispatcher.profile("bad"));
+}
+
+TEST_CASE("Dispatcher: profiles learned by another app version are discarded", "[platform][threading]")
+{
+    auto&         dispatcher = Dispatcher::getInstance();
+    const TempDir dir;
+    const auto    path = (dir.path() / "profiles.json").string();
+
+    dispatcher.run("v", [] { });
+    dispatcher.save(path);
+    std::ifstream        in(path);
+    const nlohmann::json saved = nlohmann::json::parse(in);
+    CHECK(saved.at("appVersion") == std::string(core::utils::kVersion));
+
+    const std::string ok = profileOf(2, 2.0).toJson().dump();
+    for (const std::string app : {R"("appVersion": "0.0.0-other", )", R"("appVersion": 3, )", ""})
+    {
+        CAPTURE(app);
+        dispatcher.setProfile("old", profileOf(2, 2.0));
+        writeFile(path, R"({"version": 1, )" + app + R"("operations": {"ok": )" + ok + "}}");
+        REQUIRE_NOTHROW(dispatcher.load(path));
+        CHECK_FALSE(dispatcher.profile("ok"));
+        CHECK_FALSE(dispatcher.profile("old"));
+    }
 }
 
 TEST_CASE("Dispatcher: freeWorkers is total when idle and drops during a run", "[platform][threading]")

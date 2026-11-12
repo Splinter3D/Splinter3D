@@ -16,15 +16,15 @@ namespace geometry::occt
 {
     namespace
     {
-        // A copy of mesh with float nodes: STL stores floats, so nothing is
-        // lost, and the nodes take half the memory. Precision can only be
-        // chosen before the nodes are allocated, hence the copy.
-        occ::handle<Poly_Triangulation> singlePrecision(const occ::handle<Poly_Triangulation>& mesh)
+        // mesh with its nodes stored as double or float. Precision can only
+        // be chosen before the nodes are allocated, hence the copy.
+        occ::handle<Poly_Triangulation> inPrecision(const occ::handle<Poly_Triangulation>& mesh, Shape::Precision precision)
         {
-            if (!mesh->IsDoublePrecision())
+            const bool wantDouble = precision == Shape::Precision::Double;
+            if (mesh->IsDoublePrecision() == wantDouble)
                 return mesh;
             occ::handle<Poly_Triangulation> copy = new Poly_Triangulation();
-            copy->SetDoublePrecision(false);
+            copy->SetDoublePrecision(wantDouble);
             copy->ResizeNodes(mesh->NbNodes(), false);
             copy->ResizeTriangles(mesh->NbTriangles(), false);
             for (int i = 1; i <= mesh->NbNodes(); ++i)
@@ -37,13 +37,14 @@ namespace geometry::occt
 
     Shape Shape::fromSTL(const std::filesystem::path& path,
                          const Message_ProgressRange& progress,
-                         const ParallelFor&           parallelFor)
+                         const ParallelFor&           parallelFor,
+                         Precision                    precision)
     {
         const std::string filename = toUtf8(path);
         if (filename.empty())
             throw std::invalid_argument("Cannot import an STL shape from an empty path");
         if (isBinarySTL(path))
-            return fromMesh(readBinarySTL(path, progress, parallelFor));
+            return fromMesh(inPrecision(readBinarySTL(path, progress, parallelFor), precision));
 
         Message_ProgressScope                 scope(progress, "Import STL", 1);
         const occ::handle<Poly_Triangulation> mesh = RWStl::ReadFile(filename.c_str(), scope.Next());
@@ -52,7 +53,23 @@ namespace geometry::occt
         if (mesh.IsNull())
             throw std::runtime_error("Failed to import STL shape: " + filename);
 
-        return fromMesh(singlePrecision(mesh));
+        return fromMesh(inPrecision(mesh, precision));
+    }
+
+    std::optional<Shape::Precision> Shape::precision() const
+    {
+        const auto triangulation = mesh();
+        if (triangulation.IsNull())
+            return std::nullopt;
+        return triangulation->IsDoublePrecision() ? Precision::Double : Precision::Single;
+    }
+
+    Shape Shape::withPrecision(const Shape& shape, Precision precision)
+    {
+        const auto triangulation = shape.mesh();
+        if (triangulation.IsNull() || shape.precision() == precision)
+            return shape;
+        return fromMesh(inPrecision(triangulation, precision));
     }
 
     Shape Shape::fromMesh(occ::handle<Poly_Triangulation> mesh)

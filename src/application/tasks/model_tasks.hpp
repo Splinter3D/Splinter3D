@@ -31,8 +31,25 @@ namespace application::tasks
      */
     [[nodiscard]] std::string importOperation(std::uintmax_t bytes);
 
-    /** @brief "Import <file>": reads the STL in the background, then adds it under an id reserved now. */
-    [[nodiscard]] Task importTask(service::SceneService& scene, SceneEditor& editor, std::filesystem::path path);
+    /**
+     * @brief "Import <file>": reads the STL in the background (its mesh stored
+     * in `precision`), then adds it under an id reserved now: the task's only
+     * write.
+     */
+    [[nodiscard]] Task importTask(service::SceneService&           scene,
+                                  SceneEditor&                     editor,
+                                  std::filesystem::path            path,
+                                  geometry::occt::Shape::Precision precision = geometry::occt::Shape::Precision::Single);
+
+    /**
+     * @brief "Convert <model> to single/double precision": stores the model's
+     * mesh nodes as float or double; a model that is no mesh, or already in
+     * that precision, is left as it is.
+     */
+    [[nodiscard]] Task precisionTask(const service::SceneService&     scene,
+                                     SceneEditor&                     editor,
+                                     service::ModelId                 id,
+                                     geometry::occt::Shape::Precision precision);
 
     /**
      * @brief "Export <file>": every model, including ones still being
@@ -70,6 +87,20 @@ namespace application::tasks
      * mesh; a model removed meanwhile drops the result.
      */
     [[nodiscard]] Task convertTask(const service::SceneService& scene, SceneEditor& editor, service::ModelId id);
+
+    /** @brief Whether the model has no B-Rep and no conversion pending. */
+    [[nodiscard]] bool needsConversion(const TaskManager& tasks, const service::SceneService& scene, service::ModelId id);
+
+    /**
+     * @brief Submits a convertTask() for the model if it needsConversion(). Works for a model still being imported: the
+     * conversion queues behind the import.
+     *
+     * @return The conversion's id, if one was submitted.
+     */
+    std::optional<TaskId> submitConversion(TaskManager&                 tasks,
+                                           const service::SceneService& scene,
+                                           SceneEditor&                 editor,
+                                           service::ModelId             id);
 
     /**
      * @brief For an operation's prepare(): fails with "model "<name>" could not

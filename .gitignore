@@ -83,7 +83,7 @@ __pycache__/
 # Docker
 !Dockerfile
 
-# Scalability profiles the Dispatcher learns per machine
+# Scalability profiles' old location (now in the per-user data folder, see Dispatcher::locateProfiles)
 /assets/splinter3D.profiles.json
 
 # stl files except test ones and manifest

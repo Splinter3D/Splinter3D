@@ -29,7 +29,7 @@ namespace platform::threading
      * reads the budget with NPROC and spreads work with parallelFor() over
      * one global WorkerPool. Each run is measured with benchmark::measure()
      * and fed back into the operation's profile; load()/save() keep the
-     * profiles between launches, in <data root>/assets/kProfilesFile.
+     * profiles between launches, in the file locateProfiles() gives.
      *
      * @code{.cpp}
      * auto result = Dispatcher::getInstance().run("boolean.cut", [&] { return cutter.perform(); });
@@ -39,7 +39,7 @@ namespace platform::threading
     class Dispatcher final : public core::utils::Singleton<Dispatcher>
     {
       public:
-        /** @brief Name of the profiles file, kept in the assets folder (git-ignored). */
+        /** @brief Name of the profiles file (see locateProfiles()). */
         static constexpr std::string_view kProfilesFile = "splinter3D.profiles.json";
 
         /**
@@ -50,9 +50,21 @@ namespace platform::threading
 
         /**
          * @brief Where the profiles live: $SPLINTER3D_PROFILES if set (tests
-         * point it at a temporary file), else <dataRoot>/assets/kProfilesFile.
+         * point it at a temporary file), else <directory>/kProfilesFile.
          */
-        [[nodiscard]] static std::filesystem::path profilesPath(const std::filesystem::path& dataRoot);
+        [[nodiscard]] static std::filesystem::path profilesPath(const std::filesystem::path& directory);
+
+        /**
+         * @brief The profiles file to load(): profilesPath(userDir) - a per-user,
+         * per-machine, writable folder (core::utils::userLocalDataDir()) - or,
+         * if userDir is empty, the old <dataRoot>/assets location.
+         *
+         * Profiles left at the old location (an install may be read-only) are
+         * moved to the new one first, unless it already has some; a failed
+         * move leaves them where they were.
+         */
+        [[nodiscard]] static std::filesystem::path locateProfiles(const std::filesystem::path& userDir,
+                                                                  const std::filesystem::path& dataRoot);
 
         /** @brief Every kExploreEvery-th run of an operation tries one worker more or fewer. */
         static constexpr std::size_t kExploreEvery = 8;
@@ -122,7 +134,9 @@ namespace platform::threading
         /**
          * @brief Replaces every profile with the file's and remembers the path
          * for save(). A missing file leaves none; an unreadable one is
-         * reported on the log and leaves none too. Never throws.
+         * reported on the log and leaves none too, as does one saved by
+         * another application version (its "appVersion": another release may
+         * scale differently, so it learns again). Never throws.
          */
         void load(const std::filesystem::path& path);
 

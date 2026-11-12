@@ -78,6 +78,15 @@ namespace application::service
         return true;
     }
 
+    bool SceneService::setShape(ModelId id, geometry::occt::Shape shape)
+    {
+        const auto index = indexOf(id);
+        if (!index)
+            return false;
+        models_[*index].shape = std::move(shape);
+        return true;
+    }
+
     const geometry::occt::Shape* SceneService::brep(ModelId id) const noexcept
     {
         const Model* model = find(id);

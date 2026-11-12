@@ -1,5 +1,6 @@
 #pragma once
 
+#include "platform/settings/settings_registry.hpp"
 #include "ui/framework/occt/model_viewer_panel.hpp"
 #include "ui/framework/wx/events/event_manager.hpp"
 #include "ui/layouts/base_layout/base_layout.hpp"
@@ -17,12 +18,16 @@ namespace ui::dialogs
 
 namespace ui::panels
 {
+    class SettingsPanel;
     class SideDock;
     class TasksPanel;
 } // namespace ui::panels
 
 namespace ui::windows
 {
+    /// Whether the tasks panel opens by itself when a task starts ("1"/"0").
+    inline constexpr const char* kTasksAutoOpenSetting = "tasks.auto_open";
+
     /**
      * @brief Main application window.
      *
@@ -60,6 +65,7 @@ namespace ui::windows
         ui::toolbars::TransformToolbar*          transform_toolbar_ = nullptr;
         ui::panels::SideDock*                    side_dock_         = nullptr;
         ui::panels::TasksPanel*                  tasks_panel_       = nullptr;
+        ui::panels::SettingsPanel*               settings_panel_    = nullptr;
         // Asked before closing with tasks pending; true quits. Empty: a dialog asks.
         std::function<bool(std::size_t pending)>                 confirm_quit_;
         std::unique_ptr<ui::framework::wx::events::EventManager> event_manager_;

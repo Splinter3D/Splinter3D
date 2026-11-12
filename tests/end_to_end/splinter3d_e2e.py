@@ -42,14 +42,17 @@ class Run:
 
 
 # Where the app under test keeps its scalability profiles: a throwaway file, so test
-# runs never teach the user's own assets/splinter3D.profiles.json anything.
+# runs never teach the user's own splinter3D.profiles.json (in their per-user data folder) anything.
 PROFILES = Path(tempfile.mkdtemp(prefix="splinter3d-e2e-")) / "profiles.json"
+# Likewise for its settings: defaults, never the user's own settings.cfg.
+SETTINGS = PROFILES.parent / "settings.cfg"
 
 
 def app_env(env: dict[str, str] | None = None) -> dict[str, str]:
-    """The environment to run the app with: env (or ours), profiles redirected."""
+    """The environment to run the app with: env (or ours), profiles and settings redirected."""
     result = dict(os.environ if env is None else env)
     result.setdefault("SPLINTER3D_PROFILES", str(PROFILES))
+    result.setdefault("SPLINTER3D_SETTINGS", str(SETTINGS))
     return result
 
 

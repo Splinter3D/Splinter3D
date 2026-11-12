@@ -3,6 +3,7 @@
 #include "application/service/scene_service.hpp"
 #include "application/workflow/batch_runner.hpp"
 #include "core/utils/data_root.hpp"
+#include "core/utils/user_dirs.hpp"
 #include "platform/locale/locale_manager.hpp"
 #include "platform/threading/dispatcher.hpp"
 
@@ -55,7 +56,7 @@ namespace app::cli
         // Scripts and their output are machine-read: keep the messages in English.
         platform::locale::LocaleManager::get().init((dataRoot / "assets" / "locale").string());
         platform::locale::LocaleManager::get().setLanguage("en");
-        dispatcher.load(platform::threading::Dispatcher::profilesPath(dataRoot));
+        dispatcher.load(platform::threading::Dispatcher::locateProfiles(core::utils::userLocalDataDir(), dataRoot));
         const auto result = runner.runFile(script);
         dispatcher.save();
         std::cout.flush();

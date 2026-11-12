@@ -46,6 +46,38 @@ TEST_CASE("Shape::fromSTL: imports the cube fixture", "[geometry][shape]")
     CHECK_FALSE(shape.mesh()->IsDoublePrecision()); // STL stores floats: nothing lost, half the memory
 }
 
+TEST_CASE("Shape::fromSTL: imports in double precision on request", "[geometry][shape]")
+{
+    const std::string format = GENERATE("ascii", "binary");
+    CAPTURE(format);
+    using Precision = geometry::occt::Shape::Precision;
+
+    const auto single = geometry::occt::Shape::fromSTL(kAssets / "stl" / format / "cube.stl");
+    const auto dbl    = geometry::occt::Shape::fromSTL(kAssets / "stl" / format / "cube.stl", {}, {}, Precision::Double);
+
+    CHECK(single.precision() == Precision::Single);
+    CHECK(dbl.precision() == Precision::Double);
+    REQUIRE(dbl.mesh()->NbNodes() == single.mesh()->NbNodes());
+    for (int i = 1; i <= dbl.mesh()->NbNodes(); ++i)
+        CHECK(dbl.mesh()->Node(i).IsEqual(single.mesh()->Node(i), 0.0));
+}
+
+TEST_CASE("Shape::withPrecision: converts a mesh both ways, leaves other shapes alone", "[geometry][shape]")
+{
+    using geometry::occt::Shape;
+    const auto single = Shape::fromSTL(kAssets / "stl" / "ascii" / "cube.stl");
+
+    const auto dbl = Shape::withPrecision(single, Shape::Precision::Double);
+    CHECK(dbl.precision() == Shape::Precision::Double);
+    CHECK(dbl.triangleCount() == single.triangleCount());
+    CHECK(Shape::withPrecision(dbl, Shape::Precision::Single).precision() == Shape::Precision::Single);
+    CHECK(Shape::withPrecision(single, Shape::Precision::Single).mesh() == single.mesh()); // no copy
+
+    const auto brep = Shape::toBRep(single);
+    CHECK_FALSE(brep.precision().has_value());
+    CHECK(Shape::withPrecision(brep, Shape::Precision::Double).value().IsSame(brep.value()));
+}
+
 TEST_CASE("Shape::fromSTL: rejects an empty path", "[geometry][shape]")
 {
     REQUIRE_THROWS_AS(geometry::occt::Shape::fromSTL({}), std::invalid_argument);

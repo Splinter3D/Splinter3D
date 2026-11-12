@@ -1,5 +1,6 @@
 #include "dispatcher.hpp"
 
+#include "core/utils/version.hpp"
 #include "platform/logger/logger.hpp"
 
 #include <algorithm>
@@ -7,6 +8,7 @@
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
+#include <optional>
 #include <thread>
 
 namespace platform::threading
@@ -21,21 +23,49 @@ namespace platform::threading
             const unsigned cores = std::thread::hardware_concurrency();
             return cores > 1 ? cores - 1 : 1;
         }
+
+        // $SPLINTER3D_PROFILES, if set.
+        std::optional<std::filesystem::path> overriddenProfiles()
+        {
+            const char* override = std::getenv("SPLINTER3D_PROFILES");
+            if (override == nullptr || *override == '\0')
+                return std::nullopt;
+            // UTF-8, as every path string here.
+            const std::string utf8 = override;
+            return std::filesystem::path(std::u8string(utf8.begin(), utf8.end()));
+        }
     } // namespace
 
     Dispatcher::Dispatcher()
         : _pool(poolThreads())
     { }
 
-    std::filesystem::path Dispatcher::profilesPath(const std::filesystem::path& dataRoot)
+    std::filesystem::path Dispatcher::profilesPath(const std::filesystem::path& directory)
     {
-        if (const char* override = std::getenv("SPLINTER3D_PROFILES"); override != nullptr && *override != '\0')
+        if (auto overridden = overriddenProfiles())
+            return *overridden;
+        return directory / kProfilesFile;
+    }
+
+    std::filesystem::path Dispatcher::locateProfiles(const std::filesystem::path& userDir, const std::filesystem::path& dataRoot)
+    {
+        const std::filesystem::path legacy = dataRoot / "assets" / kProfilesFile;
+        if (auto overridden = overriddenProfiles())
+            return *overridden;
+        if (userDir.empty())
+            return legacy;
+
+        const std::filesystem::path target = userDir / kProfilesFile;
+        std::error_code             ec;
+        if (std::filesystem::exists(target, ec) || !std::filesystem::is_regular_file(legacy, ec))
+            return target; // already there, or nothing to move
+        std::filesystem::create_directories(target.parent_path(), ec);
+        if (!ec && std::filesystem::copy_file(legacy, target, ec) && !ec)
         {
-            // UTF-8, as every path string here.
-            const std::string utf8 = override;
-            return std::filesystem::path(std::u8string(utf8.begin(), utf8.end()));
+            std::filesystem::remove(legacy, ec); // may well fail on a read-only install: harmless
+            logger::clog("[dispatcher] moved scalability profiles to ", target.string());
         }
-        return dataRoot / "assets" / kProfilesFile;
+        return target;
     }
 
     std::size_t Dispatcher::nproc() const noexcept
@@ -223,6 +253,13 @@ namespace platform::threading
             else if (const auto version = root.find("version");
                      version == root.end() || !version->is_number_integer() || *version != kProfilesVersion)
                 platform::logger::cerr("[dispatcher] ignoring profiles in ", path, ": unsupported version");
+            // Another release may scale differently (new algorithms, other
+            // operations): learn again rather than trust its numbers.
+            else if (const auto app = root.find("appVersion");
+                     app == root.end() || !app->is_string() || app->get<std::string>() != core::utils::kVersion)
+                platform::logger::clog("[dispatcher] discarding profiles in ", path, ": learned by another Splinter3D version (",
+                                       app != root.end() && app->is_string() ? app->get<std::string>() : std::string("unknown"),
+                                       ", now ", core::utils::kVersion, ")");
             else if (const auto operations = root.find("operations");
                      operations != root.end() && operations->is_object())
             {
@@ -270,6 +307,7 @@ namespace platform::threading
 
         const nlohmann::json root = {
             {"version", kProfilesVersion},
+            {"appVersion", core::utils::kVersion},
             {"hardwareConcurrency", std::thread::hardware_concurrency()},
             {"operations", std::move(operations)},
         };
