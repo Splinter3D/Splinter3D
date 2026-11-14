@@ -78,11 +78,12 @@ def configure_build(enable_tests: bool = False):
             cmake_command.append(f"-DCMAKE_BUILD_TYPE={build_type}")
         # Always passed explicitly (ON or OFF): CMake caches options, so a release build
         # run after a debug or test build in the same build/ would otherwise silently keep
-        # SPLINTER3D_DEBUG or the test-only flags (SPLINTER3D_TESTING, coverage
-        # instrumentation, Catch2).
+        # SPLINTER3D_DEBUG, SPLINTER3D_RELEASE_BUILD or the test-only flags (SPLINTER3D_TESTING,
+        # coverage instrumentation, Catch2).
         # The "tests" manifest feature makes vcpkg install the test framework (Catch2).
         cmake_command.extend([
             f"-DENABLE_DEBUG={'ON' if debug_build and not enable_tests else 'OFF'}",
+            f"-DENABLE_RELEASE_BUILD={'ON' if args.release else 'OFF'}",
             f"-DENABLE_TESTS={'ON' if enable_tests else 'OFF'}",
             f"-DENABLE_COVERAGE={'ON' if enable_tests and args.coverage else 'OFF'}",
             f"-DVCPKG_MANIFEST_FEATURES={'tests' if enable_tests else ''}",

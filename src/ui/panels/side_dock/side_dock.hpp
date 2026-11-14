@@ -43,6 +43,8 @@ namespace ui::panels
         /** @brief The open page, or nullptr. */
         [[nodiscard]] wxWindow* CurrentPage() const noexcept;
         [[nodiscard]] bool      IsOpenedManually() const noexcept;
+        /** @brief Whether the user ever closed the dock (Close()): requests no longer open it. */
+        [[nodiscard]] bool IsClosedByHand() const noexcept;
         /** @brief page's strip button, or nullptr. */
         [[nodiscard]] wxToggleButton* GetButton(wxWindow* page) const;
 

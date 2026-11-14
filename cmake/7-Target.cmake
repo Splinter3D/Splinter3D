@@ -32,6 +32,12 @@ endif()
 set(SPLINTER3D_VERSION "${CMAKE_MATCH_1}")
 message(STATUS "INFO: Splinter3D version ${SPLINTER3D_VERSION}")
 target_compile_definitions(${SPLINTER3D_LIB_TARGET_NAME} PUBLIC SPLINTER3D_VERSION="${SPLINTER3D_VERSION}")
+if(ENABLE_RELEASE_BUILD)
+    target_compile_definitions(${SPLINTER3D_LIB_TARGET_NAME} PUBLIC SPLINTER3D_RELEASE_BUILD=1)
+    message(STATUS "INFO: release build")
+else()
+    message(STATUS "INFO: dev build (settings and profiles in <data root>/dev-data)")
+endif()
 
 ########################################
 

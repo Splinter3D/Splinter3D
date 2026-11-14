@@ -56,7 +56,7 @@ namespace app::cli
         // Scripts and their output are machine-read: keep the messages in English.
         platform::locale::LocaleManager::get().init((dataRoot / "assets" / "locale").string());
         platform::locale::LocaleManager::get().setLanguage("en");
-        dispatcher.load(platform::threading::Dispatcher::locateProfiles(core::utils::userLocalDataDir(), dataRoot));
+        dispatcher.load(platform::threading::Dispatcher::locateProfiles(core::utils::profilesDir(dataRoot), dataRoot));
         const auto result = runner.runFile(script);
         dispatcher.save();
         std::cout.flush();

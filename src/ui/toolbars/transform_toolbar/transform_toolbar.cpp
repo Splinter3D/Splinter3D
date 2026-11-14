@@ -292,6 +292,21 @@ namespace ui::toolbars
         return ActiveTool::None;
     }
 
+    void TransformToolbar::OpenTool(ActiveTool tool)
+    {
+        if (tool == ActiveTool::None)
+        {
+            CloseActiveTool();
+            return;
+        }
+        if (!move_button_->IsEnabled())
+            return;
+        move_button_->SetValue(tool == ActiveTool::Move);
+        rotate_button_->SetValue(tool == ActiveTool::Rotate);
+        ShowFieldsPanel(tool == ActiveTool::Move ? move_panel_ : rotate_panel_);
+        NotifyActiveToolChanged();
+    }
+
     void TransformToolbar::SetOnActiveToolChanged(std::function<void(ActiveTool)> callback)
     {
         on_active_tool_changed_ = std::move(callback);

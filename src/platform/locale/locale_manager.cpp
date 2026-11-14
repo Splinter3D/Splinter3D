@@ -46,6 +46,11 @@ namespace platform::locale
             setLanguage(language);
     }
 
+    std::string LocaleManager::resolve(const std::string& setting)
+    {
+        return validateLanguage(setting == "default" ? detectSystemLanguage() : setting);
+    }
+
     std::string LocaleManager::gettext(
         const std::string& key) const
     {

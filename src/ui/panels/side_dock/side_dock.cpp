@@ -71,6 +71,11 @@ namespace ui::panels
         return current_ != nullptr && manual_;
     }
 
+    bool SideDock::IsClosedByHand() const noexcept
+    {
+        return closed_by_hand_;
+    }
+
     wxToggleButton* SideDock::GetButton(wxWindow* page) const
     {
         const auto found = std::find_if(pages_.begin(), pages_.end(), [page](const Page& p) { return p.window == page; });

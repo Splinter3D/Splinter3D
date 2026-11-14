@@ -58,6 +58,11 @@ namespace ui::windows
         void SetConfirmQuit(std::function<bool(std::size_t pending)> confirm);
         /** @brief Test-only: replaces the "delete?" dialog (true = delete). */
         void SetConfirmDelete(std::function<bool(const wxString& message)> confirm);
+        /**
+         * @brief Test-only: replaces the "reload for the new language?" dialog
+         * (true = reload). With tasks pending it is only told (the answer is ignored).
+         */
+        void SetConfirmReload(std::function<bool(std::size_t pending)> confirm);
 #endif
 
       protected:
@@ -81,7 +86,12 @@ namespace ui::windows
         // Asked before closing with tasks pending; true quits. Empty: a dialog asks.
         std::function<bool(std::size_t pending)> confirm_quit_;
         // Asked before deleting models; true deletes. Empty: a dialog asks.
-        std::function<bool(const wxString& message)>             confirm_delete_;
+        std::function<bool(const wxString& message)> confirm_delete_;
+        // Asked when the language changes; true reloads. Empty: a dialog asks.
+        std::function<bool(std::size_t pending)> confirm_reload_;
+        platform::settings::Subscription         language_subscription_;
+        // The tool to open once the models are in (a reload's, see Reload()).
+        ui::toolbars::TransformToolbar::ActiveTool               reopen_tool_ = ui::toolbars::TransformToolbar::ActiveTool::None;
         std::unique_ptr<ui::framework::wx::events::EventManager> event_manager_;
         std::unique_ptr<ui::dialogs::ModelManagementDialog>      model_management_menu_;
 
@@ -107,5 +117,15 @@ namespace ui::windows
         // Asks before quitting with tasks pending (vetoes on "Keep working"),
         // then cancels them and waits until none runs.
         void OnClose(wxCloseEvent& event);
+
+        // The language setting changed: strings are read when the window is
+        // built, so offers to Reload() now (unless tasks are pending), or
+        // leaves it for the next start.
+        void OfferReload();
+
+        // Switches to the language setting's language and replaces this
+        // window with a new one in its place, holding the same models,
+        // camera, selection, open tool and side dock page.
+        void Reload();
     };
 } // namespace ui::windows

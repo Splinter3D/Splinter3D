@@ -90,3 +90,18 @@ TEST_CASE("userDataDir / userLocalDataDir: empty without a home", "[core][user_d
     CHECK(core::utils::userLocalDataDir().empty());
 }
 #endif
+
+TEST_CASE("settingsDir / profilesDir: dev builds keep their own under the data root", "[core][user_dirs]")
+{
+    const fs::path dataRoot("/opt/splinter3D");
+    if constexpr (core::utils::kReleaseBuild)
+    {
+        CHECK(core::utils::settingsDir(dataRoot) == core::utils::userDataDir());
+        CHECK(core::utils::profilesDir(dataRoot) == core::utils::userLocalDataDir());
+    }
+    else
+    {
+        CHECK(core::utils::settingsDir(dataRoot) == dataRoot / "dev-data");
+        CHECK(core::utils::profilesDir(dataRoot) == dataRoot / "dev-data");
+    }
+}

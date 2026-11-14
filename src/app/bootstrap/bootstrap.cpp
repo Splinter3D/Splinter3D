@@ -59,11 +59,11 @@ namespace app
         platform::locale::LocaleManager::get().init((dataRoot / "assets" / "locale").string());
 
         // Per user, outside the install (which may be read-only): e.g.
-        // ~/Library/Application Support/Splinter3D/settings.cfg.
+        // ~/Library/Application Support/Splinter3D/settings.cfg - or <data root>/dev-data in a dev build.
         // $SPLINTER3D_SETTINGS overrides it (the end-to-end tests point it at a temporary file).
         auto&                 settings     = platform::settings::SettingsRegistry::getInstance();
         std::filesystem::path settingsPath = core::utils::environmentPath("SPLINTER3D_SETTINGS");
-        if (const auto userDir = core::utils::userDataDir(); settingsPath.empty() && !userDir.empty())
+        if (const auto userDir = core::utils::settingsDir(dataRoot); settingsPath.empty() && !userDir.empty())
             settingsPath = userDir / "settings.cfg";
         if (!settingsPath.empty())
         {
@@ -75,7 +75,7 @@ namespace app
         platform::locale::LocaleManager::get().useSettings(settings);
 
         const auto profiles =
-            platform::threading::Dispatcher::locateProfiles(core::utils::userLocalDataDir(), dataRoot);
+            platform::threading::Dispatcher::locateProfiles(core::utils::profilesDir(dataRoot), dataRoot);
         platform::logger::clog("[bootstrap] loading scalability profiles from ", profiles.string());
         platform::threading::Dispatcher::getInstance().load(profiles);
 

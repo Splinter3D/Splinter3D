@@ -18,6 +18,7 @@
 #include <Aspect_GraphicDeviceDefinitionError.hxx>
 #include <BRep_Builder.hxx>
 #include <Bnd_Box.hxx>
+#include <Graphic3d_Camera.hxx>
 #include <OpenGl_GraphicDriver.hxx>
 #include <Precision.hxx>
 #include <TopoDS_Vertex.hxx>
@@ -44,11 +45,13 @@
 #include <gp_Lin.hxx>
 #include <gp_Pnt.hxx>
 #include <gp_Trsf.hxx>
+#include <iterator>
 #include <limits>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <utility>
 #include <vector>
 #include <wx/dcclient.h>
 #include <wx/log.h>
@@ -608,6 +611,30 @@ namespace ui::framework::occt
             return transform;
         }
 
+        [[nodiscard]] ModelViewerPanel::CameraState camera() const
+        {
+            const auto&  camera = view_->Camera();
+            const gp_Pnt eye    = camera->Eye();
+            const gp_Pnt center = camera->Center();
+            const gp_Dir up     = camera->Up();
+            return {{eye.X(), eye.Y(), eye.Z()},
+                    {center.X(), center.Y(), center.Z()},
+                    {up.X(), up.Y(), up.Z()},
+                    camera->Scale(),
+                    scale_};
+        }
+
+        void setCamera(const ModelViewerPanel::CameraState& state)
+        {
+            const auto& camera = view_->Camera();
+            camera->SetEyeAndCenter(gp_Pnt(state.eye[0], state.eye[1], state.eye[2]),
+                                    gp_Pnt(state.center[0], state.center[1], state.center[2]));
+            camera->SetUp(gp_Dir(state.up[0], state.up[1], state.up[2]));
+            camera->SetScale(state.scale);
+            scale_ = state.zoom;
+            view_->Redraw();
+        }
+
         [[nodiscard]] std::array<double, 3> cameraEye() const
         {
             double x = 0.0;
@@ -1009,6 +1036,59 @@ namespace ui::framework::occt
                 mailbox->panel->CallAfter(std::move(callback));
         });
         viewer_->setIsInteracting([this] { return rotating_ || panning_ || gizmo_dragging_; });
+        showAdoptedModels();
+    }
+
+    ModelViewerPanel::ModelsSnapshot ModelViewerPanel::SnapshotModels() const
+    {
+        if (adopted_) // not shown yet: still what was adopted
+            return *adopted_;
+        return {scene_.models(), GetModelVisibility(), selection_.ids(),
+                initialized_ ? std::optional(viewer_->camera()) : std::nullopt};
+    }
+
+    void ModelViewerPanel::AdoptModels(ModelsSnapshot snapshot)
+    {
+        snapshot.visibility.resize(snapshot.models.size(), true);
+        if (!adopted_)
+            adopted_ = std::move(snapshot);
+        else
+        {
+            auto& adopted = *adopted_;
+            adopted.models.insert(adopted.models.end(), std::make_move_iterator(snapshot.models.begin()),
+                                  std::make_move_iterator(snapshot.models.end()));
+            adopted.visibility.insert(adopted.visibility.end(), snapshot.visibility.begin(), snapshot.visibility.end());
+            adopted.selected.insert(adopted.selected.end(), snapshot.selected.begin(), snapshot.selected.end());
+            if (snapshot.camera)
+                adopted.camera = snapshot.camera;
+        }
+        if (initialized_)
+            showAdoptedModels();
+    }
+
+    void ModelViewerPanel::showAdoptedModels()
+    {
+        if (!adopted_)
+            return;
+        ModelsSnapshot adopted = *std::exchange(adopted_, std::nullopt);
+        for (std::size_t i = 0; i < adopted.models.size(); ++i)
+        {
+            auto& model = adopted.models[i];
+            viewer_->addModel(model.id, model.name, std::move(model.shape), model.loadDuration);
+            if (model.brep)
+                viewer_->setBRep(model.id, std::move(*model.brep));
+            viewer_->setTransform(model.id, model.transform);
+            if (!adopted.visibility[i])
+                if (const auto index = scene_.indexOf(model.id))
+                    viewer_->setModelVisibility(static_cast<int>(*index), false);
+        }
+        if (adopted.camera)
+            viewer_->setCamera(*adopted.camera);
+        else
+            viewer_->fitAll();
+        for (const auto id : adopted.selected)
+            if (const auto index = scene_.indexOf(id); index && isSelectable(static_cast<int>(*index)) && !selection_.contains(id))
+                selection_.toggle(id);
     }
 
     bool ModelViewerPanel::hasModel() const

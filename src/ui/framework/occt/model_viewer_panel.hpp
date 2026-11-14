@@ -68,6 +68,39 @@ namespace ui::framework::occt
         // True as soon as a shape is loaded in the viewer.
         [[nodiscard]] bool hasModel() const;
 
+        // Where the camera looks from and at, which way is up, and how far
+        // it is zoomed (the view's scale, and the wheel's zoom factor).
+        struct CameraState
+        {
+            std::array<double, 3> eye{};
+            std::array<double, 3> center{};
+            std::array<double, 3> up{};
+            double                scale = 1.0;
+            double                zoom  = 1.0;
+        };
+
+        // The open models (ids, names, shapes, placements, B-Reps), whether
+        // each is shown, the selection and the camera, to carry over to
+        // another viewer.
+        struct ModelsSnapshot
+        {
+            std::vector<application::service::SceneService::Model> models;
+            std::vector<bool>                                      visibility;
+            std::vector<application::service::ModelId>             selected; // in the order picked
+            std::optional<CameraState>                             camera;   // none before the viewport exists
+        };
+
+        // Copies the open models (shapes are shared, not duplicated).
+        // Meant for when no task is pending: a model still being imported
+        // is not in it.
+        [[nodiscard]] ModelsSnapshot SnapshotModels() const;
+
+        // Adds a snapshot's models with their ids, names, placements,
+        // B-Reps and visibility, selects what it had selected, and puts the
+        // camera where it was (else frames every model). Waits for the
+        // viewport to exist (its first paint) if it doesn't yet.
+        void AdoptModels(ModelsSnapshot snapshot);
+
         // Display names of every currently loaded model, in load order.
         // Index i matches setTransform()/GetTransform()'s targetIndex.
         [[nodiscard]] std::vector<wxString> GetModelNames() const;
@@ -220,6 +253,7 @@ namespace ui::framework::occt
         void onMouseMove(wxMouseEvent& event);
         void onMouseWheel(wxMouseEvent& event);
         void initializeViewer();
+        void showAdoptedModels();
 
         // Declared before viewer_, which holds a reference to it.
         application::service::SceneService scene_;
@@ -257,6 +291,7 @@ namespace ui::framework::occt
         };
 
         Group                                                         group_;
+        std::optional<ModelsSnapshot>                                 adopted_;
         std::function<bool(LoadedModelsQuestion, std::size_t models)> confirm_convert_loaded_;
         platform::settings::Subscription                              precision_subscription_;
         platform::settings::Subscription                              brep_subscription_;

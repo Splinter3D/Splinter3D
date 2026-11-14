@@ -10,7 +10,7 @@
     "general": {
       "language": "Langue",
       "language_system": "Langue du syst\u00e8me",
-      "restart": "S'applique au prochain d\u00e9marrage de Splinter3D."
+      "restart": "S'applique au rechargement de la fen\u00eatre ou au prochain d\u00e9marrage de Splinter3D."
     },
     "languages": {
       "en": "English",
@@ -65,13 +65,21 @@
   },
   "window": {
     "status": {
-      "ready": "Splinter3D {version} - pr\u00eat"
+      "ready": "Splinter3D {version} - pr\u00eat",
+      "dev_build": "(Version de d\u00e9veloppement)"
     },
     "quit": {
       "title": "Quitter Splinter3D",
       "message": "{count} t\u00e2che(s) en cours ou en attente. Les annuler et quitter ?",
       "confirm": "Quitter",
       "keep": "Continuer \u00e0 travailler"
+    },
+    "language": {
+      "title": "Changer la langue",
+      "message": "La nouvelle langue s'applique au rechargement de la fen\u00eatre (les mod\u00e8les ouverts sont conserv\u00e9s). Recharger maintenant, ou attendre le prochain d\u00e9marrage ?",
+      "reload": "Recharger maintenant",
+      "later": "Plus tard",
+      "busy": "{count} t\u00e2che(s) en cours ou en attente : la nouvelle langue s'appliquera au prochain d\u00e9marrage."
     }
   },
   "toolbar": {

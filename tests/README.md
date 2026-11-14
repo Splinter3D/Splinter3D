@@ -81,7 +81,7 @@ tests/
 - Drive widgets by sending them events (`HandleWindowEvent`, `ProcessWindowEvent`, `sendMenuCommand`), then `pumpEvents()` if anything was deferred.
 - Own top-level windows with `ScopedFrame<T>`, which destroys them at scope exit. A window that closes itself (e.g. File > Exit) must not be in a `ScopedFrame`; track it with `wxWeakRef` and `pumpUntil([&] { return !ref; })`.
 - Call `ScopedFrame::showAndWait()` before anything needs OpenGL (the OCCT viewer is created on first use, and needs a realized window).
-- Anything that opens a modal dialog (`ModelViewerPanel::openFile()`/`saveFile()`, Help > About, `ui::dialogs::*` except `progress()`) cannot be driven; test the code behind it instead (e.g. `loadFile(path)`/`exportFile(path)`). The quit confirmation is replaced with `MainWindow::SetConfirmQuit()`.
+- Anything that opens a modal dialog (`ModelViewerPanel::openFile()`/`saveFile()`, Help > About, `ui::dialogs::*` except `progress()`) cannot be driven; test the code behind it instead (e.g. `loadFile(path)`/`exportFile(path)`). The quit confirmation is replaced with `MainWindow::SetConfirmQuit()`, the "reload for the new language?" one with `MainWindow::SetConfirmReload()`.
 - `loadFile()`, `exportFile()` and `newFile()` only start background tasks: wait with `pumpUntil([&] { return panel->tasks().idle(); })` before checking the scene (results are applied through events that pumping runs). Unit tests of `TaskManager` use `support/manual_poster.hpp` as their UI thread.
 - Code that saves preferences (theme and language menus) writes `./splinter3D.cfg`: run it inside a `TempCwd`.
 

@@ -44,6 +44,7 @@ namespace application::service
     {
         Model model;
         model.id           = id != 0 ? id : nextId_++;
+        nextId_            = std::max(nextId_, model.id + 1);
         model.name         = uniqueName(baseName);
         model.shape        = std::move(shape);
         model.loadDuration = loadDuration;

@@ -83,6 +83,9 @@ __pycache__/
 # Docker
 !Dockerfile
 
+# Dev builds' settings and profiles (core::utils::devDataDir)
+/dev-data/
+
 # Scalability profiles' old location (now in the per-user data folder, see Dispatcher::locateProfiles)
 /assets/splinter3D.profiles.json
 

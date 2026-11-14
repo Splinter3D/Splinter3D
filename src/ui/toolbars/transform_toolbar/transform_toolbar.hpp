@@ -109,6 +109,12 @@ namespace ui::toolbars
         [[nodiscard]] ActiveTool GetActiveTool() const;
 
         /**
+         * @brief Presses tool's button and shows its fields, as clicking it
+         * would (None: CloseActiveTool()). Does nothing while disabled.
+         */
+        void OpenTool(ActiveTool tool);
+
+        /**
          * @brief Invoked whenever the active tool changes (a panel is
          * shown, hidden, or the bar gets disabled), with the same value
          * GetActiveTool() would then return.

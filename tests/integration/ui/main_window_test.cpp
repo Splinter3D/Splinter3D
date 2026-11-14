@@ -1,4 +1,5 @@
 #include "application/tasks/task.hpp"
+#include "platform/locale/locale_manager.hpp"
 #include "platform/settings/settings_registry.hpp"
 #include "support/temp_dir.hpp"
 #include "support/wx_helpers.hpp"
@@ -15,11 +16,14 @@
 #include "ui/widgets/key_bind_button/key_bind_button.hpp"
 #include "ui/windows/main_window/main_window.hpp"
 
+#include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 #include <chrono>
+#include <cmath>
 #include <filesystem>
 #include <gp_Pnt.hxx>
 #include <thread>
+#include <vector>
 #include <wx/combobox.h>
 #include <wx/glcanvas.h>
 #include <wx/menu.h>
@@ -543,4 +547,162 @@ TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: Escape with only a selecti
     openMove();
     CHECK_FALSE(pressEscape(window.get()));
     CHECK(toolbar->GetActiveTool() == TransformToolbar::ActiveTool::None);
+}
+
+namespace
+{
+    // A language change, with the reload question answered by `reload`;
+    // records the pending task counts it was asked with.
+    class LanguageWindowFixture : public MainWindowFixture
+    {
+      public:
+        LanguageWindowFixture()
+        {
+            window->SetConfirmReload([this](std::size_t pending) {
+                asked.push_back(pending);
+                return reload;
+            });
+        }
+
+        // Sets the language, then lets the question come (it waits for set() to return).
+        void changeLanguage(const std::string& language)
+        {
+            platform::settings::SettingsRegistry::getInstance().set(platform::locale::kLanguageSetting, language);
+            tests::support::pumpUntil([this] { return !asked.empty(); });
+        }
+
+        bool                     reload = true;
+        std::vector<std::size_t> asked;
+    };
+} // namespace
+
+TEST_CASE("MainWindow: reloading for a new language keeps the models", "[integration][ui][main_window][locale]")
+{
+    // Not a ScopedFrame: the window destroys itself when it reloads.
+    const RegisteredFactories factories;
+    auto*                     window = new ui::windows::MainWindow();
+    window->Show();
+    REQUIRE(tests::support::pumpUntil([&] { return window->IsShownOnScreen(); }));
+    std::vector<std::size_t> asked;
+    window->SetConfirmReload([&](std::size_t pending) {
+        asked.push_back(pending);
+        return true;
+    });
+    auto* viewer = findDescendant<ModelViewerPanel>(window);
+    REQUIRE(viewer != nullptr);
+    const auto settle = [](ModelViewerPanel* panel) {
+        return tests::support::pumpUntil([&] { return panel->tasks().idle(); });
+    };
+    REQUIRE(viewer->loadFile(kCube));
+    REQUIRE(settle(viewer));
+    REQUIRE(viewer->loadFile(kCube));
+    REQUIRE(settle(viewer));
+    viewer->setTransform(0, 5.0, 0.0, 0.0, 0.0, 0.0, 90.0);
+    REQUIRE(settle(viewer));
+    viewer->SetModelVisibility(1, false);
+    viewer->SelectOnly(0);
+    // Orbit and zoom, away from where framing the models would put the camera.
+    auto* canvas = findDescendant<wxGLCanvas>(viewer);
+    REQUIRE(canvas != nullptr);
+    const auto sendMouse = [canvas](wxEventType type, int x, int y, int wheelRotation = 0) {
+        wxMouseEvent event(type);
+        event.SetEventObject(canvas);
+        event.SetPosition(wxPoint(x, y));
+        event.m_x             = x;
+        event.m_y             = y;
+        event.m_leftDown      = type == wxEVT_MOTION;
+        event.m_wheelRotation = wheelRotation;
+        event.m_wheelDelta    = 120;
+        canvas->HandleWindowEvent(event);
+    };
+    sendMouse(wxEVT_LEFT_DOWN, 100, 100);
+    sendMouse(wxEVT_MOTION, 140, 120);
+    sendMouse(wxEVT_MOTION, 180, 140);
+    sendMouse(wxEVT_LEFT_UP, 180, 140);
+    sendMouse(wxEVT_MOUSEWHEEL, 100, 100, 240);
+    const auto ids   = viewer->GetModelIds();
+    const auto names = viewer->GetModelNames();
+    const auto eye   = viewer->CameraEye();
+    // Rotate open, and the settings page, where the language is picked.
+    auto* toolbar = findDescendant<TransformToolbar>(window);
+    auto* dock    = findDescendant<ui::panels::SideDock>(window);
+    REQUIRE(toolbar != nullptr);
+    REQUIRE(dock != nullptr);
+    toolbar->OpenTool(TransformToolbar::ActiveTool::Rotate);
+    REQUIRE(toolbar->GetActiveTool() == TransformToolbar::ActiveTool::Rotate);
+    dock->Open(findDescendant<ui::panels::SettingsPanel>(window));
+    tests::support::pumpEvents();
+    // Measured with the dock open: it narrows the viewport.
+    const auto corner = viewer->ProjectToCanvas(gp_Pnt(10.0, 10.0, 10.0));
+
+    platform::settings::SettingsRegistry::getInstance().set(platform::locale::kLanguageSetting, "fr");
+    ui::windows::MainWindow* reloaded = nullptr;
+    REQUIRE(tests::support::pumpUntil([&] {
+        reloaded = dynamic_cast<ui::windows::MainWindow*>(wxTheApp->GetTopWindow());
+        return reloaded != nullptr && reloaded != window;
+    }));
+    CHECK(asked == std::vector<std::size_t>{0});
+    CHECK(platform::locale::LocaleManager::get().getLanguage() == "fr");
+    CHECK(reloaded->GetMenuBar()->FindMenu("Fichier") != wxNOT_FOUND);
+
+    auto* moved = findDescendant<ModelViewerPanel>(reloaded);
+    REQUIRE(moved != nullptr);
+    REQUIRE(tests::support::pumpUntil([&] { return moved->GetModelIds().size() == 2; }));
+    CHECK(moved->GetModelIds() == ids);
+    CHECK(moved->GetModelNames() == names);
+    CHECK(moved->GetModelVisibility() == std::vector<bool>{true, false});
+    CHECK(moved->GetTransform(0).moveX == 5.0);
+    CHECK(moved->GetTransform(0).rotateZ == 90.0);
+    CHECK(moved->GetSelectedIndices() == std::vector<int>{0});
+    CHECK(moved->IsHighlighted(0));
+    for (std::size_t axis = 0; axis < 3; ++axis)
+        CHECK(std::abs(moved->CameraEye()[axis] - eye[axis]) < 1e-6);
+    const auto movedCorner = moved->ProjectToCanvas(gp_Pnt(10.0, 10.0, 10.0));
+    CHECK(std::abs(movedCorner.x - corner.x) <= 1);
+    CHECK(std::abs(movedCorner.y - corner.y) <= 1);
+    auto* movedToolbar = findDescendant<TransformToolbar>(reloaded);
+    auto* movedDock    = findDescendant<ui::panels::SideDock>(reloaded);
+    REQUIRE(movedToolbar != nullptr);
+    REQUIRE(movedDock != nullptr);
+    CHECK(movedToolbar->GetActiveTool() == TransformToolbar::ActiveTool::Rotate);
+    CHECK(dynamic_cast<ui::panels::SettingsPanel*>(movedDock->CurrentPage()) != nullptr);
+    CHECK(movedDock->IsOpenedManually());
+    // New models never take a carried-over id.
+    REQUIRE(moved->loadFile(kCube));
+    REQUIRE(settle(moved));
+    REQUIRE(moved->GetModelIds().size() == 3);
+    CHECK(moved->GetModelIds()[2] > std::max(ids[0], ids[1]));
+
+    reloaded->Destroy();
+    tests::support::pumpEvents();
+}
+
+TEST_CASE_METHOD(LanguageWindowFixture, "MainWindow: \"Later\" keeps the window and its language", "[integration][ui][main_window][locale]")
+{
+    reload = false;
+    changeLanguage("de");
+
+    CHECK(asked == std::vector<std::size_t>{0});
+    CHECK(wxTheApp->GetTopWindow() == window.get());
+    CHECK(platform::locale::LocaleManager::get().getLanguage() == "en");
+}
+
+TEST_CASE_METHOD(LanguageWindowFixture, "MainWindow: no reload while tasks are pending", "[integration][ui][main_window][locale]")
+{
+    REQUIRE(viewer->loadFile(kCube));
+    REQUIRE(settle());
+    hold();
+    changeLanguage("es");
+
+    CHECK(asked == std::vector<std::size_t>{1});
+    CHECK(platform::locale::LocaleManager::get().getLanguage() == "en");
+    viewer->tasks().cancelAllAndWait();
+}
+
+TEST_CASE_METHOD(LanguageWindowFixture, "MainWindow: no question when the language shown doesn't change", "[integration][ui][main_window][locale]")
+{
+    changeLanguage("en");
+    tests::support::pumpEvents();
+
+    CHECK(asked.empty());
 }

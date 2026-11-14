@@ -427,3 +427,12 @@ TEST_CASE("SceneService: setBRep and brep", "[application][scene]")
     CHECK_FALSE(scene.models()[0].shape.mesh().IsNull()); // still displayed and exported as a mesh
     CHECK_FALSE(scene.setBRep(id + 100, Shape::toBRep(scene.models()[0].shape)));
 }
+
+TEST_CASE("SceneService: a model added with another scene's id never sees it reused", "[application][scene]")
+{
+    SceneService scene;
+    scene.add("moved", Shape{}, 7);
+
+    CHECK(scene.reserveId() == 8);
+    CHECK(scene.models()[scene.add("new", Shape{})].id == 9);
+}

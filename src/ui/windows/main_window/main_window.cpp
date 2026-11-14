@@ -1,6 +1,8 @@
 #include "main_window.hpp"
 
 #include "core/utils/data_root.hpp"
+#include "core/utils/version.hpp"
+#include "platform/locale/locale_manager.hpp"
 #include "ui/dialogs/dialogs.hpp"
 #include "ui/dialogs/model_management_dialog.hpp"
 #include "ui/framework/wx/ids/ids.hpp"
@@ -16,7 +18,9 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <string>
 #include <utility>
+#include <wx/app.h>
 #include <wx/iconbndl.h>
 #include <wx/image.h>
 #include <wx/msgdlg.h>
@@ -94,10 +98,21 @@ namespace ui::windows
         SetMenuBar(menuBar);
     }
 
+    namespace
+    {
+        wxString Version()
+        {
+            wxString version = wxString::FromUTF8(std::string(core::utils::kVersion));
+            if constexpr (!core::utils::kReleaseBuild)
+                version += " " + tr("window.status.dev_build");
+            return version;
+        }
+    } // namespace
+
     void MainWindow::InitStatusBar()
     {
         CreateStatusBar();
-        SetStatusText(tr("window.status.ready", {{"version", wxString::Format("%s", SPLINTER3D_VERSION)}}));
+        SetStatusText(tr("window.status.ready", {{"version", Version()}}));
     }
 
     void MainWindow::InitLayout()
@@ -200,6 +215,8 @@ namespace ui::windows
                 transform_toolbar_->SetTargets(names);
                 SyncTargetToSelection();
                 transform_toolbar_->SetEnabled(hasModel);
+                if (hasModel && reopen_tool_ != ui::toolbars::TransformToolbar::ActiveTool::None)
+                    transform_toolbar_->OpenTool(std::exchange(reopen_tool_, ui::toolbars::TransformToolbar::ActiveTool::None));
                 SyncTransformFields();
                 UpdateGizmoState();
                 if (model_management_menu_ != nullptr)
@@ -284,6 +301,75 @@ namespace ui::windows
         event_manager_->bindAll();
 
         Bind(wxEVT_CLOSE_WINDOW, &MainWindow::OnClose, this);
+
+        language_subscription_ = platform::settings::SettingsRegistry::getInstance().subscribe(
+            platform::locale::kLanguageSetting, [this](const std::string&) { CallAfter([this] { OfferReload(); }); });
+    }
+
+    void MainWindow::OfferReload()
+    {
+        using platform::locale::LocaleManager;
+        const std::string language =
+            LocaleManager::resolve(platform::settings::SettingsRegistry::getInstance().get(platform::locale::kLanguageSetting));
+        if (language == LocaleManager::get().getLanguage())
+            return;
+
+        const std::size_t pending = model_viewer_ != nullptr ? model_viewer_->tasks().pending() : 0;
+        if (confirm_reload_)
+        {
+            if (confirm_reload_(pending) && pending == 0)
+                Reload();
+            return;
+        }
+        if (pending > 0)
+        {
+            wxMessageDialog dialog(this, tr("window.language.busy", {{"count", wxString::Format("%zu", pending)}}),
+                                   tr("window.language.title"), wxOK | wxICON_INFORMATION);
+            dialog.ShowModal();
+            return;
+        }
+        wxMessageDialog dialog(this, tr("window.language.message"), tr("window.language.title"),
+                               wxYES_NO | wxYES_DEFAULT | wxICON_QUESTION);
+        dialog.SetYesNoLabels(tr("window.language.reload"), tr("window.language.later"));
+        if (dialog.ShowModal() == wxID_YES)
+            Reload();
+    }
+
+    void MainWindow::Reload()
+    {
+        using platform::locale::LocaleManager;
+        LocaleManager::get().setLanguage(
+            LocaleManager::resolve(platform::settings::SettingsRegistry::getInstance().get(platform::locale::kLanguageSetting)));
+
+        auto* reloaded = new MainWindow();
+        reloaded->SetSize(GetRect());
+        if (IsMaximized())
+            reloaded->Maximize();
+        if (transform_toolbar_ != nullptr)
+            reloaded->reopen_tool_ = transform_toolbar_->GetActiveTool();
+        if (model_viewer_ != nullptr && reloaded->model_viewer_ != nullptr)
+            reloaded->model_viewer_->AdoptModels(model_viewer_->SnapshotModels());
+        reloaded->Show();
+        if (IsFullScreen())
+            reloaded->ShowFullScreen(true);
+
+        if (side_dock_ != nullptr && reloaded->side_dock_ != nullptr)
+        {
+            if (side_dock_->IsClosedByHand())
+                reloaded->side_dock_->Close();
+            wxWindow* const page = side_dock_->CurrentPage();
+            if (page != nullptr && page == settings_panel_ && reloaded->settings_panel_ != nullptr)
+            {
+                reloaded->side_dock_->Open(reloaded->settings_panel_);
+                reloaded->CallAfter([reloaded, start = settings_panel_->GetViewStart()] {
+                    reloaded->settings_panel_->Scroll(start);
+                });
+            }
+            else if (page != nullptr && page == tasks_panel_ && side_dock_->IsOpenedManually() && reloaded->tasks_panel_ != nullptr)
+                reloaded->side_dock_->Open(reloaded->tasks_panel_);
+        }
+        wxTheApp->SetTopWindow(reloaded);
+        Destroy();
     }
 
     void MainWindow::OnClose(wxCloseEvent& event)
@@ -326,6 +412,11 @@ namespace ui::windows
     void MainWindow::SetConfirmDelete(std::function<bool(const wxString& message)> confirm)
     {
         confirm_delete_ = std::move(confirm);
+    }
+
+    void MainWindow::SetConfirmReload(std::function<bool(std::size_t pending)> confirm)
+    {
+        confirm_reload_ = std::move(confirm);
     }
 #endif
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/utils/version.hpp"
+
 #include <cstdlib>
 #include <filesystem>
 #include <string>
@@ -8,6 +10,9 @@ namespace core::utils
 {
     /// The folder name used under each per-user location.
     inline constexpr const char* kUserDirName = "Splinter3D";
+
+    /// The folder under the data root where a dev build keeps what a release build puts in the per-user folders.
+    inline constexpr const char* kDevDataDirName = "dev-data";
 
     /** @brief An environment variable as a path (read wide on Windows, so non-ASCII names survive); empty if unset. */
     inline std::filesystem::path environmentPath(const char* name)
@@ -79,5 +84,32 @@ namespace core::utils
         const auto home = environmentPath("HOME");
         return home.empty() ? home : detail::under(home / ".local" / "share");
 #endif
+    }
+
+    /**
+     * @brief Where a dev build keeps its settings and profiles: <dataRoot>/dev-data,
+     * so it never reads or overwrites those of an installed release.
+     */
+    inline std::filesystem::path devDataDir(const std::filesystem::path& dataRoot)
+    {
+        return dataRoot / kDevDataDirName;
+    }
+
+    /** @brief Where this build keeps its settings: userDataDir() in a release build, else devDataDir(). */
+    inline std::filesystem::path settingsDir(const std::filesystem::path& dataRoot)
+    {
+        if constexpr (kReleaseBuild)
+            return userDataDir();
+        else
+            return devDataDir(dataRoot);
+    }
+
+    /** @brief Where this build keeps its scalability profiles: userLocalDataDir() in a release build, else devDataDir(). */
+    inline std::filesystem::path profilesDir(const std::filesystem::path& dataRoot)
+    {
+        if constexpr (kReleaseBuild)
+            return userLocalDataDir();
+        else
+            return devDataDir(dataRoot);
     }
 } // namespace core::utils

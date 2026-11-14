@@ -41,10 +41,14 @@ namespace platform::locale
 
         /**
          * @brief Declares the language setting in settings and switches to the
-         * language it holds (other than "default"). Later changes apply on the
-         * next start: strings are read when windows are built.
+         * language it holds (other than "default"). Later changes apply once
+         * the main window is rebuilt (reloaded, or on the next start): strings
+         * are read when windows are built.
          */
         void useSettings(settings::SettingsRegistry& settings);
+
+        /** @brief The language a kLanguageSetting value stands for: the system's for "default". */
+        static std::string resolve(const std::string& setting);
 
         std::string gettext(
             const std::string& key) const;
