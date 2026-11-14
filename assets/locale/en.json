@@ -36,10 +36,14 @@
       "new": "New",
       "open": "Open",
       "save": "Save",
-      "model_management": "Model management",
+      "model_management": "Models panel",
+      "tasks_panel": "Tasks panel",
+      "settings_panel": "Settings panel",
       "fullscreen": "Fullscreen",
       "quit": "Quit",
       "delete_model": "Delete model",
+      "hide_selection": "Hide the selected models",
+      "duplicate": "Duplicate the selected models",
       "deselect": "Close the tool and deselect",
       "press": "Press keys\u2026",
       "none": "None",
@@ -123,11 +127,23 @@
       "unknown": "unknown error"
     }
   },
+  "models": {
+    "title": "Models",
+    "column": "Model",
+    "hide": "Hide",
+    "delete": "Delete",
+    "show_only": "Show only",
+    "duplicate": "Duplicate",
+    "show_all": "Show all",
+    "hide_tooltip": "Hide the selected models",
+    "delete_tooltip": "Delete the selected models",
+    "show_only_tooltip": "Show the selected models and hide the others",
+    "duplicate_tooltip": "Copy the selected models in place",
+    "show_all_tooltip": "Show every model",
+    "include_hidden": "Include hidden",
+    "include_hidden_tooltip": "Shift-click ranges also select hidden models"
+  },
   "dialogs": {
-    "models": {
-      "title": "Models",
-      "column": "Model"
-    },
     "info": "Info",
     "warning": "Warning",
     "error": "Error",
@@ -139,7 +155,17 @@
     "please_wait": "Please wait",
     "delete_model": {
       "one": "Delete \"{name}\"?",
-      "many": "Delete {count} models?"
+      "many": "Delete {count} models?",
+      "title_one": "Delete model",
+      "title_many": "Delete models",
+      "confirm": "Delete",
+      "cancel": "Cancel"
+    },
+    "duplicate": {
+      "title_one": "Duplicate model",
+      "title_many": "Duplicate models",
+      "message": "How many copies?",
+      "prompt": "Copies:"
     }
   },
   "viewer": {

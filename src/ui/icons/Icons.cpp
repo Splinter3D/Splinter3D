@@ -2,12 +2,7 @@
 
 #include <array>
 #include <string>
-#include <wx/bmpbndl.h>
-#include <wx/button.h>
-#include <wx/imaglist.h>
-#include <wx/listctrl.h>
 #include <wx/settings.h>
-#include <wx/sizer.h>
 
 namespace ui::icons
 {
@@ -38,7 +33,7 @@ namespace ui::icons
         }();
     } // namespace
 
-    wxBitmap MakeIcon(const char* pathsSvg)
+    wxBitmapBundle MakeIcon(const char* pathsSvg)
     {
         const wxColour    c = wxSystemSettings::GetColour(wxSYS_COLOUR_LISTBOXTEXT);
         const std::string svg =
@@ -48,16 +43,16 @@ namespace ui::icons
             "' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>" +
             pathsSvg + "</svg>";
 
-        return wxBitmapBundle::FromSVG(svg.c_str(), wxSize(svgIconSize, svgIconSize))
-            .GetBitmap(wxSize(svgIconSize, svgIconSize));
+        // A bundle, not a bitmap: rendered at the display's scale (a 1x
+        // bitmap is blurred on Retina, and misplaced in list rows).
+        return wxBitmapBundle::FromSVG(svg.c_str(), wxSize(svgIconSize, svgIconSize));
     }
 
-    /** this create an image list linking the enum to the svgs*/
-    wxImageList* CreateImageList()
+    std::vector<wxBitmapBundle> ListIcons()
     {
-        auto* images = new wxImageList(svgIconSize, svgIconSize, true);
+        std::vector<wxBitmapBundle> icons;
         for (const char* svg : svgs)
-            images->Add(MakeIcon(svg));
-        return images;
+            icons.push_back(MakeIcon(svg));
+        return icons;
     }
 } // namespace ui::icons

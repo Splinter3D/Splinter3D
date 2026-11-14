@@ -1,11 +1,13 @@
 #include "platform/settings/settings_registry.hpp"
 #include "support/wx_helpers.hpp"
 #include "ui/panels/settings_panel/settings_panel.hpp"
+#include "ui/panels/side_dock/side_dock.hpp"
 #include "ui/widgets/key_bind_button/key_bind_button.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <string>
 #include <vector>
+#include <wx/button.h>
 #include <wx/checkbox.h>
 #include <wx/choice.h>
 #include <wx/sizer.h>
@@ -16,6 +18,7 @@ using tests::support::findDescendant;
 using tests::support::pumpEvents;
 using tests::support::ScopedFrame;
 using ui::panels::SettingsPanel;
+using ui::panels::SideDock;
 using ui::widgets::KeyBindButton;
 
 namespace
@@ -136,6 +139,43 @@ TEST_CASE_METHOD(SettingsFixture, "SettingsPanel: a combination used twice is fl
 
     settings.reset("test.key.b");
     CHECK(keys[1]->GetToolTipText().empty());
+}
+
+TEST_CASE("SettingsPanel: long labels wrap or shorten; nothing leaves the side dock", "[integration][ui][settings]")
+{
+    auto& settings = SettingsRegistry::getInstance();
+    settings.add({"test.toggle.long", "settings.section.general", "Open the tasks panel whenever a long task starts, far too long to fit on one line", "", Kind::Toggle, "0", {}});
+    settings.add({"test.choice.long", "settings.section.general", "A drop-down label that is far too long to fit on one line of the side dock", "", Kind::Choice, "a", {{"a", "settings.an_option_far_too_long_to_fit_in_the_drop_down_of_the_side_dock_panel"}}});
+    settings.add({"test.key.long", "settings.section.keys", "settings.keys.a_label_far_too_long_to_ever_fit_next_to_its_shortcut_in_the_side_dock", "", Kind::KeyBind, "Ctrl+Shift+Alt+F12", {}});
+    settings.add({"test.key.short", "settings.section.keys", "settings.keys.save", "", Kind::KeyBind, "Ctrl+S", {}});
+
+    ScopedFrame<> frame{nullptr, wxID_ANY, "SettingsPanel dock test", wxDefaultPosition, wxSize(900, 300)};
+    auto*         dock  = new SideDock(frame.get());
+    auto*         panel = new SettingsPanel(dock);
+    dock->AddPage(panel, wxBitmap(), "Settings");
+    auto* sizer = new wxBoxSizer(wxHORIZONTAL);
+    sizer->Add(new wxPanel(frame.get()), 1, wxEXPAND);
+    sizer->Add(dock, 0, wxEXPAND);
+    frame->SetSizer(sizer);
+    frame->Show();
+    dock->Open(panel);
+    pumpEvents();
+
+    std::vector<wxButton*> resets;
+    for (auto* button : findAll<wxButton>(panel))
+        if (dynamic_cast<KeyBindButton*>(button) == nullptr)
+            resets.push_back(button);
+    REQUIRE(resets.size() == 2);
+    const int visible = panel->GetClientSize().GetWidth();
+    CHECK(panel->GetVirtualSize().GetWidth() <= visible);
+    for (wxWindow* child : panel->GetChildren())
+    {
+        INFO(child->GetLabel().utf8_string());
+        CHECK(child->GetRect().GetLeft() >= 0);
+        CHECK(child->GetRect().GetRight() < visible);
+    }
+    // The reset buttons line up in one column.
+    CHECK(resets[0]->GetPosition().x == resets[1]->GetPosition().x);
 }
 
 TEST_CASE_METHOD(SettingsFixture, "SettingsPanel: settings declared later show once it is shown again", "[integration][ui][settings]")

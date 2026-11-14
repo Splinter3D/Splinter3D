@@ -13,6 +13,18 @@ namespace application::service
         notify();
     }
 
+    void Selection::set(const std::vector<ModelId>& ids)
+    {
+        std::vector<ModelId> unique;
+        for (const ModelId id : ids)
+            if (std::find(unique.begin(), unique.end(), id) == unique.end())
+                unique.push_back(id);
+        if (unique == ids_)
+            return;
+        ids_ = std::move(unique);
+        notify();
+    }
+
     void Selection::toggle(ModelId id)
     {
         if (!remove(id))

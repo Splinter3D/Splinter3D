@@ -133,3 +133,21 @@ TEST_CASE_METHOD(DockFixture, "SideDock: once closed by hand, requests no longer
     click(dock->GetButton(first)); // the user can still open it
     CHECK(dock->CurrentPage() == first);
 }
+
+TEST_CASE_METHOD(DockFixture, "SideDock: Toggle opens a page, or closes it when it is the open one", "[integration][ui][side_dock]")
+{
+    dock->Toggle(first);
+    CHECK(dock->CurrentPage() == first);
+    CHECK(dock->IsOpenedManually());
+    CHECK(dock->GetButton(first)->GetValue());
+
+    dock->Toggle(other); // another page: switches to it
+    CHECK(dock->CurrentPage() == other);
+    CHECK_FALSE(first->IsShown());
+
+    dock->Toggle(other);
+    CHECK(dock->CurrentPage() == nullptr);
+    CHECK_FALSE(other->IsShown());
+    CHECK_FALSE(dock->GetButton(other)->GetValue());
+    CHECK(dock->IsClosedByHand());
+}

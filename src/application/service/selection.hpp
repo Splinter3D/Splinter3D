@@ -20,6 +20,8 @@ namespace application::service
       public:
         /// The selection becomes just this model.
         void selectOnly(ModelId id);
+        /// The selection becomes these models, in this order (repeats dropped).
+        void set(const std::vector<ModelId>& ids);
         /// Adds the model, or removes it if it was selected.
         void toggle(ModelId id);
         void clear();

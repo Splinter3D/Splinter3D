@@ -72,3 +72,21 @@ TEST_CASE("Selection: retainOnly drops models that no longer exist", "[unit][sel
     s.selection.retainOnly({2});
     CHECK(s.changes == 1);
 }
+
+TEST_CASE("Selection: set replaces the selection at once", "[unit][selection]")
+{
+    CountingSelection s;
+    s.selection.toggle(9);
+    s.changes = 0;
+
+    s.selection.set({3, 1, 3, 2});
+    CHECK(s.selection.ids() == std::vector<ModelId>{3, 1, 2}); // in order, without repeats
+    CHECK(s.changes == 1);
+
+    s.selection.set({3, 1, 2});
+    CHECK(s.changes == 1);
+
+    s.selection.set({});
+    CHECK(s.selection.empty());
+    CHECK(s.changes == 2);
+}

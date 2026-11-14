@@ -18,7 +18,7 @@ namespace ui::panels
         SetSizer(root);
     }
 
-    void SideDock::AddPage(wxWindow* page, const wxBitmap& icon, const wxString& label)
+    void SideDock::AddPage(wxWindow* page, const wxBitmapBundle& icon, const wxString& label)
     {
         if (page == nullptr)
             return;
@@ -33,7 +33,7 @@ namespace ui::panels
         button->SetToolTip(label);
         // Showing or hiding a page from inside the click handler re-lays out
         // the window under the click; act once it returns.
-        button->Bind(wxEVT_TOGGLEBUTTON, [this, page](wxCommandEvent&) { CallAfter([this, page] { onButton(page); }); });
+        button->Bind(wxEVT_TOGGLEBUTTON, [this, page](wxCommandEvent&) { CallAfter([this, page] { Toggle(page); }); });
         strip_->Add(button, 0, wxEXPAND | wxBOTTOM, 4);
         pages_.push_back({page, button});
     }
@@ -82,7 +82,7 @@ namespace ui::panels
         return found != pages_.end() ? found->button : nullptr;
     }
 
-    void SideDock::onButton(wxWindow* page)
+    void SideDock::Toggle(wxWindow* page)
     {
         if (current_ == page)
             Close();

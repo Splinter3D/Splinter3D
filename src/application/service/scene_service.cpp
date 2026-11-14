@@ -19,6 +19,7 @@
 #include <optional>
 #include <random>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <utility>
 
@@ -224,6 +225,20 @@ namespace application::service
     // Disambiguates two models loaded from files with the same name (e.g.
     // imported from different folders) so the target dropdown never shows
     // duplicate entries.
+    std::string SceneService::baseName(const std::string& name)
+    {
+        // " (" digits ")" at the end, with something before it.
+        if (name.size() < 4 || name.back() != ')')
+            return name;
+        const auto open = name.rfind(" (");
+        if (open == std::string::npos || open == 0 || open + 4 > name.size()) // at least one digit
+            return name;
+        const auto digits = std::string_view(name).substr(open + 2, name.size() - open - 3);
+        if (!std::all_of(digits.begin(), digits.end(), [](char c) { return c >= '0' && c <= '9'; }))
+            return name;
+        return name.substr(0, open);
+    }
+
     std::string SceneService::uniqueName(const std::string& base) const
     {
         const auto taken = [this](const std::string& name) {

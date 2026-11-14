@@ -436,3 +436,12 @@ TEST_CASE("SceneService: a model added with another scene's id never sees it reu
     CHECK(scene.reserveId() == 8);
     CHECK(scene.models()[scene.add("new", Shape{})].id == 9);
 }
+
+TEST_CASE("SceneService: baseName drops the suffix uniqueName added", "[application][scene]")
+{
+    CHECK(SceneService::baseName("cube.stl (2)") == "cube.stl");
+    CHECK(SceneService::baseName("cube.stl (12)") == "cube.stl");
+    CHECK(SceneService::baseName("cube.stl") == "cube.stl");
+    CHECK(SceneService::baseName("part (v2).stl") == "part (v2).stl"); // not a number
+    CHECK(SceneService::baseName("(3)") == "(3)");                     // nothing before it
+}

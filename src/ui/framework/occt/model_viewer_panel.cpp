@@ -1141,6 +1141,15 @@ namespace ui::framework::occt
             selection_.selectOnly(scene_.models()[static_cast<std::size_t>(modelIndex)].id);
     }
 
+    void ModelViewerPanel::Select(const std::vector<int>& modelIndices)
+    {
+        std::vector<application::service::ModelId> ids;
+        for (const int index : modelIndices)
+            if (isSelectable(index))
+                ids.push_back(scene_.models()[static_cast<std::size_t>(index)].id);
+        selection_.set(ids);
+    }
+
     void ModelViewerPanel::ToggleSelected(int modelIndex)
     {
         if (isSelectable(modelIndex))
@@ -1171,9 +1180,7 @@ namespace ui::framework::occt
 
     bool ModelViewerPanel::isSelectable(int modelIndex) const
     {
-        if (!initialized_ || viewer_ == nullptr || modelIndex < 0 || static_cast<std::size_t>(modelIndex) >= scene_.size())
-            return false;
-        return viewer_->modelVisibility()[static_cast<std::size_t>(modelIndex)];
+        return initialized_ && viewer_ != nullptr && modelIndex >= 0 && static_cast<std::size_t>(modelIndex) < scene_.size();
     }
 
     void ModelViewerPanel::handleClick(const wxPoint& point, bool toggle)
@@ -1207,6 +1214,38 @@ namespace ui::framework::occt
         }
         if (on_selection_changed_)
             on_selection_changed_();
+    }
+
+    std::vector<int> ModelViewerPanel::DuplicateModels(const std::vector<int>& modelIndices, int copies)
+    {
+        std::vector<int> added;
+        if (!initialized_ || viewer_ == nullptr)
+            return added;
+        // By id: adding a model may move the others in memory.
+        std::vector<application::service::ModelId> sources;
+        for (const int index : modelIndices)
+            if (index >= 0 && static_cast<std::size_t>(index) < scene_.size())
+                sources.push_back(scene_.models()[static_cast<std::size_t>(index)].id);
+        for (int copy = 0; copy < copies; ++copy)
+            for (const auto id : sources)
+            {
+                const auto source = scene_.find(id);
+                if (source == nullptr)
+                    continue;
+                const auto sourceIndex = *scene_.indexOf(id);
+                const bool visible     = viewer_->modelVisibility()[sourceIndex];
+                const auto model       = *source; // shapes are shared handles: cheap
+                viewer_->addModel(0, application::service::SceneService::baseName(model.name), model.shape, model.loadDuration);
+                const auto copyId = scene_.models().back().id;
+                if (model.brep)
+                    viewer_->setBRep(copyId, *model.brep);
+                viewer_->setTransform(copyId, model.transform);
+                const int index = static_cast<int>(scene_.size() - 1);
+                if (!visible)
+                    viewer_->setModelVisibility(index, false);
+                added.push_back(index);
+            }
+        return added;
     }
 
     void ModelViewerPanel::RemoveModel(int modelIndex)

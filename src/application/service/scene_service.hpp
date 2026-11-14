@@ -75,6 +75,12 @@ namespace application::service
                         platform::benchmark::Duration loadDuration = {});
 
         /**
+         * @brief name without the " (2)", " (3)", ... add() appends to tell
+         * models apart: what a copy of that model is named after.
+         */
+        [[nodiscard]] static std::string baseName(const std::string& name);
+
+        /**
          * @brief Takes the next model id without adding a model, so work that
          * will add one later (a background import) can be referred to now.
          */

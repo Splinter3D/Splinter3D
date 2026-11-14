@@ -36,10 +36,14 @@
       "new": "Neu",
       "open": "\u00d6ffnen",
       "save": "Speichern",
-      "model_management": "Modellverwaltung",
+      "model_management": "Modellbereich",
+      "tasks_panel": "Aufgabenbereich",
+      "settings_panel": "Einstellungsbereich",
       "fullscreen": "Vollbild",
       "quit": "Beenden",
       "delete_model": "Modell l\u00f6schen",
+      "hide_selection": "Ausgew\u00e4hlte Modelle ausblenden",
+      "duplicate": "Ausgew\u00e4hlte Modelle duplizieren",
       "deselect": "Werkzeug schlie\u00dfen und Auswahl aufheben",
       "press": "Tasten dr\u00fccken\u2026",
       "none": "Keine",
@@ -123,11 +127,23 @@
       "unknown": "unbekannter Fehler"
     }
   },
+  "models": {
+    "title": "Modelle",
+    "column": "Modell",
+    "hide": "Ausblenden",
+    "delete": "L\u00f6schen",
+    "show_only": "Nur diese zeigen",
+    "duplicate": "Duplizieren",
+    "show_all": "Alle zeigen",
+    "hide_tooltip": "Die ausgew\u00e4hlten Modelle ausblenden",
+    "delete_tooltip": "Die ausgew\u00e4hlten Modelle l\u00f6schen",
+    "show_only_tooltip": "Die ausgew\u00e4hlten Modelle zeigen und die anderen ausblenden",
+    "duplicate_tooltip": "Die ausgew\u00e4hlten Modelle an Ort und Stelle kopieren",
+    "show_all_tooltip": "Alle Modelle zeigen",
+    "include_hidden": "Ausgeblendete einbeziehen",
+    "include_hidden_tooltip": "Umschalt-Klick-Bereiche w\u00e4hlen auch ausgeblendete Modelle aus"
+  },
   "dialogs": {
-    "models": {
-      "title": "Modelle",
-      "column": "Modell"
-    },
     "info": "Info",
     "warning": "Warnung",
     "error": "Fehler",
@@ -139,7 +155,17 @@
     "please_wait": "Bitte warten",
     "delete_model": {
       "one": "\u201e{name}\u201c l\u00f6schen?",
-      "many": "{count} Modelle l\u00f6schen?"
+      "many": "{count} Modelle l\u00f6schen?",
+      "title_one": "Modell l\u00f6schen",
+      "title_many": "Modelle l\u00f6schen",
+      "confirm": "L\u00f6schen",
+      "cancel": "Abbrechen"
+    },
+    "duplicate": {
+      "title_one": "Modell duplizieren",
+      "title_many": "Modelle duplizieren",
+      "message": "Wie viele Kopien?",
+      "prompt": "Kopien:"
     }
   },
   "viewer": {

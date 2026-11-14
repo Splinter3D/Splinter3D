@@ -13,6 +13,19 @@ namespace ui::framework::wx
 {
     namespace events
     {
+        namespace
+        {
+            // A shortcut that always does something (the key stops there).
+            std::function<bool()> always(std::function<void()> action)
+            {
+                return [action = std::move(action)] {
+                    if (action)
+                        action();
+                    return true;
+                };
+            }
+        } // namespace
+
         EventManager::EventManager(wxFrame* frame, Callbacks callbacks)
         {
             if (!frame)
@@ -36,13 +49,12 @@ namespace ui::framework::wx
                 std::make_unique<ShortcutEvents>(
                     frame,
                     std::map<std::string, std::function<bool()>>{
-                        {"keys.model_management",
-                         [onModelManagement = std::move(callbacks.onModelManagement)] {
-                             if (onModelManagement)
-                                 onModelManagement();
-                             return true;
-                         }},
+                        {"keys.model_management", always(std::move(callbacks.onModelsPanel))},
+                        {"keys.tasks_panel", always(std::move(callbacks.onTasksPanel))},
+                        {"keys.settings_panel", always(std::move(callbacks.onSettingsPanel))},
                         {"keys.delete_model", std::move(callbacks.onDeleteSelection)},
+                        {"keys.hide_selection", std::move(callbacks.onHideSelection)},
+                        {"keys.duplicate", std::move(callbacks.onDuplicateSelection)},
                         {"keys.deselect", std::move(callbacks.onDeselect)},
                     }));
 

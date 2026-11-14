@@ -28,12 +28,14 @@ namespace ui::panels
          * @brief Adds a page (a child of this dock) and its strip button: icon
          * with label as tooltip, or label alone without icon. The page starts closed.
          */
-        void AddPage(wxWindow* page, const wxBitmap& icon, const wxString& label);
+        void AddPage(wxWindow* page, const wxBitmapBundle& icon, const wxString& label);
 
         /** @brief Opens page as the user would (it stays open until closed by hand). */
         void Open(wxWindow* page);
         /** @brief Closes the dock as the user would (requests no longer open it). */
         void Close();
+        /** @brief What page's button does: Close() if page is the open one, else Open(page). */
+        void Toggle(wxWindow* page);
 
         /** @brief Opens page unless the dock already shows a page or the user closed it. */
         void RequestOpen(wxWindow* page);
@@ -56,7 +58,6 @@ namespace ui::panels
         };
 
         void show(wxWindow* page, bool manual);
-        void onButton(wxWindow* page);
 
         std::vector<Page> pages_;
         wxBoxSizer*       content_        = nullptr;

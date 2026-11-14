@@ -7,6 +7,8 @@
 #include <vector>
 #include <wx/scrolwin.h>
 
+class wxFlexGridSizer;
+
 namespace ui::widgets
 {
     class KeyBindButton;
@@ -40,7 +42,8 @@ namespace ui::panels
         };
 
         void build();
-        void addSetting(const platform::settings::Setting& setting, wxSizer* sizer);
+        /** @brief Adds setting's controls to sizer; keys is the key bind grid being filled, if any. */
+        void addSetting(const platform::settings::Setting& setting, wxSizer* sizer, wxFlexGridSizer*& keys);
         void markConflicts();
 
         std::vector<std::string>                      built_keys_;

@@ -42,9 +42,16 @@ namespace ui::framework::wx
                 std::function<void()> onOpen;
                 std::function<void()> onSave;
                 std::function<void()> onExit;
-                std::function<void()> onModelManagement;
+                // Each opens its side dock page, or closes it when it is the open one.
+                std::function<void()> onModelsPanel;
+                std::function<void()> onTasksPanel;
+                std::function<void()> onSettingsPanel;
                 // False when nothing was selected (the key goes on to the focused control).
                 std::function<bool()> onDeleteSelection;
+                // Hides the selected models; false when nothing was selected (the key goes on).
+                std::function<bool()> onHideSelection;
+                // Duplicates the selected models; false when nothing was selected (the key goes on).
+                std::function<bool()> onDuplicateSelection;
                 // Closes the transform tool and clears the selection; false
                 // when there was neither (the key goes on).
                 std::function<bool()>          onDeselect;

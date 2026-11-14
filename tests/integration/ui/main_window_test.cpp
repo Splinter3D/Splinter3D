@@ -7,6 +7,7 @@
 #include "ui/framework/wx/ids/ids.hpp"
 #include "ui/layouts/layout_registration.hpp"
 #include "ui/menus/menu_registration.hpp"
+#include "ui/panels/models_panel/models_panel.hpp"
 #include "ui/panels/panel_registration.hpp"
 #include "ui/panels/settings_panel/settings_panel.hpp"
 #include "ui/panels/side_dock/side_dock.hpp"
@@ -22,10 +23,13 @@
 #include <cmath>
 #include <filesystem>
 #include <gp_Pnt.hxx>
+#include <optional>
 #include <thread>
 #include <vector>
+#include <wx/button.h>
 #include <wx/combobox.h>
 #include <wx/glcanvas.h>
+#include <wx/listctrl.h>
 #include <wx/menu.h>
 #include <wx/textentry.h>
 #include <wx/tglbtn.h>
@@ -269,6 +273,51 @@ TEST_CASE_METHOD(MainWindowFixture, "MainWindow: the dock has a settings page li
     CHECK(findDescendant<ui::widgets::KeyBindButton>(settings) != nullptr);
 }
 
+TEST_CASE_METHOD(MainWindowFixture, "MainWindow: the dock has a models page listing the models", "[integration][ui][main_window]")
+{
+    auto* dock   = findDescendant<ui::panels::SideDock>(window.get());
+    auto* models = findDescendant<ui::panels::ModelsPanel>(window.get());
+    REQUIRE(dock != nullptr);
+    REQUIRE(models != nullptr);
+    REQUIRE(dock->GetButton(models) != nullptr);
+    auto* list = findDescendant<wxListCtrl>(models);
+    REQUIRE(list != nullptr);
+    CHECK(list->GetItemCount() == 0);
+
+    REQUIRE(viewer->loadFile(kCube));
+    REQUIRE(settle());
+    CHECK(list->GetItemCount() == 1);
+}
+
+TEST_CASE_METHOD(MainWindowFixture, "MainWindow: a page's shortcut opens it, and closes it when open", "[integration][ui][main_window][shortcuts]")
+{
+    auto* dock = findDescendant<ui::panels::SideDock>(window.get());
+    REQUIRE(dock != nullptr);
+    const auto press = [this](int keyCode, bool shift) {
+        wxKeyEvent event(wxEVT_CHAR_HOOK);
+        event.m_keyCode = keyCode;
+        event.SetControlDown(true);
+        event.SetShiftDown(shift);
+        event.SetEventObject(window.get());
+        window->ProcessWindowEvent(event);
+        tests::support::pumpEvents();
+    };
+    wxWindow* const models   = findDescendant<ui::panels::ModelsPanel>(window.get());
+    wxWindow* const tasks    = findDescendant<ui::panels::TasksPanel>(window.get());
+    wxWindow* const settings = findDescendant<ui::panels::SettingsPanel>(window.get());
+
+    press('O', true);
+    CHECK(dock->CurrentPage() == models);
+    press('T', true); // another page's key switches to it
+    CHECK(dock->CurrentPage() == tasks);
+    press(',', false);
+    CHECK(dock->CurrentPage() == settings);
+    CHECK(settings->IsShown());
+    press(',', false);
+    CHECK(dock->CurrentPage() == nullptr);
+    CHECK_FALSE(settings->IsShown());
+}
+
 TEST_CASE_METHOD(MainWindowFixture, "MainWindow: the File menu shows the current shortcuts", "[integration][ui][main_window][settings]")
 {
     wxMenuItem* save = window->GetMenuBar()->FindItem(ids::file::kSave);
@@ -292,7 +341,8 @@ namespace
             REQUIRE(viewer->loadFile(kCube));
             REQUIRE(settle());
             platform::settings::SettingsRegistry::getInstance().reset(ui::windows::kConfirmDeleteSetting);
-            window->SetConfirmDelete([this](const wxString& message) {
+            window->SetConfirmDelete([this](const wxString& title, const wxString& message) {
+                titles.push_back(title);
                 asked.push_back(message);
                 return answer;
             });
@@ -325,6 +375,7 @@ namespace
 
         wxComboBox*           combo = nullptr;
         std::vector<wxString> asked;
+        std::vector<wxString> titles;
         bool                  answer = true;
     };
 } // namespace
@@ -339,6 +390,34 @@ TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: the selection drives the t
     viewer->ClearSelection();
     CHECK(toolbar->GetTargetIndex() == -1);
     CHECK(combo->GetCount() == 3);
+}
+
+TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: the models list and the viewer share the selection", "[integration][ui][main_window][selection]")
+{
+    auto* list = findDescendant<wxListCtrl>(findDescendant<ui::panels::ModelsPanel>(window.get()));
+    REQUIRE(list != nullptr);
+    REQUIRE(list->GetItemCount() == 2);
+    const auto clickRow = [list](int row, bool command) {
+        wxRect rect;
+        REQUIRE(list->GetItemRect(row, rect));
+        wxMouseEvent event(wxEVT_LEFT_DOWN);
+        event.m_x = rect.x + 4;
+        event.m_y = rect.y + rect.height / 2;
+        event.SetControlDown(command);
+        event.SetEventObject(list);
+        list->ProcessWindowEvent(event);
+    };
+
+    clickRow(1, false);
+    CHECK(viewer->GetSelectedIndices() == std::vector<int>{1});
+    clickRow(0, true);
+    CHECK(viewer->GetSelectedIndices() == std::vector<int>{1, 0});
+    CHECK(list->GetItemState(0, wxLIST_STATE_SELECTED) != 0);
+    CHECK(list->GetItemState(1, wxLIST_STATE_SELECTED) != 0);
+
+    viewer->SelectOnly(0); // from the viewport
+    CHECK(list->GetItemState(0, wxLIST_STATE_SELECTED) != 0);
+    CHECK(list->GetItemState(1, wxLIST_STATE_SELECTED) == 0);
 }
 
 TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: the target dropdown drives the selection", "[integration][ui][main_window][selection]")
@@ -381,6 +460,7 @@ TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: deleting asks first", "[in
     REQUIRE(settle());
     CHECK(viewer->GetModelNames().size() == 2);
     CHECK(asked == std::vector<wxString>{"Delete \"cube.stl\"?"});
+    CHECK(titles == std::vector<wxString>{"Delete model"});
     CHECK(viewer->GetSelectedIndices() == std::vector<int>{0}); // nothing changed
 
     answer = true;
@@ -406,6 +486,7 @@ TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: deleting several models", 
     window->DeleteModels(viewer->GetSelectedIndices());
     REQUIRE(settle());
     CHECK(asked == std::vector<wxString>{"Delete 2 models?"});
+    CHECK(titles == std::vector<wxString>{"Delete models"});
     CHECK_FALSE(viewer->hasModel());
 }
 
@@ -432,11 +513,62 @@ TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: the delete key deletes the
     CHECK(viewer->GetModelNames() == std::vector<wxString>{"cube.stl"});
 }
 
+TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: H hides the selected models", "[integration][ui][main_window][selection]")
+{
+    const auto pressH = [this] {
+        wxKeyEvent key(wxEVT_CHAR_HOOK);
+        key.m_keyCode = 'H';
+        key.SetEventObject(window.get());
+        window->ProcessWindowEvent(key);
+    };
+    REQUIRE(platform::settings::SettingsRegistry::getInstance().get("keys.hide_selection") == "H");
+    pressH(); // nothing selected: nothing hidden
+    CHECK(viewer->GetModelVisibility() == std::vector<bool>{true, true});
+
+    viewer->SelectOnly(1);
+    pressH();
+    CHECK(viewer->GetModelVisibility() == std::vector<bool>{true, false});
+    CHECK(viewer->GetSelectedIndices().empty());
+}
+
+TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: the models page's buttons act on the selection", "[integration][ui][main_window][selection]")
+{
+    auto* models = findDescendant<ui::panels::ModelsPanel>(window.get());
+    REQUIRE(models != nullptr);
+    const auto press = [models](const wxString& label) {
+        for (wxWindow* child : models->GetChildren())
+            if (auto* button = dynamic_cast<wxButton*>(child); button != nullptr && button->GetLabel() == label)
+            {
+                REQUIRE(button->IsEnabled());
+                wxCommandEvent event(wxEVT_BUTTON, button->GetId());
+                event.SetEventObject(button);
+                button->ProcessWindowEvent(event);
+                return;
+            }
+        FAIL("no enabled button " << label.utf8_string());
+    };
+
+    viewer->SelectOnly(1);
+    press("Show only");
+    CHECK(viewer->GetModelVisibility() == std::vector<bool>{false, true});
+    CHECK(viewer->GetSelectedIndices() == std::vector<int>{1}); // still selected
+
+    press("Hide");
+    CHECK(viewer->GetModelVisibility() == std::vector<bool>{false, false});
+
+    viewer->SetModelVisibility(0, true);
+    viewer->SelectOnly(0);
+    press("Delete");
+    REQUIRE(settle());
+    CHECK(titles == std::vector<wxString>{"Delete model"});
+    CHECK(viewer->GetModelNames() == std::vector<wxString>{"cube.stl (2)"});
+}
+
 TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: a removal during the delete dialog doesn't change what is deleted", "[integration][ui][main_window][selection]")
 {
     REQUIRE(viewer->loadFile(kCube));
     REQUIRE(settle());
-    window->SetConfirmDelete([this](const wxString&) {
+    window->SetConfirmDelete([this](const wxString&, const wxString&) {
         viewer->RemoveModel(0); // an earlier removal lands while the dialog is up
         return true;
     });
@@ -445,13 +577,84 @@ TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: a removal during the delet
     CHECK(viewer->GetModelNames() == std::vector<wxString>{"cube.stl (3)"});
 }
 
-TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: picking a hidden model in the dropdown selects nothing", "[integration][ui][main_window][selection]")
+TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: picking a hidden model in the dropdown selects it", "[integration][ui][main_window][selection]")
 {
     viewer->SetModelVisibility(1, false);
     viewer->SelectOnly(0);
     pick(2); // the hidden model
-    CHECK(viewer->GetSelectedIndices().empty());
-    CHECK(toolbar->GetTargetIndex() == -1); // the dropdown says what is selected
+    CHECK(viewer->GetSelectedIndices() == std::vector<int>{1});
+    CHECK(toolbar->GetTargetIndex() == 1);
+    CHECK(viewer->GetModelVisibility() == std::vector<bool>{true, false});
+}
+
+TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: Command/Ctrl+D duplicates the selection, asking how many times", "[integration][ui][main_window][selection]")
+{
+    std::vector<std::size_t> askedFor; // how many models each question was about
+    std::optional<int>       copies = 2;
+    window->SetAskCopies([&](std::size_t models) {
+        askedFor.push_back(models);
+        return copies;
+    });
+    const auto pressD = [this] {
+        wxKeyEvent key(wxEVT_CHAR_HOOK);
+        key.m_keyCode = 'D';
+        key.SetControlDown(true);
+        key.SetEventObject(window.get());
+        window->ProcessWindowEvent(key);
+    };
+    REQUIRE(platform::settings::SettingsRegistry::getInstance().get("keys.duplicate") == "Ctrl+D");
+
+    pressD(); // nothing selected: not asked
+    CHECK(askedFor.empty());
+
+    viewer->SelectOnly(0);
+    viewer->ToggleSelected(1);
+    copies = std::nullopt; // cancelled
+    pressD();
+    CHECK(askedFor == std::vector<std::size_t>{2});
+    CHECK(viewer->GetModelNames().size() == 2);
+
+    copies = 2;
+    pressD();
+    CHECK(viewer->GetModelNames().size() == 6);
+    CHECK(viewer->GetSelectedIndices() == std::vector<int>{2, 3, 4, 5}); // the copies
+}
+
+TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: Show all shows every model", "[integration][ui][main_window]")
+{
+    auto* models = findDescendant<ui::panels::ModelsPanel>(window.get());
+    REQUIRE(models != nullptr);
+    wxButton* showAll = nullptr;
+    for (wxWindow* child : models->GetChildren())
+        if (auto* button = dynamic_cast<wxButton*>(child); button != nullptr && button->GetLabel() == "Show all")
+            showAll = button;
+    REQUIRE(showAll != nullptr);
+
+    viewer->SetModelVisibility(0, false);
+    viewer->SetModelVisibility(1, false);
+    wxCommandEvent event(wxEVT_BUTTON, showAll->GetId());
+    event.SetEventObject(showAll);
+    showAll->ProcessWindowEvent(event);
+    CHECK(viewer->GetModelVisibility() == std::vector<bool>{true, true});
+}
+
+TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: the Duplicate button copies the selection", "[integration][ui][main_window][selection]")
+{
+    window->SetAskCopies([](std::size_t) { return std::optional<int>{1}; });
+    auto* models = findDescendant<ui::panels::ModelsPanel>(window.get());
+    REQUIRE(models != nullptr);
+    wxButton* duplicate = nullptr;
+    for (wxWindow* child : models->GetChildren())
+        if (auto* button = dynamic_cast<wxButton*>(child); button != nullptr && button->GetLabel() == "Duplicate")
+            duplicate = button;
+    REQUIRE(duplicate != nullptr);
+
+    viewer->SelectOnly(1);
+    wxCommandEvent event(wxEVT_BUTTON, duplicate->GetId());
+    event.SetEventObject(duplicate);
+    duplicate->ProcessWindowEvent(event);
+    CHECK(viewer->GetModelNames() == std::vector<wxString>{"cube.stl", "cube.stl (2)", "cube.stl (3)"});
+    CHECK(viewer->GetSelectedIndices() == std::vector<int>{2});
 }
 
 TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: after clicking a model, the delete key deletes it even from a field", "[integration][ui][main_window][selection]")

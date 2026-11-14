@@ -723,15 +723,64 @@ TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: click threshold", "[integr
     CHECK_FALSE(canvas->HasCapture());
 }
 
-TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: hidden models can't be picked and leave the selection", "[integration][ui][viewer][selection]")
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: hidden models can't be picked and leave the selection when hidden", "[integration][ui][viewer][selection]")
 {
     const wxPoint c0 = centreOf(0);
     panel->SelectOnly(0);
     panel->SetModelVisibility(0, false);
     CHECK(panel->GetSelectedIndices().empty());
     CHECK(panel->PickModelAt(c0) == -1);
-    panel->SelectOnly(0); // not selectable while hidden
+}
+
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: hidden models can be selected, and stay hidden", "[integration][ui][viewer][selection]")
+{
+    panel->SetModelVisibility(0, false);
+    panel->SelectOnly(0);
+    CHECK(panel->GetSelectedIndices() == std::vector<int>{0});
+    panel->ToggleSelected(1);
+    CHECK(panel->GetSelectedIndices() == std::vector<int>{0, 1});
+    panel->Select({1, 0});
+    CHECK(panel->GetSelectedIndices() == std::vector<int>{1, 0});
+    CHECK(panel->GetModelVisibility() == std::vector<bool>{false, true});
+
+    panel->SetModelVisibility(0, true); // shown again: still selected, highlighted
+    CHECK(panel->GetSelectedIndices() == std::vector<int>{1, 0});
+    CHECK(panel->IsHighlighted(0));
+}
+
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: DuplicateModels adds copies in place", "[integration][ui][viewer]")
+{
+    panel->SetModelVisibility(0, false);
+    const auto added = panel->DuplicateModels({1, 0}, 2);
+    CHECK(added == std::vector<int>{2, 3, 4, 5});
+    CHECK(panel->GetModelNames() == std::vector<wxString>{"cube.stl", "cube.stl (2)", "cube.stl (3)", "cube.stl (4)",
+                                                          "cube.stl (5)", "cube.stl (6)"});
+    // Copies of model 1 (moved to x = 3) then of model 0, twice; hidden copies of the hidden one.
+    CHECK(panel->GetTransform(2).moveX == 3);
+    CHECK(panel->GetTransform(3).moveX == 0);
+    CHECK(panel->GetTransform(4).moveX == 3);
+    CHECK(panel->GetModelVisibility() == std::vector<bool>{false, true, true, false, true, false});
+
+    CHECK(panel->DuplicateModels({}, 3).empty());
+    CHECK(panel->DuplicateModels({0}, 0).empty());
+    CHECK(panel->DuplicateModels({9}, 1).empty()); // no such model
+    CHECK(panel->GetModelNames().size() == 6);
+}
+
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: Select picks several models at once, skipping unknown ones", "[integration][ui][viewer][selection]")
+{
+    int changes = 0;
+    panel->SetOnSelectionChanged([&] { ++changes; });
+    panel->Select({1, 0});
+    CHECK(panel->GetSelectedIndices() == std::vector<int>{1, 0});
+    CHECK(panel->IsHighlighted(0));
+    CHECK(panel->IsHighlighted(1));
+    CHECK(changes == 1);
+
+    changes = 0;
+    panel->Select({7}); // no such model
     CHECK(panel->GetSelectedIndices().empty());
+    CHECK(changes == 1);
 }
 
 TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: removed models leave the selection", "[integration][ui][viewer][selection]")

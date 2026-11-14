@@ -3,13 +3,12 @@
 #include "core/utils/data_root.hpp"
 #include "core/utils/version.hpp"
 #include "platform/locale/locale_manager.hpp"
-#include "ui/dialogs/dialogs.hpp"
-#include "ui/dialogs/model_management_dialog.hpp"
 #include "ui/framework/wx/ids/ids.hpp"
 #include "ui/framework/wx/locale/locale.hpp"
 #include "ui/icons/Icons.hpp"
 #include "ui/layouts/layout_registry.hpp"
 #include "ui/menus/menu_registry.hpp"
+#include "ui/panels/models_panel/models_panel.hpp"
 #include "ui/panels/panel_registry.hpp"
 #include "ui/panels/settings_panel/settings_panel.hpp"
 #include "ui/panels/side_dock/side_dock.hpp"
@@ -24,6 +23,7 @@
 #include <wx/iconbndl.h>
 #include <wx/image.h>
 #include <wx/msgdlg.h>
+#include <wx/numdlg.h>
 #include <wx/stdpaths.h>
 
 using ui::framework::wx::locale::tr;
@@ -74,8 +74,6 @@ namespace ui::windows
         InitializeAll();
     }
 
-    MainWindow::~MainWindow() = default;
-
     void MainWindow::InitMenuBarEntry(wxMenuBar* menuBar, const int menuId, const wxString& title)
     {
         using ui::menus::MenuRegistry;
@@ -100,6 +98,9 @@ namespace ui::windows
 
     namespace
     {
+        // The most copies one duplication makes (each is a model to draw).
+        constexpr int kMaxCopies = 100;
+
         wxString Version()
         {
             wxString version = wxString::FromUTF8(std::string(core::utils::kVersion));
@@ -157,6 +158,26 @@ namespace ui::windows
         if (side_dock_ != nullptr && layout_ != nullptr)
             layout_->AddRight(side_dock_);
 
+        if (side_dock_ != nullptr && model_viewer_ != nullptr)
+        {
+            ui::panels::ModelsPanel::Actions actions;
+            actions.names          = [this] { return model_viewer_->GetModelNames(); };
+            actions.visibility     = [this] { return model_viewer_->GetModelVisibility(); };
+            actions.selected       = [this] { return model_viewer_->GetSelectedIndices(); };
+            actions.setVisibility  = [this](int index, bool visible) { model_viewer_->SetModelVisibility(index, visible); };
+            actions.remove         = [this](int index) { DeleteModels({index}); };
+            actions.focus          = [this](int index) { model_viewer_->FocusModel(index); };
+            actions.select         = [this](std::vector<int> indices) { model_viewer_->Select(indices); };
+            actions.toggleSelected = [this](int index) { model_viewer_->ToggleSelected(index); };
+            actions.hide           = [this](std::vector<int> indices) { HideModels(indices); };
+            actions.removeMany     = [this](std::vector<int> indices) { DeleteModels(std::move(indices)); };
+            actions.showOnly       = [this](std::vector<int> indices) { ShowOnlyModels(indices); };
+            actions.duplicate      = [this](std::vector<int> indices) { DuplicateModels(indices); };
+            actions.showAll        = [this] { ShowAllModels(); };
+            models_panel_          = new ui::panels::ModelsPanel(side_dock_, std::move(actions));
+            side_dock_->AddPage(models_panel_, ui::icons::MakeIcon(ui::icons::modelsSvg), tr("models.title"));
+        }
+
         // Opens by itself while tasks run (unless turned off in the settings),
         // unless already opened by hand.
         platform::settings::SettingsRegistry::getInstance().add(
@@ -188,19 +209,6 @@ namespace ui::windows
                 side_dock_->AddPage(settings_panel_, ui::icons::MakeIcon(ui::icons::settingsSvg), tr("settings.title"));
         }
 
-        if (model_viewer_ != nullptr)
-        {
-            model_management_menu_ = std::make_unique<ui::dialogs::ModelManagementDialog>(
-                this,
-                [this] { return model_viewer_->GetModelNames(); },
-                [this] { return model_viewer_->GetModelVisibility(); },
-                [this](int index, bool visible) {
-                    model_viewer_->SetModelVisibility(index, visible);
-                },
-                [this](int index) { DeleteModels({index}); },
-                [this](int index) { model_viewer_->FocusModel(index); });
-        }
-
         Layout();
     }
 
@@ -219,8 +227,8 @@ namespace ui::windows
                     transform_toolbar_->OpenTool(std::exchange(reopen_tool_, ui::toolbars::TransformToolbar::ActiveTool::None));
                 SyncTransformFields();
                 UpdateGizmoState();
-                if (model_management_menu_ != nullptr)
-                    model_management_menu_->RefreshModelRows();
+                if (models_panel_ != nullptr)
+                    models_panel_->RefreshModelRows();
             });
 
             // The dropdown and the viewport selection are one and the same.
@@ -228,9 +236,6 @@ namespace ui::windows
                 if (index >= 0)
                 {
                     model_viewer_->SelectOnly(index);
-                    // A hidden model can't be selected: nothing is, then.
-                    if (model_viewer_->GetSelectedIndices() != std::vector<int>{index})
-                        model_viewer_->ClearSelection();
                     SyncTargetToSelection();
                 }
                 else if (index == application::service::SceneService::kAllModels)
@@ -239,6 +244,8 @@ namespace ui::windows
                 UpdateGizmoState();
             });
             model_viewer_->SetOnSelectionChanged([this] {
+                if (models_panel_ != nullptr)
+                    models_panel_->ShowSelection();
                 SyncTargetToSelection();
                 SyncTransformFields();
                 UpdateGizmoState();
@@ -265,11 +272,25 @@ namespace ui::windows
                 model_viewer_->saveFile();
         };
         callbacks.onExit            = [this] { Close(); };
-        callbacks.onModelManagement = [this] { ShowModelManagement(); };
+        callbacks.onModelsPanel     = [this] { ToggleDockPage(models_panel_); };
+        callbacks.onTasksPanel      = [this] { ToggleDockPage(tasks_panel_); };
+        callbacks.onSettingsPanel   = [this] { ToggleDockPage(settings_panel_); };
         callbacks.onDeleteSelection = [this] {
             if (model_viewer_ == nullptr || model_viewer_->GetSelectedIndices().empty())
                 return false;
             DeleteModels(model_viewer_->GetSelectedIndices());
+            return true;
+        };
+        callbacks.onHideSelection = [this] {
+            if (model_viewer_ == nullptr || model_viewer_->GetSelectedIndices().empty())
+                return false;
+            HideModels(model_viewer_->GetSelectedIndices());
+            return true;
+        };
+        callbacks.onDuplicateSelection = [this] {
+            if (model_viewer_ == nullptr || model_viewer_->GetSelectedIndices().empty())
+                return false;
+            DuplicateModels(model_viewer_->GetSelectedIndices());
             return true;
         };
         callbacks.onDeselect = [this] {
@@ -367,6 +388,8 @@ namespace ui::windows
             }
             else if (page != nullptr && page == tasks_panel_ && side_dock_->IsOpenedManually() && reloaded->tasks_panel_ != nullptr)
                 reloaded->side_dock_->Open(reloaded->tasks_panel_);
+            else if (page != nullptr && page == models_panel_ && reloaded->models_panel_ != nullptr)
+                reloaded->side_dock_->Open(reloaded->models_panel_);
         }
         wxTheApp->SetTopWindow(reloaded);
         Destroy();
@@ -409,7 +432,7 @@ namespace ui::windows
         confirm_quit_ = std::move(confirm);
     }
 
-    void MainWindow::SetConfirmDelete(std::function<bool(const wxString& message)> confirm)
+    void MainWindow::SetConfirmDelete(std::function<bool(const wxString& title, const wxString& message)> confirm)
     {
         confirm_delete_ = std::move(confirm);
     }
@@ -417,6 +440,11 @@ namespace ui::windows
     void MainWindow::SetConfirmReload(std::function<bool(std::size_t pending)> confirm)
     {
         confirm_reload_ = std::move(confirm);
+    }
+
+    void MainWindow::SetAskCopies(std::function<std::optional<int>(std::size_t models)> ask)
+    {
+        ask_copies_ = std::move(ask);
     }
 #endif
 
@@ -444,7 +472,16 @@ namespace ui::windows
                 indices.size() == 1
                     ? tr("dialogs.delete_model.one", {{"name", names[static_cast<std::size_t>(indices.front())]}})
                     : tr("dialogs.delete_model.many", {{"count", wxString::Format("%zu", indices.size())}});
-            const bool confirmed = confirm_delete_ ? confirm_delete_(message) : ui::dialogs::confirm(this, message);
+            const wxString title     = tr(indices.size() == 1 ? "dialogs.delete_model.title_one" : "dialogs.delete_model.title_many");
+            bool           confirmed = false;
+            if (confirm_delete_)
+                confirmed = confirm_delete_(title, message);
+            else
+            {
+                wxMessageDialog dialog(this, message, title, wxYES_NO | wxNO_DEFAULT | wxICON_WARNING);
+                dialog.SetYesNoLabels(tr("dialogs.delete_model.confirm"), tr("dialogs.delete_model.cancel"));
+                confirmed = dialog.ShowModal() == wxID_YES;
+            }
             if (!confirmed)
                 return;
         }
@@ -461,6 +498,62 @@ namespace ui::windows
         model_viewer_->ClearSelection();
     }
 
+    void MainWindow::HideModels(const std::vector<int>& indices)
+    {
+        if (model_viewer_ == nullptr)
+            return;
+        for (const int index : indices)
+            model_viewer_->SetModelVisibility(index, false);
+        if (models_panel_ != nullptr)
+            models_panel_->RefreshModelRows();
+    }
+
+    void MainWindow::DuplicateModels(const std::vector<int>& indices)
+    {
+        if (model_viewer_ == nullptr || indices.empty())
+            return;
+        std::optional<int> copies;
+        if (ask_copies_)
+            copies = ask_copies_(indices.size());
+        else
+        {
+            wxNumberEntryDialog dialog(this, tr("dialogs.duplicate.message"), tr("dialogs.duplicate.prompt"),
+                                       tr(indices.size() == 1 ? "dialogs.duplicate.title_one" : "dialogs.duplicate.title_many"),
+                                       1, 1, kMaxCopies);
+            if (dialog.ShowModal() == wxID_OK)
+                copies = static_cast<int>(dialog.GetValue());
+        }
+        if (!copies || *copies < 1)
+            return;
+        model_viewer_->Select(model_viewer_->DuplicateModels(indices, std::min(*copies, kMaxCopies)));
+    }
+
+    void MainWindow::ShowAllModels()
+    {
+        if (model_viewer_ == nullptr)
+            return;
+        const auto visibility = model_viewer_->GetModelVisibility();
+        for (std::size_t index = 0; index < visibility.size(); ++index)
+            if (!visibility[index])
+                model_viewer_->SetModelVisibility(static_cast<int>(index), true);
+        if (models_panel_ != nullptr)
+            models_panel_->RefreshModelRows();
+    }
+
+    void MainWindow::ShowOnlyModels(const std::vector<int>& indices)
+    {
+        if (model_viewer_ == nullptr)
+            return;
+        const std::size_t count = model_viewer_->GetModelNames().size();
+        for (std::size_t index = 0; index < count; ++index)
+        {
+            const int i = static_cast<int>(index);
+            model_viewer_->SetModelVisibility(i, std::find(indices.begin(), indices.end(), i) != indices.end());
+        }
+        if (models_panel_ != nullptr)
+            models_panel_->RefreshModelRows();
+    }
+
     void MainWindow::SyncTargetToSelection()
     {
         if (model_viewer_ == nullptr || transform_toolbar_ == nullptr)
@@ -475,11 +568,10 @@ namespace ui::windows
             transform_toolbar_->SetTargetIndex(ui::framework::occt::ModelViewerPanel::kSelectionTarget);
     }
 
-    void MainWindow::ShowModelManagement()
+    void MainWindow::ToggleDockPage(wxWindow* page)
     {
-        if (model_management_menu_ == nullptr)
-            return;
-        model_management_menu_->ToggleVisibility();
+        if (side_dock_ != nullptr && page != nullptr)
+            side_dock_->Toggle(page);
     }
 
     void MainWindow::ApplyTransform()

@@ -31,8 +31,9 @@ namespace ui::framework::wx
           public:
             /**
              * @param actions What the shortcuts that are not menu commands do,
-             * by setting key ("keys.model_management", "keys.delete_model",
-             * "keys.deselect");
+             * by setting key ("keys.model_management", "keys.tasks_panel",
+             * "keys.settings_panel", "keys.delete_model", "keys.hide_selection",
+             * "keys.duplicate", "keys.deselect");
              * false when there was nothing to do: the key then goes on to the
              * focused control.
              */

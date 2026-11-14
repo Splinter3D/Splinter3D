@@ -10,15 +10,12 @@
 #include <cstddef>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <vector>
-
-namespace ui::dialogs
-{
-    class ModelManagementDialog;
-}
 
 namespace ui::panels
 {
+    class ModelsPanel;
     class SettingsPanel;
     class SideDock;
     class TasksPanel;
@@ -42,9 +39,6 @@ namespace ui::windows
     {
       public:
         MainWindow();
-        // Defined in main_window.cpp, where ModelManagementDialog is a complete
-        // type: model_management_menu_'s unique_ptr can only be destroyed there.
-        ~MainWindow() override;
 
         /**
          * @brief Removes these models (indices as the viewer's), after asking
@@ -52,17 +46,30 @@ namespace ui::windows
          * nothing for an empty list.
          */
         void DeleteModels(std::vector<int> indices);
+        /** @brief Hides these models (they leave the selection). */
+        void HideModels(const std::vector<int>& indices);
+        /** @brief Shows these models and hides every other. */
+        void ShowOnlyModels(const std::vector<int>& indices);
+        /** @brief Shows every model. */
+        void ShowAllModels();
+        /**
+         * @brief Asks how many copies to make, then copies these models in
+         * place that many times; the copies become the selection.
+         */
+        void DuplicateModels(const std::vector<int>& indices);
 
 #if defined(SPLINTER3D_TESTING)
         /** @brief Test-only: replaces the "quit with tasks pending?" dialog (true = quit). */
         void SetConfirmQuit(std::function<bool(std::size_t pending)> confirm);
         /** @brief Test-only: replaces the "delete?" dialog (true = delete). */
-        void SetConfirmDelete(std::function<bool(const wxString& message)> confirm);
+        void SetConfirmDelete(std::function<bool(const wxString& title, const wxString& message)> confirm);
         /**
          * @brief Test-only: replaces the "reload for the new language?" dialog
          * (true = reload). With tasks pending it is only told (the answer is ignored).
          */
         void SetConfirmReload(std::function<bool(std::size_t pending)> confirm);
+        /** @brief Test-only: replaces the "how many copies?" dialog (nullopt = cancelled). */
+        void SetAskCopies(std::function<std::optional<int>(std::size_t models)> ask);
 #endif
 
       protected:
@@ -81,19 +88,21 @@ namespace ui::windows
         ui::framework::occt::ModelViewerPanel*   model_viewer_      = nullptr;
         ui::toolbars::TransformToolbar*          transform_toolbar_ = nullptr;
         ui::panels::SideDock*                    side_dock_         = nullptr;
+        ui::panels::ModelsPanel*                 models_panel_      = nullptr;
         ui::panels::TasksPanel*                  tasks_panel_       = nullptr;
         ui::panels::SettingsPanel*               settings_panel_    = nullptr;
         // Asked before closing with tasks pending; true quits. Empty: a dialog asks.
         std::function<bool(std::size_t pending)> confirm_quit_;
         // Asked before deleting models; true deletes. Empty: a dialog asks.
-        std::function<bool(const wxString& message)> confirm_delete_;
+        std::function<bool(const wxString& title, const wxString& message)> confirm_delete_;
         // Asked when the language changes; true reloads. Empty: a dialog asks.
         std::function<bool(std::size_t pending)> confirm_reload_;
-        platform::settings::Subscription         language_subscription_;
+        // Asked how many copies to make; nullopt cancels. Empty: a dialog asks.
+        std::function<std::optional<int>(std::size_t models)> ask_copies_;
+        platform::settings::Subscription                      language_subscription_;
         // The tool to open once the models are in (a reload's, see Reload()).
         ui::toolbars::TransformToolbar::ActiveTool               reopen_tool_ = ui::toolbars::TransformToolbar::ActiveTool::None;
         std::unique_ptr<ui::framework::wx::events::EventManager> event_manager_;
-        std::unique_ptr<ui::dialogs::ModelManagementDialog>      model_management_menu_;
 
         // Helper function to initialize a menu bar entry and add it to the menu bar.
         void InitMenuBarEntry(wxMenuBar* menuBar, int menuId, const wxString& title);
@@ -112,7 +121,8 @@ namespace ui::windows
         // Puts the toolbar's target dropdown on the viewer's selection.
         void SyncTargetToSelection();
 
-        void ShowModelManagement();
+        // Opens page in the side dock, or closes it when it is the open one.
+        void ToggleDockPage(wxWindow* page);
 
         // Asks before quitting with tasks pending (vetoes on "Keep working"),
         // then cancels them and waits until none runs.

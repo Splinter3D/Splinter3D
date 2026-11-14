@@ -35,7 +35,9 @@ namespace
             callbacks.onSave             = [this] { fired.emplace_back("save"); };
             callbacks.onExit             = [this] { fired.emplace_back("exit"); };
             callbacks.onTransformChanged = [this] { fired.emplace_back("transform"); };
-            callbacks.onModelManagement  = [this] { fired.emplace_back("models"); };
+            callbacks.onModelsPanel      = [this] { fired.emplace_back("models"); };
+            callbacks.onTasksPanel       = [this] { fired.emplace_back("tasks"); };
+            callbacks.onSettingsPanel    = [this] { fired.emplace_back("settings"); };
             callbacks.onDeselect         = [this] {
                 fired.emplace_back("deselect");
                 return true;
@@ -50,11 +52,12 @@ namespace
             manager->bindAll();
         }
 
-        void pressKey(int keyCode, bool control)
+        void pressKey(int keyCode, bool control, bool shift = false)
         {
             wxKeyEvent event(wxEVT_CHAR_HOOK);
             event.m_keyCode = keyCode;
             event.SetControlDown(control);
+            event.SetShiftDown(shift);
             event.SetEventObject(frame.get());
             frame->ProcessWindowEvent(event);
         }
@@ -174,14 +177,22 @@ TEST_CASE_METHOD(EventManagerFixture, "EventManager: the delete shortcut calls i
     CHECK(fired == std::vector<std::string>{"delete"});
 
     fired.clear();
-    pressKey('O', true); // Open, not model management
-    wxKeyEvent models(wxEVT_CHAR_HOOK);
-    models.m_keyCode = 'O';
-    models.SetControlDown(true);
-    models.SetShiftDown(true);
-    models.SetEventObject(frame.get());
-    frame->ProcessWindowEvent(models);
+    pressKey('O', true); // Open, not the models panel
+    pressKey('O', true, true);
     CHECK(fired == std::vector<std::string>{"open", "models"});
+}
+
+TEST_CASE_METHOD(EventManagerFixture, "EventManager: each side dock page has a shortcut", "[integration][ui][events][shortcuts]")
+{
+    auto& settings = platform::settings::SettingsRegistry::getInstance();
+    CHECK(settings.get("keys.model_management") == "Ctrl+Shift+O");
+    CHECK(settings.get("keys.tasks_panel") == "Ctrl+Shift+T");
+    CHECK(settings.get("keys.settings_panel") == "Ctrl+,");
+
+    pressKey('O', true, true);
+    pressKey('T', true, true);
+    pressKey(',', true);
+    CHECK(fired == std::vector<std::string>{"models", "tasks", "settings"});
 }
 
 TEST_CASE_METHOD(EventManagerFixture, "EventManager: bare keys are left to text fields", "[integration][ui][events][shortcuts]")

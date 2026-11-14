@@ -36,10 +36,14 @@
       "new": "Nuevo",
       "open": "Abrir",
       "save": "Guardar",
-      "model_management": "Gesti\u00f3n de modelos",
+      "model_management": "Panel de modelos",
+      "tasks_panel": "Panel de tareas",
+      "settings_panel": "Panel de ajustes",
       "fullscreen": "Pantalla completa",
       "quit": "Salir",
       "delete_model": "Eliminar modelo",
+      "hide_selection": "Ocultar los modelos seleccionados",
+      "duplicate": "Duplicar los modelos seleccionados",
       "deselect": "Cerrar la herramienta y deseleccionar",
       "press": "Pulse las teclas\u2026",
       "none": "Ninguno",
@@ -123,11 +127,23 @@
       "unknown": "error desconocido"
     }
   },
+  "models": {
+    "title": "Modelos",
+    "column": "Modelo",
+    "hide": "Ocultar",
+    "delete": "Eliminar",
+    "show_only": "Mostrar solo",
+    "duplicate": "Duplicar",
+    "show_all": "Mostrar todo",
+    "hide_tooltip": "Ocultar los modelos seleccionados",
+    "delete_tooltip": "Eliminar los modelos seleccionados",
+    "show_only_tooltip": "Mostrar los modelos seleccionados y ocultar los dem\u00e1s",
+    "duplicate_tooltip": "Copiar los modelos seleccionados en su sitio",
+    "show_all_tooltip": "Mostrar todos los modelos",
+    "include_hidden": "Incluir ocultos",
+    "include_hidden_tooltip": "Los rangos con May\u00fas-clic tambi\u00e9n seleccionan los modelos ocultos"
+  },
   "dialogs": {
-    "models": {
-      "title": "Modelos",
-      "column": "Modelo"
-    },
     "info": "Informaci\u00f3n",
     "warning": "Advertencia",
     "error": "Error",
@@ -139,7 +155,17 @@
     "please_wait": "Espere un momento",
     "delete_model": {
       "one": "\u00bfEliminar \u00ab{name}\u00bb?",
-      "many": "\u00bfEliminar {count} modelos?"
+      "many": "\u00bfEliminar {count} modelos?",
+      "title_one": "Eliminar modelo",
+      "title_many": "Eliminar modelos",
+      "confirm": "Eliminar",
+      "cancel": "Cancelar"
+    },
+    "duplicate": {
+      "title_one": "Duplicar modelo",
+      "title_many": "Duplicar modelos",
+      "message": "\u00bfCu\u00e1ntas copias?",
+      "prompt": "Copias:"
     }
   },
   "viewer": {

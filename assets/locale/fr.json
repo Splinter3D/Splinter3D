@@ -36,10 +36,14 @@
       "new": "Nouveau",
       "open": "Ouvrir",
       "save": "Enregistrer",
-      "model_management": "Gestion des mod\u00e8les",
+      "model_management": "Panneau des mod\u00e8les",
+      "tasks_panel": "Panneau des t\u00e2ches",
+      "settings_panel": "Panneau des param\u00e8tres",
       "fullscreen": "Plein \u00e9cran",
       "quit": "Quitter",
       "delete_model": "Supprimer le mod\u00e8le",
+      "hide_selection": "Masquer les mod\u00e8les s\u00e9lectionn\u00e9s",
+      "duplicate": "Dupliquer les mod\u00e8les s\u00e9lectionn\u00e9s",
       "deselect": "Fermer l'outil et d\u00e9s\u00e9lectionner",
       "press": "Appuyez sur des touches\u2026",
       "none": "Aucun",
@@ -123,11 +127,23 @@
       "unknown": "erreur inconnue"
     }
   },
+  "models": {
+    "title": "Mod\u00e8les",
+    "column": "Mod\u00e8le",
+    "hide": "Masquer",
+    "delete": "Supprimer",
+    "show_only": "Afficher seuls",
+    "duplicate": "Dupliquer",
+    "show_all": "Tout afficher",
+    "hide_tooltip": "Masquer les mod\u00e8les s\u00e9lectionn\u00e9s",
+    "delete_tooltip": "Supprimer les mod\u00e8les s\u00e9lectionn\u00e9s",
+    "show_only_tooltip": "Afficher les mod\u00e8les s\u00e9lectionn\u00e9s et masquer les autres",
+    "duplicate_tooltip": "Copier les mod\u00e8les s\u00e9lectionn\u00e9s sur place",
+    "show_all_tooltip": "Afficher tous les mod\u00e8les",
+    "include_hidden": "Inclure les masqu\u00e9s",
+    "include_hidden_tooltip": "Les plages Maj-clic s\u00e9lectionnent aussi les mod\u00e8les masqu\u00e9s"
+  },
   "dialogs": {
-    "models": {
-      "title": "Mod\u00e8les",
-      "column": "Mod\u00e8le"
-    },
     "info": "Information",
     "warning": "Avertissement",
     "error": "Erreur",
@@ -139,7 +155,17 @@
     "please_wait": "Veuillez patienter",
     "delete_model": {
       "one": "Supprimer \u00ab {name} \u00bb ?",
-      "many": "Supprimer {count} mod\u00e8les ?"
+      "many": "Supprimer {count} mod\u00e8les ?",
+      "title_one": "Supprimer le mod\u00e8le",
+      "title_many": "Supprimer les mod\u00e8les",
+      "confirm": "Supprimer",
+      "cancel": "Annuler"
+    },
+    "duplicate": {
+      "title_one": "Dupliquer le mod\u00e8le",
+      "title_many": "Dupliquer les mod\u00e8les",
+      "message": "Combien de copies ?",
+      "prompt": "Copies :"
     }
   },
   "viewer": {

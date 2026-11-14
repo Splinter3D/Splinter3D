@@ -111,17 +111,24 @@ namespace ui::framework::occt
         [[nodiscard]] std::vector<bool> GetModelVisibility() const;
         void                            SetModelVisibility(int modelIndex, bool visible);
         void                            RemoveModel(int modelIndex);
-        void                            FocusModel(int modelIndex);
+        // Adds copies of these models where they are (same shape, placement,
+        // B-Rep and visibility; named after them, see SceneService::baseName),
+        // copies times over. Returns the copies' indices, in the order added.
+        std::vector<int> DuplicateModels(const std::vector<int>& modelIndices, int copies);
+        void             FocusModel(int modelIndex);
 
         // The models the user picked, drawn in a lighter shade: a click on a
         // model selects just it, Cmd/Ctrl-click adds or removes it, a click
         // on empty space clears the selection. Indices as GetModelNames(), in
-        // the order they were picked. Hidden models can't be selected, and
-        // leave the selection when hidden or removed.
+        // the order they were picked. Hidden models can't be picked in the
+        // viewport but can be selected (e.g. from the models list); hiding or
+        // removing a model takes it out of the selection.
         [[nodiscard]] std::vector<int> GetSelectedIndices() const;
         void                           SelectOnly(int modelIndex);
-        void                           ToggleSelected(int modelIndex);
-        void                           ClearSelection();
+        // The selection becomes these models (hidden or unknown ones left out).
+        void Select(const std::vector<int>& modelIndices);
+        void ToggleSelected(int modelIndex);
+        void ClearSelection();
         // Invoked after every change of the selection.
         void SetOnSelectionChanged(std::function<void()> callback);
         // Invoked when a plain click on empty space cleared the selection.
