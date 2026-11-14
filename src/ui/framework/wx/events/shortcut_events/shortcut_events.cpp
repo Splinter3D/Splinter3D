@@ -27,7 +27,12 @@ namespace ui::framework::wx
                 {"keys.open", "Ctrl+O", "settings.keys.open", ids::file::kOpen},
                 {"keys.save", "Ctrl+S", "settings.keys.save", ids::file::kSave},
                 {"keys.model_management", "Ctrl+Shift+O", "settings.keys.model_management", 0},
+#if defined(__WXOSX__)
+                // F11 is Mission Control's "Show Desktop" on macOS; ⌃⌘F is the platform's fullscreen key.
+                {"keys.fullscreen", "RawCtrl+Ctrl+F", "settings.keys.fullscreen", ids::view::kToggleFullscreen},
+#else
                 {"keys.fullscreen", "F11", "settings.keys.fullscreen", ids::view::kToggleFullscreen},
+#endif
                 {"keys.quit", "Ctrl+Q", "settings.keys.quit", ids::file::kExit},
             };
 
