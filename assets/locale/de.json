@@ -1,0 +1,216 @@
+{
+  "play": "Spielen",
+  "settings": {
+    "title": "Einstellungen",
+    "section": {
+      "general": "Allgemein",
+      "import": "Import",
+      "keys": "Tastenk\u00fcrzel"
+    },
+    "general": {
+      "language": "Sprache",
+      "language_system": "Systemsprache",
+      "restart": "Wird nach dem Neuladen des Fensters oder einem Neustart von Splinter3D wirksam."
+    },
+    "languages": {
+      "en": "English",
+      "fr": "Fran\u00e7ais",
+      "de": "Deutsch",
+      "es": "Espa\u00f1ol"
+    },
+    "tasks": {
+      "auto_open": "Aufgabenbereich \u00f6ffnen, wenn eine Aufgabe startet"
+    },
+    "models": {
+      "confirm_delete": "Vor dem L\u00f6schen eines Modells nachfragen",
+      "include_hidden": "Ausgeblendete Modelle in Umschalt-Klick-Bereiche der Modellliste einbeziehen"
+    },
+    "import": {
+      "precision": "Netzgenauigkeit",
+      "precision_single": "Einfach (float)",
+      "precision_double": "Doppelt",
+      "precision_note": "Einfache Genauigkeit halbiert den Speicher (STL-Dateien speichern floats); doppelte erh\u00e4lt die Genauigkeit \u00fcber Transformationen hinweg.",
+      "compute_brep": "B-Reps beim Import berechnen",
+      "compute_brep_note": "Konvertiert jedes importierte Modell im Hintergrund; bei gro\u00dfen Netzen langsam und speicherintensiv."
+    },
+    "keys": {
+      "new": "Neu",
+      "open": "\u00d6ffnen",
+      "save": "Speichern",
+      "model_management": "Modellbereich",
+      "tasks_panel": "Aufgabenbereich",
+      "settings_panel": "Einstellungsbereich",
+      "fullscreen": "Vollbild",
+      "quit": "Beenden",
+      "delete_model": "Modell l\u00f6schen",
+      "hide_selection": "Ausgew\u00e4hlte Modelle ausblenden",
+      "duplicate": "Ausgew\u00e4hlte Modelle duplizieren",
+      "deselect": "Werkzeug schlie\u00dfen und Auswahl aufheben",
+      "press": "Tasten dr\u00fccken\u2026",
+      "none": "Keine",
+      "reset_tooltip": "Zur\u00fcck zum Standardk\u00fcrzel",
+      "conflict": "Dieses K\u00fcrzel wird auch von einer anderen Aktion verwendet."
+    }
+  },
+  "quit": "Beenden",
+  "menu": {
+    "file": {
+      "title": "&Datei",
+      "new": "&Neu\tCtrl+N",
+      "open": "&\u00d6ffnen\tCtrl+O",
+      "save": "&Speichern\tCtrl+S",
+      "import": "&Importieren...",
+      "export": "&Exportieren...",
+      "exit": "&Beenden\tAlt+F4"
+    },
+    "about": {
+      "text": "wxWidgets-Demo\nAlle wichtigen Widgets an einem Ort.",
+      "title": "\u00dcber"
+    }
+  },
+  "window": {
+    "status": {
+      "ready": "Splinter3D {version} - bereit",
+      "dev_build": "(Entwicklerversion)"
+    },
+    "quit": {
+      "title": "Splinter3D beenden",
+      "message": "{count} Aufgabe(n) laufen noch oder warten. Abbrechen und beenden?",
+      "confirm": "Beenden",
+      "keep": "Weiterarbeiten"
+    },
+    "language": {
+      "title": "Sprache \u00e4ndern",
+      "message": "Die neue Sprache wird beim Neuladen des Fensters wirksam (ge\u00f6ffnete Modelle bleiben erhalten). Jetzt neu laden oder bis zum n\u00e4chsten Start warten?",
+      "reload": "Jetzt neu laden",
+      "later": "Sp\u00e4ter",
+      "busy": "{count} Aufgabe(n) laufen noch oder warten: Die neue Sprache wird beim n\u00e4chsten Start wirksam."
+    }
+  },
+  "toolbar": {
+    "transform": {
+      "move": "Verschieben",
+      "rotate": "Drehen",
+      "all_models": "Alle Modelle",
+      "selected": "{count} ausgew\u00e4hlt"
+    }
+  },
+  "tasks": {
+    "title": "Aufgaben",
+    "empty": "Keine Aufgaben",
+    "cancel": "Abbrechen",
+    "dismiss": "Schlie\u00dfen",
+    "failed": "Fehlgeschlagen: {error}",
+    "model_fallback": "Modell",
+    "name": {
+      "import": "{name} importieren",
+      "export": "{name} exportieren",
+      "move": "{name} verschieben",
+      "remove": "{name} entfernen",
+      "clear": "Szene leeren",
+      "convert": "{name} konvertieren",
+      "precision_double": "{name} in doppelte Genauigkeit konvertieren",
+      "precision_single": "{name} in einfache Genauigkeit konvertieren"
+    },
+    "status": {
+      "queued": "In Warteschlange",
+      "queued_waiting": "In Warteschlange \u00b7 {reason}",
+      "waiting_for_task": "wartet auf \u201e{name}\u201c",
+      "waiting_for_workers": "wartet auf Worker",
+      "cancelling": "Wird abgebrochen\u2026"
+    },
+    "error": {
+      "no_model": "kein Modell geladen",
+      "model_gone": "Modell \u201e{name}\u201c existiert nicht mehr",
+      "model_not_converted": "Modell \u201e{name}\u201c konnte nicht konvertiert werden",
+      "export_cancelled": "Export abgebrochen",
+      "export_failed": "Export nach {path} nicht m\u00f6glich",
+      "unknown": "unbekannter Fehler"
+    }
+  },
+  "models": {
+    "title": "Modelle",
+    "column": "Modell",
+    "hide": "Ausblenden",
+    "delete": "L\u00f6schen",
+    "show_only": "Nur diese zeigen",
+    "duplicate": "Duplizieren",
+    "show_all": "Alle zeigen",
+    "hide_tooltip": "Die ausgew\u00e4hlten Modelle ausblenden",
+    "delete_tooltip": "Die ausgew\u00e4hlten Modelle l\u00f6schen",
+    "show_only_tooltip": "Die ausgew\u00e4hlten Modelle zeigen und die anderen ausblenden",
+    "duplicate_tooltip": "Die ausgew\u00e4hlten Modelle an Ort und Stelle kopieren",
+    "show_all_tooltip": "Alle Modelle zeigen",
+    "include_hidden": "Ausgeblendete einbeziehen",
+    "include_hidden_tooltip": "Umschalt-Klick-Bereiche w\u00e4hlen auch ausgeblendete Modelle aus"
+  },
+  "dialogs": {
+    "info": "Info",
+    "warning": "Warnung",
+    "error": "Fehler",
+    "question": "Frage",
+    "input": "Eingabe",
+    "number": "Zahl:",
+    "open_file": "Datei \u00f6ffnen",
+    "all_files": "Alle Dateien (*.*)|*.*",
+    "please_wait": "Bitte warten",
+    "delete_model": {
+      "one": "\u201e{name}\u201c l\u00f6schen?",
+      "many": "{count} Modelle l\u00f6schen?",
+      "title_one": "Modell l\u00f6schen",
+      "title_many": "Modelle l\u00f6schen",
+      "confirm": "L\u00f6schen",
+      "cancel": "Abbrechen"
+    },
+    "duplicate": {
+      "title_one": "Modell duplizieren",
+      "title_many": "Modelle duplizieren",
+      "message": "Wie viele Kopien?",
+      "prompt": "Kopien:"
+    }
+  },
+  "viewer": {
+    "import": {
+      "title": "3D-Modell importieren"
+    },
+    "export": {
+      "title": "3D-Modell exportieren"
+    },
+    "filter": {
+      "stl": "STL-Dateien (*.stl)|*.stl|Alle Dateien (*.*)|*.*"
+    },
+    "error": {
+      "create": "Neues Modell konnte nicht erstellt werden: {error}",
+      "import": "Modell konnte nicht importiert werden: {error}",
+      "export_empty": "Export nicht m\u00f6glich: kein Modell geladen.",
+      "init": "Modellbetrachter konnte nicht initialisiert werden: {error}"
+    },
+    "precision": {
+      "message": "{count} geladene(s) Modell(e) sind in einer anderen Genauigkeit gespeichert. Ebenfalls in {precision} konvertieren?"
+    },
+    "convert_loaded": {
+      "title": "Geladene Modelle",
+      "convert": "Konvertieren",
+      "keep": "Unver\u00e4ndert lassen"
+    },
+    "brep": {
+      "message": "{count} geladene(s) Modell(e) haben noch keine B-Rep. Jetzt ebenfalls berechnen? Bei gro\u00dfen Netzen kann das dauern."
+    }
+  },
+  "showcase": {
+    "button": "Schaltfl\u00e4che",
+    "button_tooltip": "Eine einfache Schaltfl\u00e4che",
+    "check_box": "Kontrollk\u00e4stchen",
+    "option_a": "Option A",
+    "option_b": "Option B",
+    "option_c": "Option C",
+    "combo_placeholder": "Option ausw\u00e4hlen",
+    "item_1": "Element 1",
+    "item_2": "Element 2",
+    "item_3": "Element 3",
+    "radio_box": "Optionsfeld",
+    "text_hint": "Hier eingeben",
+    "toggle_button": "Umschalter",
+    "example": "ExamplePanel - Registry-Pipeline OK"
+  }
+}

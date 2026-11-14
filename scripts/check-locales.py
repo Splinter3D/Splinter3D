@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify that every locale/*.json file exposes the same message keys and {placeholder}
+"""Verify that every assets/locale/*.json file exposes the same message keys and {placeholder}
 patterns as the reference (first, alphabetically) locale file. Exits non-zero on any
 missing/extra key, type mismatch, or placeholder mismatch."""
 
@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 
-LOCALE_DIR = Path("locale")
+LOCALE_DIR = Path("assets/locale")
 # Matches both {{name}} and {name} placeholder forms used across locale strings.
 PLACEHOLDER_RE = re.compile(r"\{\{([^{}]+)\}\}|\{([^{}]*)\}")
 

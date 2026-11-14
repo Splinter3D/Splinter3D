@@ -128,3 +128,12 @@ TEST_CASE("LocaleManager: get() is a single shared instance", "[platform][locale
 {
     REQUIRE(&LocaleManager::get() == &LocaleManager::get());
 }
+
+TEST_CASE("LocaleManager: resolve() maps a language setting to a language", "[platform][locale]")
+{
+    CHECK(LocaleManager::resolve("fr") == "fr");
+    CHECK(LocaleManager::resolve("de") == "de");
+    // "default" is whichever supported language the system uses.
+    const std::string system = LocaleManager::resolve("default");
+    CHECK((system == "en" || system == "fr" || system == "de" || system == "es"));
+}

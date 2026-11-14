@@ -29,6 +29,7 @@ Not run directly by contributors; invoked through `scripts/build.sh` / `scripts/
 scripts/build.sh --tests --coverage    # configure, build, and run every test suite with coverage (see tests/README.md)
 scripts/build.sh --clean               # remove the build directory
 scripts/build.sh --ci                  # auto mode: no interactive prompts (used by CI)
+scripts/build.sh --release             # release build (CI): per-user settings/profiles; without it, a dev build keeps them in <data root>/dev-data and shows "(Dev Build)"
 scripts/build.sh --skip-configure      # rebuild an already-configured target without reconfiguring
 ```
 

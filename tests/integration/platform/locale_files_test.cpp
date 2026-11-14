@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-// Loads the real locale/*.json files through the C++ LocaleManager (key/placeholder
+// Loads the real assets/locale/*.json files through the C++ LocaleManager (key/placeholder
 // consistency between languages is checked separately by scripts/check-locales.py,
 // registered as the integration.check-locales CTest).
 

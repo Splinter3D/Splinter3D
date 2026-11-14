@@ -1,8 +1,12 @@
 #pragma once
 
 #include "../event_binder.hpp"
+#include "platform/settings/settings_registry.hpp"
 
 #include <functional>
+#include <map>
+#include <string>
+#include <vector>
 
 namespace ui::framework::wx
 {
@@ -11,17 +15,30 @@ namespace ui::framework::wx
         /**
          * @brief Handles application keyboard shortcuts.
          *
-         * This event binder registers global keyboard shortcuts
-         * such as Ctrl+S, Ctrl+O, F11, etc.
+         * Each shortcut is a KeyBind setting ("keys.save", default Ctrl+S, ...;
+         * see kShortcuts) the user can change in the settings panel. The File
+         * menu's items show the current ones.
          *
          * Shortcuts should trigger application actions rather than
          * containing business logic directly.
+         *
+         * While a text field has the focus, a key without Ctrl/Command or Alt
+         * (other than F1-F24 and Escape) is left to it: Backspace there edits
+         * the text.
          */
         class ShortcutEvents final : public EventBinder
         {
           public:
-            ShortcutEvents(wxFrame* frame, std::function<void()> onModelManagement)
-                : EventBinder(frame), on_model_management_(std::move(onModelManagement))
+            /**
+             * @param actions What the shortcuts that are not menu commands do,
+             * by setting key ("keys.model_management", "keys.tasks_panel",
+             * "keys.settings_panel", "keys.delete_model", "keys.hide_selection",
+             * "keys.duplicate", "keys.deselect");
+             * false when there was nothing to do: the key then goes on to the
+             * focused control.
+             */
+            ShortcutEvents(wxFrame* frame, std::map<std::string, std::function<bool()>> actions)
+                : EventBinder(frame), actions_(std::move(actions))
             {
             }
 
@@ -31,17 +48,13 @@ namespace ui::framework::wx
             void bind() override;
 
           private:
-            /**
-             * @brief Handles standard application shortcuts.
-             */
-            void bindCommonShortcuts();
+            void onKey(wxKeyEvent& event);
 
-            /**
-             * @brief Handles fullscreen shortcut.
-             */
-            void bindFullscreenShortcut();
+            /** @brief Shows the current shortcuts on the menu items they trigger. */
+            void syncMenus();
 
-            std::function<void()> on_model_management_;
+            std::map<std::string, std::function<bool()>>  actions_;
+            std::vector<platform::settings::Subscription> subscriptions_;
         };
 
     } // namespace events

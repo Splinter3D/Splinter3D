@@ -1,0 +1,216 @@
+{
+  "play": "Jugar",
+  "settings": {
+    "title": "Ajustes",
+    "section": {
+      "general": "General",
+      "import": "Importaci\u00f3n",
+      "keys": "Atajos de teclado"
+    },
+    "general": {
+      "language": "Idioma",
+      "language_system": "Idioma del sistema",
+      "restart": "Se aplica al recargar la ventana o al reiniciar Splinter3D."
+    },
+    "languages": {
+      "en": "English",
+      "fr": "Fran\u00e7ais",
+      "de": "Deutsch",
+      "es": "Espa\u00f1ol"
+    },
+    "tasks": {
+      "auto_open": "Abrir el panel de tareas cuando empieza una tarea"
+    },
+    "models": {
+      "confirm_delete": "Confirmar antes de eliminar un modelo",
+      "include_hidden": "Incluir los modelos ocultos en los rangos con May\u00fas-clic de la lista de modelos"
+    },
+    "import": {
+      "precision": "Precisi\u00f3n de las mallas",
+      "precision_single": "Simple (float)",
+      "precision_double": "Doble",
+      "precision_note": "La precisi\u00f3n simple reduce la memoria a la mitad (los archivos STL guardan floats); la doble conserva la precisi\u00f3n a trav\u00e9s de las transformaciones.",
+      "compute_brep": "Calcular B-Reps al importar",
+      "compute_brep_note": "Convierte cada modelo importado en segundo plano; lento y costoso en memoria con mallas grandes."
+    },
+    "keys": {
+      "new": "Nuevo",
+      "open": "Abrir",
+      "save": "Guardar",
+      "model_management": "Panel de modelos",
+      "tasks_panel": "Panel de tareas",
+      "settings_panel": "Panel de ajustes",
+      "fullscreen": "Pantalla completa",
+      "quit": "Salir",
+      "delete_model": "Eliminar modelo",
+      "hide_selection": "Ocultar los modelos seleccionados",
+      "duplicate": "Duplicar los modelos seleccionados",
+      "deselect": "Cerrar la herramienta y deseleccionar",
+      "press": "Pulse las teclas\u2026",
+      "none": "Ninguno",
+      "reset_tooltip": "Volver al atajo predeterminado",
+      "conflict": "Este atajo tambi\u00e9n lo usa otra acci\u00f3n."
+    }
+  },
+  "quit": "Salir",
+  "menu": {
+    "file": {
+      "title": "&Archivo",
+      "new": "&Nuevo\tCtrl+N",
+      "open": "&Abrir\tCtrl+O",
+      "save": "&Guardar\tCtrl+S",
+      "import": "&Importar...",
+      "export": "&Exportar...",
+      "exit": "&Salir\tAlt+F4"
+    },
+    "about": {
+      "text": "Demo de wxWidgets\nTodos los widgets principales en un solo lugar.",
+      "title": "Acerca de"
+    }
+  },
+  "window": {
+    "status": {
+      "ready": "Splinter3D {version} - listo",
+      "dev_build": "(Versi\u00f3n de desarrollo)"
+    },
+    "quit": {
+      "title": "Salir de Splinter3D",
+      "message": "{count} tarea(s) en curso o en cola. \u00bfCancelarlas y salir?",
+      "confirm": "Salir",
+      "keep": "Seguir trabajando"
+    },
+    "language": {
+      "title": "Cambiar el idioma",
+      "message": "El nuevo idioma se aplica al recargar la ventana (los modelos abiertos se conservan). \u00bfRecargar ahora o esperar al pr\u00f3ximo inicio?",
+      "reload": "Recargar ahora",
+      "later": "M\u00e1s tarde",
+      "busy": "{count} tarea(s) en curso o en espera: el nuevo idioma se aplicar\u00e1 en el pr\u00f3ximo inicio."
+    }
+  },
+  "toolbar": {
+    "transform": {
+      "move": "Mover",
+      "rotate": "Rotar",
+      "all_models": "Todos los modelos",
+      "selected": "{count} seleccionados"
+    }
+  },
+  "tasks": {
+    "title": "Tareas",
+    "empty": "No hay tareas",
+    "cancel": "Cancelar",
+    "dismiss": "Descartar",
+    "failed": "Error: {error}",
+    "model_fallback": "modelo",
+    "name": {
+      "import": "Importar {name}",
+      "export": "Exportar {name}",
+      "move": "Mover {name}",
+      "remove": "Eliminar {name}",
+      "clear": "Vaciar la escena",
+      "convert": "Convertir {name}",
+      "precision_double": "Convertir {name} a doble precisi\u00f3n",
+      "precision_single": "Convertir {name} a precisi\u00f3n simple"
+    },
+    "status": {
+      "queued": "En cola",
+      "queued_waiting": "En cola \u00b7 {reason}",
+      "waiting_for_task": "esperando \u00ab{name}\u00bb",
+      "waiting_for_workers": "esperando procesos de trabajo",
+      "cancelling": "Cancelando\u2026"
+    },
+    "error": {
+      "no_model": "ning\u00fan modelo cargado",
+      "model_gone": "el modelo \u00ab{name}\u00bb ya no existe",
+      "model_not_converted": "no se pudo convertir el modelo \u00ab{name}\u00bb",
+      "export_cancelled": "exportaci\u00f3n cancelada",
+      "export_failed": "no se pudo exportar a {path}",
+      "unknown": "error desconocido"
+    }
+  },
+  "models": {
+    "title": "Modelos",
+    "column": "Modelo",
+    "hide": "Ocultar",
+    "delete": "Eliminar",
+    "show_only": "Mostrar solo",
+    "duplicate": "Duplicar",
+    "show_all": "Mostrar todo",
+    "hide_tooltip": "Ocultar los modelos seleccionados",
+    "delete_tooltip": "Eliminar los modelos seleccionados",
+    "show_only_tooltip": "Mostrar los modelos seleccionados y ocultar los dem\u00e1s",
+    "duplicate_tooltip": "Copiar los modelos seleccionados en su sitio",
+    "show_all_tooltip": "Mostrar todos los modelos",
+    "include_hidden": "Incluir ocultos",
+    "include_hidden_tooltip": "Los rangos con May\u00fas-clic tambi\u00e9n seleccionan los modelos ocultos"
+  },
+  "dialogs": {
+    "info": "Informaci\u00f3n",
+    "warning": "Advertencia",
+    "error": "Error",
+    "question": "Pregunta",
+    "input": "Entrada",
+    "number": "N\u00famero:",
+    "open_file": "Abrir archivo",
+    "all_files": "Todos los archivos (*.*)|*.*",
+    "please_wait": "Espere un momento",
+    "delete_model": {
+      "one": "\u00bfEliminar \u00ab{name}\u00bb?",
+      "many": "\u00bfEliminar {count} modelos?",
+      "title_one": "Eliminar modelo",
+      "title_many": "Eliminar modelos",
+      "confirm": "Eliminar",
+      "cancel": "Cancelar"
+    },
+    "duplicate": {
+      "title_one": "Duplicar modelo",
+      "title_many": "Duplicar modelos",
+      "message": "\u00bfCu\u00e1ntas copias?",
+      "prompt": "Copias:"
+    }
+  },
+  "viewer": {
+    "import": {
+      "title": "Importar modelo 3D"
+    },
+    "export": {
+      "title": "Exportar modelo 3D"
+    },
+    "filter": {
+      "stl": "Archivos STL (*.stl)|*.stl|Todos los archivos (*.*)|*.*"
+    },
+    "error": {
+      "create": "No se pudo crear un nuevo modelo: {error}",
+      "import": "No se pudo importar el modelo: {error}",
+      "export_empty": "No se puede exportar: no hay ning\u00fan modelo cargado.",
+      "init": "No se pudo inicializar el visor de modelos: {error}"
+    },
+    "precision": {
+      "message": "{count} modelo(s) cargado(s) est\u00e1n guardados en otra precisi\u00f3n. \u00bfConvertirlos tambi\u00e9n a precisi\u00f3n {precision}?"
+    },
+    "convert_loaded": {
+      "title": "Modelos cargados",
+      "convert": "Convertir",
+      "keep": "Dejar como est\u00e1"
+    },
+    "brep": {
+      "message": "{count} modelo(s) cargado(s) a\u00fan no tienen B-Rep. \u00bfCalcularlas tambi\u00e9n ahora? Puede ser lento con mallas grandes."
+    }
+  },
+  "showcase": {
+    "button": "Bot\u00f3n",
+    "button_tooltip": "Un bot\u00f3n simple",
+    "check_box": "Casilla",
+    "option_a": "Opci\u00f3n A",
+    "option_b": "Opci\u00f3n B",
+    "option_c": "Opci\u00f3n C",
+    "combo_placeholder": "Elija una opci\u00f3n",
+    "item_1": "Elemento 1",
+    "item_2": "Elemento 2",
+    "item_3": "Elemento 3",
+    "radio_box": "Opciones",
+    "text_hint": "Escriba aqu\u00ed",
+    "toggle_button": "Bot\u00f3n de alternancia",
+    "example": "ExamplePanel - pipeline del registro OK"
+  }
+}

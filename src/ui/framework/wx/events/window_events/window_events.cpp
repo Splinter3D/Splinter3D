@@ -17,8 +17,10 @@ namespace ui::framework::wx
         {
             frame_->Bind(
                 wxEVT_MENU,
-                [this](wxCommandEvent& event) {
-                    toggleFullscreen(event.IsChecked());
+                // Not event.IsChecked(): there is no check item, and the
+                // shortcut's synthetic event is never "checked".
+                [this](wxCommandEvent&) {
+                    toggleFullscreen(!frame_->IsFullScreen());
                 },
                 ids::view::kToggleFullscreen);
         }
@@ -29,7 +31,7 @@ namespace ui::framework::wx
                 enabled,
                 wxFULLSCREEN_ALL);
 
-            if (auto* menu = frame_->GetMenuBar())
+            if (auto* menu = frame_->GetMenuBar(); menu != nullptr && menu->FindItem(ids::view::kToggleFullscreen) != nullptr)
             {
                 menu->Check(
                     ids::view::kToggleFullscreen,
@@ -41,9 +43,11 @@ namespace ui::framework::wx
         {
             frame_->Bind(
                 wxEVT_CLOSE_WINDOW,
-                [this](wxCloseEvent&) {
-                    frame_->Destroy();
-                });
+                // Skip rather than Destroy(): the frame's default handler
+                // destroys it once every close handler had its say, so one
+                // bound earlier (e.g. MainWindow asking about running tasks)
+                // can still veto, whatever the binding order.
+                [](wxCloseEvent& event) { event.Skip(); });
         }
 
         void WindowEvents::bindResize()

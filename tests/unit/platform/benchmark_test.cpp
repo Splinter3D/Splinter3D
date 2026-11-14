@@ -1,14 +1,21 @@
 #include "platform/benchmark/benchmark.hpp"
 
+#include <atomic>
 #include <catch2/catch_test_macros.hpp>
 #include <chrono>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <stdexcept>
+#include <string>
 #include <thread>
 #include <type_traits>
+#include <vector>
 
-using platform::benchmark::Benchmark;
+using platform::benchmark::Duration;
+using platform::benchmark::FrameClock;
+using platform::benchmark::measure;
+using platform::benchmark::Report;
 using namespace std::chrono_literals;
 
 namespace
@@ -26,115 +33,63 @@ namespace
     }
 } // namespace
 
-static_assert(!std::is_copy_constructible_v<Benchmark>);
-static_assert(!std::is_move_constructible_v<Benchmark>);
-static_assert(std::is_same_v<Benchmark::Duration::period, std::milli>);
+static_assert(std::is_same_v<Duration::period, std::milli>);
 
-TEST_CASE("Benchmark: a fresh benchmark has no last duration", "[platform][benchmark]")
+TEST_CASE("Benchmark: measure() returns the result and records the report", "[platform][benchmark]")
 {
-    const Benchmark benchmark;
-    REQUIRE(benchmark.lastDuration() == Benchmark::Duration::zero());
-}
+    std::optional<Report> report;
 
-TEST_CASE("Benchmark: start/stop measures the time in between", "[platform][benchmark]")
-{
-    Benchmark benchmark;
-    benchmark.start();
-    sleepFor(kSleep);
-
-    const auto stopped = benchmark.stop();
-
-    // Sleeps last at least as long as asked; no upper bound (CI machines stall).
-    CHECK(stopped >= kSleep);
-    CHECK(benchmark.lastDuration() == stopped);
-}
-
-TEST_CASE("Benchmark: elapsed() reads the running time without stopping", "[platform][benchmark]")
-{
-    Benchmark benchmark;
-    benchmark.start();
-    sleepFor(kSleep);
-
-    const auto first = benchmark.elapsed();
-    CHECK(first >= kSleep);
-    CHECK(benchmark.lastDuration() == Benchmark::Duration::zero());
-
-    sleepFor(kSleep);
-    CHECK(benchmark.elapsed() >= first + kSleep);
-}
-
-TEST_CASE("Benchmark: reset() restarts and forgets the last duration", "[platform][benchmark]")
-{
-    Benchmark benchmark;
-    benchmark.start();
-    sleepFor(kSleep);
-    (void) benchmark.stop();
-
-    benchmark.reset();
-
-    CHECK(benchmark.lastDuration() == Benchmark::Duration::zero());
-    CHECK(benchmark.elapsed() < kSleep * 50); // restarted, not counting from the first start()
-}
-
-TEST_CASE("Benchmark: measure() returns the result and records the duration", "[platform][benchmark]")
-{
-    Benchmark                          benchmark;
-    std::optional<Benchmark::Duration> duration;
-
-    const int result = benchmark.measure(&duration, add, 2, 3);
+    const int result = measure(&report, std::nullopt, add, 2, 3);
 
     CHECK(result == 5);
-    REQUIRE(duration.has_value());
-    CHECK(*duration >= Benchmark::Duration::zero());
-    // measure() does not touch start/stop state.
-    CHECK(benchmark.lastDuration() == Benchmark::Duration::zero());
+    REQUIRE(report.has_value());
+    REQUIRE(report->time.has_value());
+    CHECK(*report->time >= Duration::zero());
 }
 
 TEST_CASE("Benchmark: measure() works with void callables and lambdas", "[platform][benchmark]")
 {
-    Benchmark                          benchmark;
-    std::optional<Benchmark::Duration> duration;
-    int                                calls = 0;
+    std::optional<Report> report;
+    int                   calls = 0;
 
-    benchmark.measure(&duration, [&calls] {
+    measure(&report, std::nullopt, [&calls] {
         ++calls;
         sleepFor(kSleep);
     });
 
     CHECK(calls == 1);
-    REQUIRE(duration.has_value());
-    CHECK(*duration >= kSleep);
+    REQUIRE(report.has_value());
+    REQUIRE(report->time.has_value());
+    CHECK(*report->time >= kSleep);
 }
 
-TEST_CASE("Benchmark: measure() still records the duration when the call throws", "[platform][benchmark]")
+TEST_CASE("Benchmark: measure() still records the report when the call throws", "[platform][benchmark]")
 {
-    Benchmark                          benchmark;
-    std::optional<Benchmark::Duration> duration;
+    std::optional<Report> report;
 
-    CHECK_THROWS_AS(benchmark.measure(&duration,
-                                      [] {
-                                          sleepFor(kSleep);
-                                          throw std::runtime_error("boom");
-                                      }),
+    CHECK_THROWS_AS(measure(&report, std::nullopt,
+                            [] {
+                                sleepFor(kSleep);
+                                throw std::runtime_error("boom");
+                            }),
                     std::runtime_error);
 
-    REQUIRE(duration.has_value());
-    CHECK(*duration >= kSleep);
+    REQUIRE(report.has_value());
+    REQUIRE(report->time.has_value());
+    CHECK(*report->time >= kSleep);
 }
 
-TEST_CASE("Benchmark: measure() accepts a null duration", "[platform][benchmark]")
+TEST_CASE("Benchmark: measure() accepts a null report", "[platform][benchmark]")
 {
-    Benchmark benchmark;
-    CHECK(benchmark.measure(nullptr, add, 1, 1) == 2);
+    CHECK(measure(nullptr, std::nullopt, add, 1, 1) == 2);
 }
 
 TEST_CASE("Benchmark: measure() forwards noexcept", "[platform][benchmark]")
 {
-    Benchmark                          benchmark;
-    std::optional<Benchmark::Duration> duration;
+    std::optional<Report> report;
 
-    STATIC_REQUIRE(noexcept(benchmark.measure(&duration, add, 1, 2)));
-    STATIC_REQUIRE_FALSE(noexcept(benchmark.measure(&duration, [] { throw 1; })));
+    STATIC_REQUIRE(noexcept(measure(&report, std::nullopt, add, 1, 2)));
+    STATIC_REQUIRE_FALSE(noexcept(measure(&report, std::nullopt, [] { throw 1; })));
 }
 
 namespace
@@ -179,50 +134,164 @@ namespace
 
 TEST_CASE("Benchmark: measure() returns references as references", "[platform][benchmark]")
 {
-    Benchmark                          benchmark;
-    std::optional<Benchmark::Duration> duration;
-    int                                value = 1;
+    std::optional<Report> report;
+    int                   value = 1;
 
-    int& ref = benchmark.measure(&duration, [&value]() noexcept -> int& { return value; });
+    int& ref = measure(&report, std::nullopt, [&value]() noexcept -> int& { return value; });
     ref      = 42;
 
     CHECK(value == 42);
-    CHECK(duration.has_value());
+    CHECK(report.has_value());
 
-    const int& constRef = benchmark.measure(&duration, [&value]() -> const int& { return value; });
+    const int& constRef = measure(&report, std::nullopt, [&value]() -> const int& { return value; });
     CHECK(&constRef == &value);
 
-    STATIC_REQUIRE(std::is_same_v<decltype(benchmark.measure(&duration, [&value]() -> int& { return value; })), int&>);
+    STATIC_REQUIRE(std::is_same_v<decltype(measure(&report, std::nullopt, [&value]() -> int& { return value; })), int&>);
     STATIC_REQUIRE(
-        std::is_same_v<decltype(benchmark.measure(&duration, [&value]() -> const int& { return value; })), const int&>);
+        std::is_same_v<decltype(measure(&report, std::nullopt, [&value]() -> const int& { return value; })), const int&>);
 }
 
 TEST_CASE("Benchmark: measure() never copies a returned reference", "[platform][benchmark]")
 {
-    Benchmark                          benchmark;
-    std::optional<Benchmark::Duration> duration;
+    std::optional<Report> report;
 
     // noexcept is forwarded from sharedInstance(), and nothing is copied, so the
     // throwing copy constructor can never run inside it.
-    STATIC_REQUIRE(noexcept(benchmark.measure(&duration, sharedInstance)));
-    STATIC_REQUIRE(std::is_same_v<decltype(benchmark.measure(&duration, sharedInstance)), ThrowingCopy&>);
+    STATIC_REQUIRE(noexcept(measure(&report, std::nullopt, sharedInstance)));
+    STATIC_REQUIRE(std::is_same_v<decltype(measure(&report, std::nullopt, sharedInstance)), ThrowingCopy&>);
 
-    ThrowingCopy& result = benchmark.measure(&duration, sharedInstance);
+    ThrowingCopy& result = measure(&report, std::nullopt, sharedInstance);
     CHECK(&result == &g_shared);
 }
 
 TEST_CASE("Benchmark: measure() returns values and move-only results by value", "[platform][benchmark]")
 {
-    Benchmark                          benchmark;
-    std::optional<Benchmark::Duration> duration;
+    std::optional<Report> report;
 
-    STATIC_REQUIRE(std::is_same_v<decltype(benchmark.measure(&duration, add, 1, 2)), int>);
-    STATIC_REQUIRE(std::is_same_v<decltype(benchmark.measure(&duration, [] { })), void>);
+    STATIC_REQUIRE(std::is_same_v<decltype(measure(&report, std::nullopt, add, 1, 2)), int>);
+    STATIC_REQUIRE(std::is_same_v<decltype(measure(&report, std::nullopt, [] { })), void>);
 
-    auto owned = benchmark.measure(&duration, [] { return std::make_unique<int>(7); });
+    auto owned = measure(&report, std::nullopt, [] { return std::make_unique<int>(7); });
     STATIC_REQUIRE(std::is_same_v<decltype(owned), std::unique_ptr<int>>);
     REQUIRE(owned != nullptr);
     CHECK(*owned == 7);
+}
+
+TEST_CASE("Benchmark: measure() fills only the requested metrics", "[platform][benchmark]")
+{
+    std::optional<Report> report;
+
+    FrameClock::tick(); // a UI is running, so only the mask keeps longestFrame out
+
+    measure(&report, platform::benchmark::Time | platform::benchmark::RAM, [] { sleepFor(kSleep); });
+
+    REQUIRE(report.has_value());
+    REQUIRE(report->time.has_value());
+    CHECK(*report->time >= kSleep);
+    CHECK(report->ramBytes.has_value());
+    CHECK_FALSE(report->cpuTime.has_value());
+    CHECK_FALSE(report->cpuCores.has_value());
+    CHECK_FALSE(report->gpu.has_value());
+    CHECK_FALSE(report->longestFrame.has_value());
+}
+
+TEST_CASE("FrameClock: counts the frames ticked in a window", "[platform][benchmark]")
+{
+    const auto start = FrameClock::Clock::now();
+    for (int frame = 0; frame < 3; ++frame)
+    {
+        sleepFor(2ms);
+        FrameClock::tick();
+    }
+    sleepFor(kSleep);
+    const auto end = FrameClock::Clock::now();
+
+    REQUIRE(FrameClock::running());
+    const FrameClock::Window window = FrameClock::between(start, end);
+    CHECK(window.frames == 3);
+    // The quiet stretch after the last frame is the longest gap.
+    CHECK(window.longestGap >= kSleep);
+    CHECK(window.longestGap < end - start);
+}
+
+TEST_CASE("Benchmark: frames stay short while the UI keeps ticking", "[platform][benchmark]")
+{
+    // Stand-in UI thread: work measured off it must not stall its frames.
+    std::atomic<bool> stop{false};
+    std::thread       ui([&stop] {
+        while (!stop.load())
+        {
+            FrameClock::tick();
+            sleepFor(1ms);
+        }
+    });
+
+    std::optional<Report> report;
+    measure(&report, platform::benchmark::Time | platform::benchmark::FPS, [] { sleepFor(3 * kSleep); });
+
+    stop = true;
+    ui.join();
+
+    REQUIRE(report.has_value());
+    REQUIRE(report->longestFrame.has_value());
+    CHECK(*report->longestFrame < 3 * kSleep);
+}
+
+TEST_CASE("Benchmark: a frozen UI shows as one frame lasting the whole call", "[platform][benchmark]")
+{
+    FrameClock::tick(); // the UI ran before the call...
+    sleepFor(2ms);
+
+    std::optional<Report> report;
+    // ...then blocks on it, as when the call runs on the UI thread.
+    measure(&report, platform::benchmark::Time | platform::benchmark::FPS, [] { sleepFor(kSleep); });
+
+    REQUIRE(report.has_value());
+    REQUIRE(report->time.has_value());
+    REQUIRE(report->longestFrame.has_value());
+    CHECK(*report->longestFrame >= kSleep);
+    CHECK((*report->time - *report->longestFrame) < 1ms);
+}
+
+TEST_CASE("Benchmark: measure() samples CPU time and resident memory", "[platform][benchmark]")
+{
+    std::optional<Report> report;
+
+    measure(&report, platform::benchmark::NOFPS, [] {
+        std::vector<char> buffer(8 * 1024 * 1024, 1); // touched, so it is resident
+        volatile long     sum = 0;
+        for (const char value : buffer)
+            sum = sum + value;
+    });
+
+    REQUIRE(report.has_value());
+    REQUIRE(report->time.has_value());
+    REQUIRE(report->cpuTime.has_value());
+    REQUIRE(report->cpuCores.has_value());
+    CHECK(*report->cpuTime >= Duration::zero());
+    CHECK(*report->cpuCores >= 0.0);
+    CHECK(report->ramBytes.has_value());
+    CHECK_FALSE(report->longestFrame.has_value());
+}
+
+TEST_CASE("Benchmark: a report formats its set fields", "[platform][benchmark]")
+{
+    using platform::benchmark::formatReport;
+
+    CHECK(formatReport({}) == "no metrics");
+
+    Report report;
+    report.time         = Duration(1.5);
+    report.cpuTime      = Duration(3.0);
+    report.cpuCores     = 2.0;
+    report.ramBytes     = -3 * 1024 * 1024 / 2;
+    report.longestFrame = Duration(33.1);
+    CHECK(formatReport(report) == "time 1.50 ms, cpu 3.00 ms, cores 2.00, ram -1.50 MiB, longest frame 33.10 ms");
+
+    // operator<< writes the same text and leaves the stream's formatting alone.
+    std::ostringstream stream;
+    stream << report << ' ' << 0.125;
+    CHECK(stream.str() == formatReport(report) + " 0.125");
 }
 
 TEST_CASE("ScopeExit: runs its callback when leaving the scope", "[platform][benchmark]")

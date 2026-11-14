@@ -1,0 +1,216 @@
+{
+  "play": "Jouer",
+  "settings": {
+    "title": "Param\u00e8tres",
+    "section": {
+      "general": "G\u00e9n\u00e9ral",
+      "import": "Import",
+      "keys": "Raccourcis clavier"
+    },
+    "general": {
+      "language": "Langue",
+      "language_system": "Langue du syst\u00e8me",
+      "restart": "S'applique au rechargement de la fen\u00eatre ou au prochain d\u00e9marrage de Splinter3D."
+    },
+    "languages": {
+      "en": "English",
+      "fr": "Fran\u00e7ais",
+      "de": "Deutsch",
+      "es": "Espa\u00f1ol"
+    },
+    "tasks": {
+      "auto_open": "Ouvrir le panneau des t\u00e2ches quand une t\u00e2che d\u00e9marre"
+    },
+    "models": {
+      "confirm_delete": "Confirmer avant de supprimer un mod\u00e8le",
+      "include_hidden": "Inclure les mod\u00e8les masqu\u00e9s dans les plages Maj-clic de la liste des mod\u00e8les"
+    },
+    "import": {
+      "precision": "Pr\u00e9cision des maillages",
+      "precision_single": "Simple (float)",
+      "precision_double": "Double",
+      "precision_note": "La simple pr\u00e9cision divise la m\u00e9moire par deux (les fichiers STL stockent des floats) ; la double conserve la pr\u00e9cision au fil des transformations.",
+      "compute_brep": "Calculer les B-Reps \u00e0 l'import",
+      "compute_brep_note": "Convertit chaque mod\u00e8le import\u00e9 en arri\u00e8re-plan ; lent et gourmand en m\u00e9moire sur les gros maillages."
+    },
+    "keys": {
+      "new": "Nouveau",
+      "open": "Ouvrir",
+      "save": "Enregistrer",
+      "model_management": "Panneau des mod\u00e8les",
+      "tasks_panel": "Panneau des t\u00e2ches",
+      "settings_panel": "Panneau des param\u00e8tres",
+      "fullscreen": "Plein \u00e9cran",
+      "quit": "Quitter",
+      "delete_model": "Supprimer le mod\u00e8le",
+      "hide_selection": "Masquer les mod\u00e8les s\u00e9lectionn\u00e9s",
+      "duplicate": "Dupliquer les mod\u00e8les s\u00e9lectionn\u00e9s",
+      "deselect": "Fermer l'outil et d\u00e9s\u00e9lectionner",
+      "press": "Appuyez sur des touches\u2026",
+      "none": "Aucun",
+      "reset_tooltip": "Revenir au raccourci par d\u00e9faut",
+      "conflict": "Ce raccourci est aussi utilis\u00e9 par une autre action."
+    }
+  },
+  "quit": "Quitter",
+  "menu": {
+    "file": {
+      "title": "&Fichier",
+      "new": "&Nouveau\tCtrl+N",
+      "open": "&Ouvrir\tCtrl+O",
+      "save": "&Enregistrer\tCtrl+S",
+      "import": "&Importer...",
+      "export": "&Exporter...",
+      "exit": "&Quitter\tAlt+F4"
+    },
+    "about": {
+      "text": "D\u00e9mo wxWidgets\nTous les principaux widgets au m\u00eame endroit.",
+      "title": "\u00c0 propos"
+    }
+  },
+  "window": {
+    "status": {
+      "ready": "Splinter3D {version} - pr\u00eat",
+      "dev_build": "(Version de d\u00e9veloppement)"
+    },
+    "quit": {
+      "title": "Quitter Splinter3D",
+      "message": "{count} t\u00e2che(s) en cours ou en attente. Les annuler et quitter ?",
+      "confirm": "Quitter",
+      "keep": "Continuer \u00e0 travailler"
+    },
+    "language": {
+      "title": "Changer la langue",
+      "message": "La nouvelle langue s'applique au rechargement de la fen\u00eatre (les mod\u00e8les ouverts sont conserv\u00e9s). Recharger maintenant, ou attendre le prochain d\u00e9marrage ?",
+      "reload": "Recharger maintenant",
+      "later": "Plus tard",
+      "busy": "{count} t\u00e2che(s) en cours ou en attente : la nouvelle langue s'appliquera au prochain d\u00e9marrage."
+    }
+  },
+  "toolbar": {
+    "transform": {
+      "move": "D\u00e9placer",
+      "rotate": "Pivoter",
+      "all_models": "Tous les mod\u00e8les",
+      "selected": "{count} s\u00e9lectionn\u00e9s"
+    }
+  },
+  "tasks": {
+    "title": "T\u00e2ches",
+    "empty": "Aucune t\u00e2che",
+    "cancel": "Annuler",
+    "dismiss": "Fermer",
+    "failed": "\u00c9chec : {error}",
+    "model_fallback": "mod\u00e8le",
+    "name": {
+      "import": "Import de {name}",
+      "export": "Export de {name}",
+      "move": "D\u00e9placement de {name}",
+      "remove": "Suppression de {name}",
+      "clear": "Vider la sc\u00e8ne",
+      "convert": "Conversion de {name}",
+      "precision_double": "Conversion de {name} en double pr\u00e9cision",
+      "precision_single": "Conversion de {name} en simple pr\u00e9cision"
+    },
+    "status": {
+      "queued": "En attente",
+      "queued_waiting": "En attente \u00b7 {reason}",
+      "waiting_for_task": "attend \u00ab {name} \u00bb",
+      "waiting_for_workers": "attend des threads de calcul",
+      "cancelling": "Annulation\u2026"
+    },
+    "error": {
+      "no_model": "aucun mod\u00e8le charg\u00e9",
+      "model_gone": "le mod\u00e8le \u00ab {name} \u00bb n'existe plus",
+      "model_not_converted": "le mod\u00e8le \u00ab {name} \u00bb n'a pas pu \u00eatre converti",
+      "export_cancelled": "export annul\u00e9",
+      "export_failed": "impossible d'exporter vers {path}",
+      "unknown": "erreur inconnue"
+    }
+  },
+  "models": {
+    "title": "Mod\u00e8les",
+    "column": "Mod\u00e8le",
+    "hide": "Masquer",
+    "delete": "Supprimer",
+    "show_only": "Afficher seuls",
+    "duplicate": "Dupliquer",
+    "show_all": "Tout afficher",
+    "hide_tooltip": "Masquer les mod\u00e8les s\u00e9lectionn\u00e9s",
+    "delete_tooltip": "Supprimer les mod\u00e8les s\u00e9lectionn\u00e9s",
+    "show_only_tooltip": "Afficher les mod\u00e8les s\u00e9lectionn\u00e9s et masquer les autres",
+    "duplicate_tooltip": "Copier les mod\u00e8les s\u00e9lectionn\u00e9s sur place",
+    "show_all_tooltip": "Afficher tous les mod\u00e8les",
+    "include_hidden": "Inclure les masqu\u00e9s",
+    "include_hidden_tooltip": "Les plages Maj-clic s\u00e9lectionnent aussi les mod\u00e8les masqu\u00e9s"
+  },
+  "dialogs": {
+    "info": "Information",
+    "warning": "Avertissement",
+    "error": "Erreur",
+    "question": "Question",
+    "input": "Saisie",
+    "number": "Nombre :",
+    "open_file": "Ouvrir un fichier",
+    "all_files": "Tous les fichiers (*.*)|*.*",
+    "please_wait": "Veuillez patienter",
+    "delete_model": {
+      "one": "Supprimer \u00ab {name} \u00bb ?",
+      "many": "Supprimer {count} mod\u00e8les ?",
+      "title_one": "Supprimer le mod\u00e8le",
+      "title_many": "Supprimer les mod\u00e8les",
+      "confirm": "Supprimer",
+      "cancel": "Annuler"
+    },
+    "duplicate": {
+      "title_one": "Dupliquer le mod\u00e8le",
+      "title_many": "Dupliquer les mod\u00e8les",
+      "message": "Combien de copies ?",
+      "prompt": "Copies :"
+    }
+  },
+  "viewer": {
+    "import": {
+      "title": "Importer un mod\u00e8le 3D"
+    },
+    "export": {
+      "title": "Exporter un mod\u00e8le 3D"
+    },
+    "filter": {
+      "stl": "Fichiers STL (*.stl)|*.stl|Tous les fichiers (*.*)|*.*"
+    },
+    "error": {
+      "create": "Impossible de cr\u00e9er un nouveau mod\u00e8le : {error}",
+      "import": "Impossible d'importer le mod\u00e8le : {error}",
+      "export_empty": "Export impossible : aucun mod\u00e8le charg\u00e9.",
+      "init": "Impossible d'initialiser la visionneuse de mod\u00e8les : {error}"
+    },
+    "precision": {
+      "message": "{count} mod\u00e8le(s) charg\u00e9(s) sont stock\u00e9s dans une autre pr\u00e9cision. Les convertir aussi en pr\u00e9cision {precision} ?"
+    },
+    "convert_loaded": {
+      "title": "Mod\u00e8les charg\u00e9s",
+      "convert": "Convertir",
+      "keep": "Laisser tel quel"
+    },
+    "brep": {
+      "message": "{count} mod\u00e8le(s) charg\u00e9(s) n'ont pas encore de B-Rep. Les calculer aussi maintenant ? Cela peut \u00eatre lent sur les gros maillages."
+    }
+  },
+  "showcase": {
+    "button": "Bouton",
+    "button_tooltip": "Un bouton simple",
+    "check_box": "Case \u00e0 cocher",
+    "option_a": "Option A",
+    "option_b": "Option B",
+    "option_c": "Option C",
+    "combo_placeholder": "Choisissez une option",
+    "item_1": "\u00c9l\u00e9ment 1",
+    "item_2": "\u00c9l\u00e9ment 2",
+    "item_3": "\u00c9l\u00e9ment 3",
+    "radio_box": "Boutons radio",
+    "text_hint": "Saisissez ici",
+    "toggle_button": "Bouton bascule",
+    "example": "ExamplePanel - pipeline du registre OK"
+  }
+}

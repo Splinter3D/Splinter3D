@@ -1,6 +1,9 @@
 #pragma once
 
 #include "application/service/scene_service.hpp"
+#include "application/tasks/scene_editor.hpp"
+#include "application/tasks/task.hpp"
+#include "application/tasks/task_manager.hpp"
 
 #include <cstddef>
 #include <filesystem>
@@ -67,7 +70,12 @@ namespace application::workflow
         Result runFile(const std::filesystem::path& scriptPath);
 
       private:
-        service::SceneService& _scene;
-        std::ostream&          _log;
+        // Runs task inline; throws (with the task's error) if it failed.
+        void _run(tasks::Task task);
+
+        service::SceneService&    _scene;
+        std::ostream&             _log;
+        tasks::SceneServiceEditor _editor;
+        tasks::TaskManager        _tasks; // synchronous: the same tasks the GUI runs in the background
     };
 } // namespace application::workflow

@@ -4,6 +4,8 @@
 #include "app/bootstrap/bootstrap.hpp"
 #include "core/utils/data_root.hpp"
 #include "core/utils/os_compatibility.hpp"
+#include "platform/benchmark/benchmark.hpp"
+#include "platform/threading/dispatcher.hpp"
 
 #include <filesystem>
 #include <vector>
@@ -26,9 +28,15 @@ namespace app
     namespace
     {
         constexpr int kSignalPollMs = 100;
+        constexpr int kFrameTickMs  = 16; // ~60 Hz
     } // namespace
 
-    WxApp::WxApp()  = default;
+    // wx creates the app before Initialize() starts GTK, so this is early enough.
+    WxApp::WxApp()
+    {
+        core::utils::preferX11Backend();
+    }
+
     WxApp::~WxApp() = default;
 
     bool WxApp::OnInit()
@@ -77,7 +85,15 @@ namespace app
         // from the GUI thread.
         signal_timer_.Bind(wxEVT_TIMER, &WxApp::onSignalPoll, this);
         signal_timer_.Start(kSignalPollMs);
+
+        frame_timer_.Bind(wxEVT_TIMER, &WxApp::onFrameTick, this);
+        frame_timer_.Start(kFrameTickMs);
         return initialized;
+    }
+
+    void WxApp::onFrameTick(wxTimerEvent&)
+    {
+        platform::benchmark::FrameClock::tick();
     }
 
     void WxApp::onSignalPoll(wxTimerEvent&)
@@ -102,6 +118,7 @@ namespace app
             application_->shutdown();
             application_.reset();
         }
+        platform::threading::Dispatcher::getInstance().save();
 
         return wxApp::OnExit();
     }

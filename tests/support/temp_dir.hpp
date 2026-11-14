@@ -68,4 +68,13 @@ namespace tests::support
       private:
         std::filesystem::path _previous;
     };
+
+    /** @brief Whether dir holds a "*.tmp" file (e.g. an export left half-written). */
+    inline bool hasTemporaryFiles(const std::filesystem::path& dir)
+    {
+        for (const auto& entry : std::filesystem::directory_iterator(dir))
+            if (entry.path().extension() == ".tmp")
+                return true;
+        return false;
+    }
 } // namespace tests::support

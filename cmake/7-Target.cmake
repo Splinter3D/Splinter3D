@@ -21,6 +21,24 @@ endif()
 apply_compiler_warnings(${SPLINTER3D_LIB_TARGET_NAME})
 apply_coverage(${SPLINTER3D_LIB_TARGET_NAME})
 
+# The application version: vcpkg.json's "version-semver", which the release workflow keeps in
+# step with the tags (scripts/check-versions.sh). Read by core/utils/version.hpp.
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg.json")
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg.json" SPLINTER3D_MANIFEST)
+string(REGEX MATCH "\"version-semver\"[ \t\r\n]*:[ \t\r\n]*\"([^\"]+)\"" _ "${SPLINTER3D_MANIFEST}")
+if(NOT CMAKE_MATCH_1)
+    message(FATAL_ERROR "vcpkg.json has no \"version-semver\"")
+endif()
+set(SPLINTER3D_VERSION "${CMAKE_MATCH_1}")
+message(STATUS "INFO: Splinter3D version ${SPLINTER3D_VERSION}")
+target_compile_definitions(${SPLINTER3D_LIB_TARGET_NAME} PUBLIC SPLINTER3D_VERSION="${SPLINTER3D_VERSION}")
+if(ENABLE_RELEASE_BUILD)
+    target_compile_definitions(${SPLINTER3D_LIB_TARGET_NAME} PUBLIC SPLINTER3D_RELEASE_BUILD=1)
+    message(STATUS "INFO: release build")
+else()
+    message(STATUS "INFO: dev build (settings and profiles in <data root>/dev-data)")
+endif()
+
 ########################################
 
 if(WIN32)
@@ -39,10 +57,11 @@ target_link_libraries(${SPLINTER3D_TARGET_NAME} PRIVATE ${SPLINTER3D_LIB_TARGET_
 add_custom_command(
     TARGET ${SPLINTER3D_TARGET_NAME}
     POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CMAKE_CURRENT_SOURCE_DIR}/assets"
-            "$<TARGET_FILE_DIR:${SPLINTER3D_TARGET_NAME}>/assets"
-    COMMENT "Copying runtime assets"
+    COMMAND ${CMAKE_COMMAND}
+            -DSRC="${CMAKE_CURRENT_SOURCE_DIR}/assets"
+            -DDST="$<TARGET_FILE_DIR:${SPLINTER3D_TARGET_NAME}>/assets"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/commands/CopyAssets.cmake"
+    COMMENT "Copying runtime assets (optional large STLs are not copied)"
 )
 
 #######################################

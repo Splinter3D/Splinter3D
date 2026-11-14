@@ -1,4 +1,6 @@
+#include "platform/locale/locale_manager.hpp"
 #include "platform/preference/preference_manager.hpp"
+#include "platform/settings/settings_registry.hpp"
 #include "support/temp_dir.hpp"
 #include "support/wx_helpers.hpp"
 #include "ui/framework/wx/events/event_manager.hpp"
@@ -9,6 +11,7 @@
 #include <string>
 #include <vector>
 #include <wx/spinctrl.h>
+#include <wx/textentry.h>
 
 namespace ids = ui::framework::wx::ids;
 using tests::support::ScopedFrame;
@@ -32,17 +35,29 @@ namespace
             callbacks.onSave             = [this] { fired.emplace_back("save"); };
             callbacks.onExit             = [this] { fired.emplace_back("exit"); };
             callbacks.onTransformChanged = [this] { fired.emplace_back("transform"); };
-            callbacks.transformControls  = {spin};
+            callbacks.onModelsPanel      = [this] { fired.emplace_back("models"); };
+            callbacks.onTasksPanel       = [this] { fired.emplace_back("tasks"); };
+            callbacks.onSettingsPanel    = [this] { fired.emplace_back("settings"); };
+            callbacks.onDeselect         = [this] {
+                fired.emplace_back("deselect");
+                return true;
+            };
+            callbacks.onDeleteSelection = [this] {
+                fired.emplace_back("delete");
+                return somethingToDelete;
+            };
+            callbacks.transformControls = {spin};
 
             manager = std::make_unique<EventManager>(frame.get(), std::move(callbacks));
             manager->bindAll();
         }
 
-        void pressKey(int keyCode, bool control)
+        void pressKey(int keyCode, bool control, bool shift = false)
         {
             wxKeyEvent event(wxEVT_CHAR_HOOK);
             event.m_keyCode = keyCode;
             event.SetControlDown(control);
+            event.SetShiftDown(shift);
             event.SetEventObject(frame.get());
             frame->ProcessWindowEvent(event);
         }
@@ -53,6 +68,7 @@ namespace
         wxSpinCtrlDouble*             spin = nullptr;
         std::unique_ptr<EventManager> manager;
         std::vector<std::string>      fired;
+        bool                          somethingToDelete = true;
     };
 } // namespace
 
@@ -79,6 +95,39 @@ TEST_CASE_METHOD(EventManagerFixture, "EventManager: keyboard shortcuts trigger 
     CHECK(fired.empty());
 }
 
+TEST_CASE_METHOD(EventManagerFixture, "EventManager: shortcuts follow their settings", "[integration][ui][events]")
+{
+    auto& settings = platform::settings::SettingsRegistry::getInstance();
+    REQUIRE(settings.find("keys.save") != nullptr);
+    settings.set("keys.save", "Ctrl+E");
+
+    pressKey('S', true);
+    CHECK(fired.empty());
+    pressKey('E', true);
+    CHECK(fired == std::vector<std::string>{"save"});
+
+    settings.reset("keys.save");
+    fired.clear();
+    pressKey('S', true);
+    CHECK(fired == std::vector<std::string>{"save"});
+}
+
+#if defined(__WXOSX__)
+TEST_CASE_METHOD(EventManagerFixture, "EventManager: on macOS, Control+key is not Command+key", "[integration][ui][events]")
+{
+    wxKeyEvent control(wxEVT_CHAR_HOOK);
+    control.m_keyCode = 'S';
+    control.SetRawControlDown(true);
+    control.SetEventObject(frame.get());
+    frame->ProcessWindowEvent(control);
+    CHECK(fired.empty()); // Save is Command+S
+
+    platform::settings::SettingsRegistry::getInstance().set("keys.save", "RawCtrl+S");
+    frame->ProcessWindowEvent(control);
+    CHECK(fired == std::vector<std::string>{"save"});
+}
+#endif
+
 TEST_CASE_METHOD(EventManagerFixture, "EventManager: editing a transform field notifies", "[integration][ui][events]")
 {
     spin->SetValue(12.5);
@@ -102,11 +151,90 @@ TEST_CASE_METHOD(EventManagerFixture, "EventManager: theme menu applies and pers
     CHECK_FALSE(platform::preference::PreferenceManager::load().darkMode);
 }
 
-TEST_CASE_METHOD(EventManagerFixture, "EventManager: language menu persists the choice", "[integration][ui][events]")
+TEST_CASE_METHOD(EventManagerFixture, "EventManager: language menu sets the language setting", "[integration][ui][events]")
 {
+    const auto& settings = platform::settings::SettingsRegistry::getInstance();
     sendMenuCommand(frame.get(), ids::language::kFrench);
-    CHECK(platform::preference::PreferenceManager::load().language == "fr");
+    CHECK(settings.get(platform::locale::kLanguageSetting) == "fr");
 
     sendMenuCommand(frame.get(), ids::language::kDefault);
-    CHECK(platform::preference::PreferenceManager::load().language == "default");
+    CHECK(settings.get(platform::locale::kLanguageSetting) == "default");
+}
+
+namespace
+{
+#if defined(__WXOSX__)
+    constexpr int kDeleteKey = WXK_BACK;
+#else
+    constexpr int kDeleteKey = WXK_DELETE;
+#endif
+} // namespace
+
+TEST_CASE_METHOD(EventManagerFixture, "EventManager: the delete shortcut calls its action", "[integration][ui][events][shortcuts]")
+{
+    REQUIRE(platform::settings::SettingsRegistry::getInstance().find("keys.delete_model") != nullptr);
+    pressKey(kDeleteKey, false);
+    CHECK(fired == std::vector<std::string>{"delete"});
+
+    fired.clear();
+    pressKey('O', true); // Open, not the models panel
+    pressKey('O', true, true);
+    CHECK(fired == std::vector<std::string>{"open", "models"});
+}
+
+TEST_CASE_METHOD(EventManagerFixture, "EventManager: each side dock page has a shortcut", "[integration][ui][events][shortcuts]")
+{
+    auto& settings = platform::settings::SettingsRegistry::getInstance();
+    CHECK(settings.get("keys.model_management") == "Ctrl+Shift+O");
+    CHECK(settings.get("keys.tasks_panel") == "Ctrl+Shift+T");
+    CHECK(settings.get("keys.settings_panel") == "Ctrl+,");
+
+    pressKey('O', true, true);
+    pressKey('T', true, true);
+    pressKey(',', true);
+    CHECK(fired == std::vector<std::string>{"models", "tasks", "settings"});
+}
+
+TEST_CASE_METHOD(EventManagerFixture, "EventManager: bare keys are left to text fields", "[integration][ui][events][shortcuts]")
+{
+    frame.showAndWait();
+    spin->SetFocus();
+    tests::support::pumpEvents();
+    REQUIRE(dynamic_cast<wxTextEntry*>(wxWindow::FindFocus()) != nullptr);
+
+    pressKey(kDeleteKey, false); // edits the field
+    CHECK(fired.empty());
+
+    pressKey('S', true); // a shortcut with a modifier still works there
+    CHECK(fired == std::vector<std::string>{"save"});
+}
+
+TEST_CASE_METHOD(EventManagerFixture, "EventManager: the delete key goes on when there is nothing to delete", "[integration][ui][events][shortcuts]")
+{
+    wxKeyEvent key(wxEVT_CHAR_HOOK);
+    key.m_keyCode = kDeleteKey;
+    key.SetEventObject(frame.get());
+
+    frame->ProcessWindowEvent(key);
+    CHECK_FALSE(key.GetSkipped()); // deleted: handled
+
+    somethingToDelete = false;
+    wxKeyEvent again(key);
+    again.Skip(false);
+    frame->ProcessWindowEvent(again);
+    CHECK(again.GetSkipped()); // nothing selected: the focused control gets it
+}
+
+TEST_CASE_METHOD(EventManagerFixture, "EventManager: Escape deselects, even from a text field", "[integration][ui][events][shortcuts]")
+{
+    REQUIRE(platform::settings::SettingsRegistry::getInstance().find("keys.deselect") != nullptr);
+    pressKey(WXK_ESCAPE, false);
+    CHECK(fired == std::vector<std::string>{"deselect"});
+
+    frame.showAndWait();
+    spin->SetFocus();
+    tests::support::pumpEvents();
+    REQUIRE(dynamic_cast<wxTextEntry*>(wxWindow::FindFocus()) != nullptr);
+    pressKey(WXK_ESCAPE, false);
+    CHECK(fired == std::vector<std::string>{"deselect", "deselect"});
 }

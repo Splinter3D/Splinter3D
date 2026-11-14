@@ -96,6 +96,8 @@ chmod +x "$STAGING_DIR/Contents/MacOS/splinter3D"
 if [[ -d "${PROJECT_ROOT}/assets" ]]; then
     msg "Copying assets..."
     cp -r "${PROJECT_ROOT}/assets" "$STAGING_DIR/Contents/Resources/assets"
+    # Optional large STLs (scripts/fetch-assets.py) are never shipped
+    rm -rf "${STAGING_DIR:?}/Contents/Resources/assets/stl/large"
 fi
 
 # App icon (optional)
@@ -103,12 +105,6 @@ ICON_SRC="${PROJECT_ROOT}/assets/Splinter3D.icns"
 if [[ -f "$ICON_SRC" ]]; then
     msg "Adding app icon Splinter3D.icns"
     cp "$ICON_SRC" "$STAGING_DIR/Contents/Resources/Splinter3D.icns"
-fi
-
-if [[ -d "${PROJECT_ROOT}/locale" ]]; then
-    msg "Copying locale files..."
-    cp -r "${PROJECT_ROOT}/locale" "$STAGING_DIR/Contents/Resources/locale"
-    find "$STAGING_DIR/Contents/Resources/locale" -name "*.po" -delete 2>/dev/null || true
 fi
 
 # Metadata and docs placed at the root of the DMG next to the app

@@ -1,0 +1,27 @@
+{
+  "name": "Splinter3D optional STL assets",
+  "version": "1.0.0",
+  "description": "Optional STL assets for Splinter3D",
+  "assets": [
+    {
+      "type": "large",
+      "name": "Large STL Assets",
+      "description": "A collection of large STL assets for Splinter3D.",
+      "path": "assets/stl/large",
+      "models": [
+        {
+          "name": "lucy",
+          "file": "lucy.stl",
+          "url": "https://kdrive.infomaniak.com/2/app/2381488/share/be88bebb-89c1-4e76-bf52-06eebc4ebee1/files/19/download",
+          "sha256": "e25bf3b380677c19bb63dbae9f3ef6d8effc0a28edbcd28546e21f4cef828f13",
+          "size": 1402787184,
+          "attributions": {
+            "author": "Stanford University Computer Graphics Laboratory",
+            "license": "Unknown",
+            "source": "https://graphics.stanford.edu/data/3Dscanrep/"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,216 @@
+{
+  "play": "Play",
+  "settings": {
+    "title": "Settings",
+    "section": {
+      "general": "General",
+      "import": "Import",
+      "keys": "Keyboard shortcuts"
+    },
+    "general": {
+      "language": "Language",
+      "language_system": "System default",
+      "restart": "Applies after reloading the window or restarting Splinter3D."
+    },
+    "languages": {
+      "en": "English",
+      "fr": "Fran\u00e7ais",
+      "de": "Deutsch",
+      "es": "Espa\u00f1ol"
+    },
+    "tasks": {
+      "auto_open": "Open the tasks panel when a task starts"
+    },
+    "models": {
+      "confirm_delete": "Confirm before deleting a model",
+      "include_hidden": "Include hidden models in Shift-click ranges of the models list"
+    },
+    "import": {
+      "precision": "Mesh precision",
+      "precision_single": "Single (float)",
+      "precision_double": "Double",
+      "precision_note": "Single halves the memory (STL files hold floats); double keeps precision through transformations.",
+      "compute_brep": "Compute B-Reps on import",
+      "compute_brep_note": "Converts each imported model in the background; slow and memory-heavy on large meshes."
+    },
+    "keys": {
+      "new": "New",
+      "open": "Open",
+      "save": "Save",
+      "model_management": "Models panel",
+      "tasks_panel": "Tasks panel",
+      "settings_panel": "Settings panel",
+      "fullscreen": "Fullscreen",
+      "quit": "Quit",
+      "delete_model": "Delete model",
+      "hide_selection": "Hide the selected models",
+      "duplicate": "Duplicate the selected models",
+      "deselect": "Close the tool and deselect",
+      "press": "Press keys\u2026",
+      "none": "None",
+      "reset_tooltip": "Back to the default shortcut",
+      "conflict": "This shortcut is also used by another action."
+    }
+  },
+  "quit": "Quit",
+  "menu": {
+    "file": {
+      "title": "&File",
+      "new": "&New\tCtrl+N",
+      "open": "&Open\tCtrl+O",
+      "save": "&Save\tCtrl+S",
+      "import": "&Import...",
+      "export": "&Export...",
+      "exit": "E&xit\tAlt+F4"
+    },
+    "about": {
+      "text": "wxWidgets Demo\nAll major widgets in one place.",
+      "title": "About"
+    }
+  },
+  "window": {
+    "status": {
+      "ready": "Splinter3D {version} - ready",
+      "dev_build": "(Dev Build)"
+    },
+    "quit": {
+      "title": "Quit Splinter3D",
+      "message": "{count} task(s) still running or queued. Cancel them and quit?",
+      "confirm": "Quit",
+      "keep": "Keep working"
+    },
+    "language": {
+      "title": "Change the language",
+      "message": "The new language applies once the window is reloaded (open models are kept). Reload now, or wait for the next restart?",
+      "reload": "Reload now",
+      "later": "Later",
+      "busy": "{count} task(s) still running or queued: the new language will apply at the next restart."
+    }
+  },
+  "toolbar": {
+    "transform": {
+      "move": "Move",
+      "rotate": "Rotate",
+      "all_models": "All models",
+      "selected": "{count} selected"
+    }
+  },
+  "tasks": {
+    "title": "Tasks",
+    "empty": "No tasks",
+    "cancel": "Cancel",
+    "dismiss": "Dismiss",
+    "failed": "Failed: {error}",
+    "model_fallback": "model",
+    "name": {
+      "import": "Import {name}",
+      "export": "Export {name}",
+      "move": "Move {name}",
+      "remove": "Remove {name}",
+      "clear": "Clear scene",
+      "convert": "Convert {name}",
+      "precision_double": "Convert {name} to double precision",
+      "precision_single": "Convert {name} to single precision"
+    },
+    "status": {
+      "queued": "Queued",
+      "queued_waiting": "Queued \u00b7 {reason}",
+      "waiting_for_task": "waiting for \"{name}\"",
+      "waiting_for_workers": "waiting for workers",
+      "cancelling": "Cancelling\u2026"
+    },
+    "error": {
+      "no_model": "no model loaded",
+      "model_gone": "model \"{name}\" no longer exists",
+      "model_not_converted": "model \"{name}\" could not be converted",
+      "export_cancelled": "export cancelled",
+      "export_failed": "could not export to {path}",
+      "unknown": "unknown error"
+    }
+  },
+  "models": {
+    "title": "Models",
+    "column": "Model",
+    "hide": "Hide",
+    "delete": "Delete",
+    "show_only": "Show only",
+    "duplicate": "Duplicate",
+    "show_all": "Show all",
+    "hide_tooltip": "Hide the selected models",
+    "delete_tooltip": "Delete the selected models",
+    "show_only_tooltip": "Show the selected models and hide the others",
+    "duplicate_tooltip": "Copy the selected models in place",
+    "show_all_tooltip": "Show every model",
+    "include_hidden": "Include hidden",
+    "include_hidden_tooltip": "Shift-click ranges also select hidden models"
+  },
+  "dialogs": {
+    "info": "Info",
+    "warning": "Warning",
+    "error": "Error",
+    "question": "Question",
+    "input": "Input",
+    "number": "Number:",
+    "open_file": "Open file",
+    "all_files": "All files (*.*)|*.*",
+    "please_wait": "Please wait",
+    "delete_model": {
+      "one": "Delete \"{name}\"?",
+      "many": "Delete {count} models?",
+      "title_one": "Delete model",
+      "title_many": "Delete models",
+      "confirm": "Delete",
+      "cancel": "Cancel"
+    },
+    "duplicate": {
+      "title_one": "Duplicate model",
+      "title_many": "Duplicate models",
+      "message": "How many copies?",
+      "prompt": "Copies:"
+    }
+  },
+  "viewer": {
+    "import": {
+      "title": "Import 3D model"
+    },
+    "export": {
+      "title": "Export 3D model"
+    },
+    "filter": {
+      "stl": "STL files (*.stl)|*.stl|All files (*.*)|*.*"
+    },
+    "error": {
+      "create": "Unable to create a new model: {error}",
+      "import": "Unable to import the model: {error}",
+      "export_empty": "Unable to export: no model loaded.",
+      "init": "Unable to initialize the model viewer: {error}"
+    },
+    "precision": {
+      "message": "{count} loaded model(s) are stored in another precision. Convert them to {precision} too?"
+    },
+    "convert_loaded": {
+      "title": "Loaded models",
+      "convert": "Convert",
+      "keep": "Keep as is"
+    },
+    "brep": {
+      "message": "{count} loaded model(s) have no B-Rep yet. Compute them now too? This can be slow on large meshes."
+    }
+  },
+  "showcase": {
+    "button": "Button",
+    "button_tooltip": "A plain button",
+    "check_box": "CheckBox",
+    "option_a": "Option A",
+    "option_b": "Option B",
+    "option_c": "Option C",
+    "combo_placeholder": "Pick an option",
+    "item_1": "Item 1",
+    "item_2": "Item 2",
+    "item_3": "Item 3",
+    "radio_box": "RadioBox",
+    "text_hint": "Type here",
+    "toggle_button": "ToggleButton",
+    "example": "ExamplePanel - registry pipeline OK"
+  }
+}
