@@ -202,6 +202,10 @@ TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: camera controls never move th
         for (int i = 0; i < 30; ++i) // past the zoom clamp
             sendMouse(canvas, wxEVT_MOUSEWHEEL, 100, 100, 120);
         sendMouse(canvas, wxEVT_MOUSEWHEEL, 100, 100, -120);
+        // Trackpad-sized deltas (well below one notch) and empty events.
+        sendMouse(canvas, wxEVT_MOUSEWHEEL, 100, 100, 3);
+        sendMouse(canvas, wxEVT_MOUSEWHEEL, 100, 100, -3);
+        sendMouse(canvas, wxEVT_MOUSEWHEEL, 100, 100, 0);
     }
 
     SECTION("moving without a button pressed does nothing")

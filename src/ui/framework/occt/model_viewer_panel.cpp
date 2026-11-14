@@ -32,6 +32,7 @@
 #include <V3d_View.hxx>
 #include <V3d_Viewer.hxx>
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <gp_Ax2.hxx>
 #include <gp_Pnt.hxx>
@@ -269,9 +270,9 @@ namespace ui::framework::occt
             view_->Pan(dx, dy, 1.0, false);
         }
 
-        void zoom(int direction)
+        void zoom(double notches)
         {
-            scale_ *= direction > 0 ? 1.15 : 0.85;
+            scale_ *= std::pow(1.15, notches);
             scale_ = std::clamp(scale_, 0.05, 20.0);
             view_->SetScale(scale_);
         }
@@ -1071,9 +1072,10 @@ namespace ui::framework::occt
 
     void ModelViewerPanel::onMouseWheel(wxMouseEvent& event)
     {
-        if (!initialized_)
+        if (!initialized_ || event.GetWheelAxis() != wxMOUSE_WHEEL_VERTICAL || event.GetWheelRotation() == 0)
             return;
-        viewer_->zoom(event.GetWheelRotation() / 100);
+        const int delta = event.GetWheelDelta() > 0 ? event.GetWheelDelta() : 120;
+        viewer_->zoom(static_cast<double>(event.GetWheelRotation()) / delta);
         viewer_->paint();
     }
 } // namespace ui::framework::occt
