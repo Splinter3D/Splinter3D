@@ -33,7 +33,18 @@ namespace ui::framework::wx
                 std::make_unique<LocaleEvents>(frame));
 
             binders_.emplace_back(
-                std::make_unique<ShortcutEvents>(frame, std::move(callbacks.onModelManagement)));
+                std::make_unique<ShortcutEvents>(
+                    frame,
+                    std::map<std::string, std::function<bool()>>{
+                        {"keys.model_management",
+                         [onModelManagement = std::move(callbacks.onModelManagement)] {
+                             if (onModelManagement)
+                                 onModelManagement();
+                             return true;
+                         }},
+                        {"keys.delete_model", std::move(callbacks.onDeleteSelection)},
+                        {"keys.deselect", std::move(callbacks.onDeselect)},
+                    }));
 
             binders_.emplace_back(
                 std::make_unique<WidgetEvents>(

@@ -18,9 +18,12 @@
 #include <catch2/catch_test_macros.hpp>
 #include <chrono>
 #include <filesystem>
+#include <gp_Pnt.hxx>
 #include <thread>
 #include <wx/combobox.h>
+#include <wx/glcanvas.h>
 #include <wx/menu.h>
+#include <wx/textentry.h>
 #include <wx/tglbtn.h>
 
 // The whole main window as Bootstrap assembles it: registries -> menus, toolbar,
@@ -270,4 +273,274 @@ TEST_CASE_METHOD(MainWindowFixture, "MainWindow: the File menu shows the current
 
     platform::settings::SettingsRegistry::getInstance().set("keys.save", "Ctrl+Shift+E");
     CHECK(save->GetItemLabel().AfterFirst('\t') == "Ctrl+Shift+E");
+}
+
+namespace
+{
+    // Two cubes loaded, and the delete dialog replaced by a recorder.
+    class SelectionWindowFixture : public MainWindowFixture
+    {
+      public:
+        SelectionWindowFixture()
+        {
+            REQUIRE(viewer->loadFile(kCube));
+            REQUIRE(settle());
+            REQUIRE(viewer->loadFile(kCube));
+            REQUIRE(settle());
+            platform::settings::SettingsRegistry::getInstance().reset(ui::windows::kConfirmDeleteSetting);
+            window->SetConfirmDelete([this](const wxString& message) {
+                asked.push_back(message);
+                return answer;
+            });
+            combo = findDescendant<wxComboBox>(toolbar);
+            REQUIRE(combo != nullptr);
+        }
+
+        ~SelectionWindowFixture()
+        {
+            platform::settings::SettingsRegistry::getInstance().reset(ui::windows::kConfirmDeleteSetting);
+        }
+
+        void pick(int entry)
+        {
+            combo->SetSelection(entry);
+            wxCommandEvent event(wxEVT_COMBOBOX, combo->GetId());
+            event.SetEventObject(combo);
+            combo->HandleWindowEvent(event);
+        }
+
+        void openMove()
+        {
+            auto* button = findDescendant<wxToggleButton>(toolbar);
+            button->SetValue(true);
+            wxCommandEvent event(wxEVT_TOGGLEBUTTON, button->GetId());
+            event.SetEventObject(button);
+            event.SetInt(1);
+            button->HandleWindowEvent(event);
+        }
+
+        wxComboBox*           combo = nullptr;
+        std::vector<wxString> asked;
+        bool                  answer = true;
+    };
+} // namespace
+
+TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: the selection drives the target dropdown", "[integration][ui][main_window][selection]")
+{
+    viewer->SelectOnly(1);
+    CHECK(toolbar->GetTargetIndex() == 1);
+    viewer->ToggleSelected(0);
+    CHECK(toolbar->GetTargetIndex() == ModelViewerPanel::kSelectionTarget);
+    CHECK(combo->GetCount() == 4); // All models, 2 cubes, "2 selected"
+    viewer->ClearSelection();
+    CHECK(toolbar->GetTargetIndex() == -1);
+    CHECK(combo->GetCount() == 3);
+}
+
+TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: the target dropdown drives the selection", "[integration][ui][main_window][selection]")
+{
+    pick(1);
+    CHECK(viewer->GetSelectedIndices() == std::vector<int>{0});
+    pick(0);
+    CHECK(viewer->GetSelectedIndices().empty());
+}
+
+TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: a click on empty space closes the open panel", "[integration][ui][main_window][selection]")
+{
+    viewer->SelectOnly(0);
+    openMove();
+    REQUIRE(toolbar->GetActiveTool() == TransformToolbar::ActiveTool::Move);
+
+    viewer->SimulateClick(wxPoint(2, 2), false);
+    CHECK(toolbar->GetActiveTool() == TransformToolbar::ActiveTool::None);
+    CHECK(viewer->GetSelectedIndices().empty());
+}
+
+TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: Move opens on the selected model", "[integration][ui][main_window][selection]")
+{
+    viewer->setTransform(1, 7, 0, 0, 0, 0, 0);
+    REQUIRE(settle());
+    viewer->SelectOnly(1);
+    openMove();
+    CHECK(toolbar->GetTargetIndex() == 1);
+    CHECK(toolbar->GetMoveX()->GetValue() == 7.0);
+
+    viewer->ToggleSelected(0); // a group: fields start from zero
+    CHECK(toolbar->GetMoveX()->GetValue() == 0.0);
+}
+
+TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: deleting asks first", "[integration][ui][main_window][selection]")
+{
+    viewer->SelectOnly(0);
+    answer = false;
+    window->DeleteModels(viewer->GetSelectedIndices());
+    REQUIRE(settle());
+    CHECK(viewer->GetModelNames().size() == 2);
+    CHECK(asked == std::vector<wxString>{"Delete \"cube.stl\"?"});
+    CHECK(viewer->GetSelectedIndices() == std::vector<int>{0}); // nothing changed
+
+    answer = true;
+    window->DeleteModels(viewer->GetSelectedIndices());
+    REQUIRE(settle());
+    CHECK(viewer->GetModelNames() == std::vector<wxString>{"cube.stl (2)"});
+    CHECK(viewer->GetSelectedIndices().empty());
+}
+
+TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: deleting without confirmation", "[integration][ui][main_window][selection]")
+{
+    platform::settings::SettingsRegistry::getInstance().set(ui::windows::kConfirmDeleteSetting, "0");
+    window->DeleteModels({1});
+    REQUIRE(settle());
+    CHECK(asked.empty());
+    CHECK(viewer->GetModelNames() == std::vector<wxString>{"cube.stl"});
+}
+
+TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: deleting several models", "[integration][ui][main_window][selection]")
+{
+    viewer->SelectOnly(0);
+    viewer->ToggleSelected(1);
+    window->DeleteModels(viewer->GetSelectedIndices());
+    REQUIRE(settle());
+    CHECK(asked == std::vector<wxString>{"Delete 2 models?"});
+    CHECK_FALSE(viewer->hasModel());
+}
+
+TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: nothing selected, nothing deleted", "[integration][ui][main_window][selection]")
+{
+    window->DeleteModels({});
+    CHECK(asked.empty());
+    CHECK(viewer->GetModelNames().size() == 2);
+}
+
+TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: the delete key deletes the selection", "[integration][ui][main_window][selection]")
+{
+    viewer->SelectOnly(1);
+    wxKeyEvent key(wxEVT_CHAR_HOOK);
+#if defined(__WXOSX__)
+    key.m_keyCode = WXK_BACK;
+#else
+    key.m_keyCode = WXK_DELETE;
+#endif
+    key.SetEventObject(window.get());
+    window->ProcessWindowEvent(key);
+    REQUIRE(settle());
+    CHECK(asked.size() == 1);
+    CHECK(viewer->GetModelNames() == std::vector<wxString>{"cube.stl"});
+}
+
+TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: a removal during the delete dialog doesn't change what is deleted", "[integration][ui][main_window][selection]")
+{
+    REQUIRE(viewer->loadFile(kCube));
+    REQUIRE(settle());
+    window->SetConfirmDelete([this](const wxString&) {
+        viewer->RemoveModel(0); // an earlier removal lands while the dialog is up
+        return true;
+    });
+    window->DeleteModels({1}); // "cube.stl (2)"
+    REQUIRE(settle());
+    CHECK(viewer->GetModelNames() == std::vector<wxString>{"cube.stl (3)"});
+}
+
+TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: picking a hidden model in the dropdown selects nothing", "[integration][ui][main_window][selection]")
+{
+    viewer->SetModelVisibility(1, false);
+    viewer->SelectOnly(0);
+    pick(2); // the hidden model
+    CHECK(viewer->GetSelectedIndices().empty());
+    CHECK(toolbar->GetTargetIndex() == -1); // the dropdown says what is selected
+}
+
+TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: after clicking a model, the delete key deletes it even from a field", "[integration][ui][main_window][selection]")
+{
+    viewer->setTransform(1, 3, 0, 0, 0, 0, 0);
+    REQUIRE(settle());
+    REQUIRE(tests::support::pumpUntil([this] { return viewer->PickDataReady(); }));
+    viewer->FitAll();
+    openMove();
+    toolbar->GetMoveX()->SetFocus();
+    tests::support::pumpEvents();
+    REQUIRE(dynamic_cast<wxTextEntry*>(wxWindow::FindFocus()) != nullptr);
+
+    auto*         canvas = findDescendant<wxGLCanvas>(viewer);
+    const wxPoint c1     = viewer->ProjectToCanvas(gp_Pnt(3.5, 0.5, 0.5));
+    for (const wxEventType type : {wxEVT_LEFT_DOWN, wxEVT_LEFT_UP})
+    {
+        wxMouseEvent click(type);
+        click.SetEventObject(canvas);
+        click.SetPosition(c1);
+        click.m_x = c1.x;
+        click.m_y = c1.y;
+        canvas->HandleWindowEvent(click);
+    }
+    tests::support::pumpEvents();
+    REQUIRE(viewer->GetSelectedIndices() == std::vector<int>{1});
+
+    wxKeyEvent key(wxEVT_CHAR_HOOK);
+#if defined(__WXOSX__)
+    key.m_keyCode = WXK_BACK;
+#else
+    key.m_keyCode = WXK_DELETE;
+#endif
+    key.SetEventObject(window.get());
+    window->ProcessWindowEvent(key);
+    REQUIRE(settle());
+    CHECK(asked.size() == 1);
+}
+
+TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: the delete key works with the target dropdown focused", "[integration][ui][main_window][selection]")
+{
+    viewer->SelectOnly(1);
+    openMove();
+    combo->SetFocus();
+    tests::support::pumpEvents();
+
+    wxKeyEvent key(wxEVT_CHAR_HOOK);
+#if defined(__WXOSX__)
+    key.m_keyCode = WXK_BACK;
+#else
+    key.m_keyCode = WXK_DELETE;
+#endif
+    key.SetEventObject(window.get());
+    window->ProcessWindowEvent(key);
+    REQUIRE(settle());
+    CHECK(asked.size() == 1);
+}
+
+namespace
+{
+    // Returns whether the window let the key go on (nothing handled it).
+    bool pressEscape(wxWindow* window)
+    {
+        wxKeyEvent key(wxEVT_CHAR_HOOK);
+        key.m_keyCode = WXK_ESCAPE;
+        key.SetEventObject(window);
+        window->ProcessWindowEvent(key);
+        return key.GetSkipped();
+    }
+} // namespace
+
+TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: Escape closes the tool and clears the selection", "[integration][ui][main_window][selection]")
+{
+    viewer->SelectOnly(0);
+    viewer->ToggleSelected(1);
+    openMove();
+    REQUIRE(toolbar->GetActiveTool() == TransformToolbar::ActiveTool::Move);
+
+    CHECK_FALSE(pressEscape(window.get()));
+    CHECK(toolbar->GetActiveTool() == TransformToolbar::ActiveTool::None);
+    CHECK(viewer->GetSelectedIndices().empty());
+    CHECK(toolbar->GetTargetIndex() == -1);
+
+    CHECK(pressEscape(window.get())); // nothing left to clear: the key goes on
+}
+
+TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: Escape with only a selection or only a tool", "[integration][ui][main_window][selection]")
+{
+    viewer->SelectOnly(1);
+    CHECK_FALSE(pressEscape(window.get()));
+    CHECK(viewer->GetSelectedIndices().empty());
+
+    openMove();
+    CHECK_FALSE(pressEscape(window.get()));
+    CHECK(toolbar->GetActiveTool() == TransformToolbar::ActiveTool::None);
 }

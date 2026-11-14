@@ -3,6 +3,7 @@
 // Must come before any OCCT header (see the file).
 #include "geometry/occt/windows_prelude.hpp"
 
+#include <gp_Pnt.hxx>
 #include <gp_Trsf.hxx>
 #include <gp_XYZ.hxx>
 
@@ -33,6 +34,20 @@ namespace geometry::occt
      * (translation * rotationZ * rotationY * rotationX).
      */
     [[nodiscard]] gp_Trsf toTrsf(const Transform& transform);
+
+    /**
+     * @brief The Transform a rigid OpenCascade transformation is: its
+     * translation, and its rotation as X, then Y, then Z angles. Inverse of
+     * toTrsf() up to equivalent angles.
+     */
+    [[nodiscard]] Transform fromTrsf(const gp_Trsf& trsf);
+
+    /**
+     * @brief Where a model placed at start ends up when its whole group is
+     * rotated by offset's angles (X, then Y, then Z, world axes) around
+     * pivot, then moved by offset's move.
+     */
+    [[nodiscard]] Transform placeInGroup(const Transform& start, const gp_Pnt& pivot, const Transform& offset);
 
     /**
      * @brief Returns start moved by a translation delta (millimeters).

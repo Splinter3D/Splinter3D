@@ -1,6 +1,7 @@
 #include "main_window.hpp"
 
 #include "core/utils/data_root.hpp"
+#include "ui/dialogs/dialogs.hpp"
 #include "ui/dialogs/model_management_dialog.hpp"
 #include "ui/framework/wx/ids/ids.hpp"
 #include "ui/framework/wx/locale/locale.hpp"
@@ -13,6 +14,7 @@
 #include "ui/panels/tasks_panel/tasks_panel.hpp"
 #include "ui/toolbars/toolbar_registry.hpp"
 
+#include <algorithm>
 #include <filesystem>
 #include <utility>
 #include <wx/iconbndl.h>
@@ -144,6 +146,8 @@ namespace ui::windows
         // unless already opened by hand.
         platform::settings::SettingsRegistry::getInstance().add(
             {kTasksAutoOpenSetting, "settings.section.general", "settings.tasks.auto_open", "", platform::settings::Kind::Toggle, "1", {}});
+        platform::settings::SettingsRegistry::getInstance().add(
+            {kConfirmDeleteSetting, "settings.section.general", "settings.models.confirm_delete", "", platform::settings::Kind::Toggle, "1", {}});
         if (side_dock_ != nullptr && model_viewer_ != nullptr)
         {
             auto* tasksPanel = PanelRegistry::getInstance().Create(ui::framework::wx::ids::panels::kTasks, side_dock_);
@@ -178,7 +182,7 @@ namespace ui::windows
                 [this](int index, bool visible) {
                     model_viewer_->SetModelVisibility(index, visible);
                 },
-                [this](int index) { model_viewer_->RemoveModel(index); },
+                [this](int index) { DeleteModels({index}); },
                 [this](int index) { model_viewer_->FocusModel(index); });
         }
 
@@ -194,6 +198,7 @@ namespace ui::windows
                 for (const auto& name : model_viewer_->GetModelNames())
                     names.Add(name);
                 transform_toolbar_->SetTargets(names);
+                SyncTargetToSelection();
                 transform_toolbar_->SetEnabled(hasModel);
                 SyncTransformFields();
                 UpdateGizmoState();
@@ -201,10 +206,27 @@ namespace ui::windows
                     model_management_menu_->RefreshModelRows();
             });
 
-            transform_toolbar_->SetOnTargetChanged([this](int) {
+            // The dropdown and the viewport selection are one and the same.
+            transform_toolbar_->SetOnTargetChanged([this](int index) {
+                if (index >= 0)
+                {
+                    model_viewer_->SelectOnly(index);
+                    // A hidden model can't be selected: nothing is, then.
+                    if (model_viewer_->GetSelectedIndices() != std::vector<int>{index})
+                        model_viewer_->ClearSelection();
+                    SyncTargetToSelection();
+                }
+                else if (index == application::service::SceneService::kAllModels)
+                    model_viewer_->ClearSelection();
                 SyncTransformFields();
                 UpdateGizmoState();
             });
+            model_viewer_->SetOnSelectionChanged([this] {
+                SyncTargetToSelection();
+                SyncTransformFields();
+                UpdateGizmoState();
+            });
+            model_viewer_->SetOnBackgroundClicked([this] { transform_toolbar_->CloseActiveTool(); });
 
             transform_toolbar_->SetOnActiveToolChanged(
                 [this](ui::toolbars::TransformToolbar::ActiveTool) { UpdateGizmoState(); });
@@ -225,8 +247,24 @@ namespace ui::windows
             if (model_viewer_ != nullptr)
                 model_viewer_->saveFile();
         };
-        callbacks.onExit             = [this] { Close(); };
-        callbacks.onModelManagement  = [this] { ShowModelManagement(); };
+        callbacks.onExit            = [this] { Close(); };
+        callbacks.onModelManagement = [this] { ShowModelManagement(); };
+        callbacks.onDeleteSelection = [this] {
+            if (model_viewer_ == nullptr || model_viewer_->GetSelectedIndices().empty())
+                return false;
+            DeleteModels(model_viewer_->GetSelectedIndices());
+            return true;
+        };
+        callbacks.onDeselect = [this] {
+            const bool toolOpen = transform_toolbar_ != nullptr &&
+                                  transform_toolbar_->GetActiveTool() != ui::toolbars::TransformToolbar::ActiveTool::None;
+            const bool selected = model_viewer_ != nullptr && !model_viewer_->GetSelectedIndices().empty();
+            if (toolOpen)
+                transform_toolbar_->CloseActiveTool();
+            if (selected)
+                model_viewer_->ClearSelection();
+            return toolOpen || selected;
+        };
         callbacks.onTransformChanged = [this] { ApplyTransform(); };
 
         if (transform_toolbar_ != nullptr)
@@ -284,7 +322,67 @@ namespace ui::windows
     {
         confirm_quit_ = std::move(confirm);
     }
+
+    void MainWindow::SetConfirmDelete(std::function<bool(const wxString& message)> confirm)
+    {
+        confirm_delete_ = std::move(confirm);
+    }
 #endif
+
+    void MainWindow::DeleteModels(std::vector<int> indices)
+    {
+        if (model_viewer_ == nullptr)
+            return;
+        const auto names = model_viewer_->GetModelNames();
+        std::erase_if(indices, [&](int index) { return index < 0 || static_cast<std::size_t>(index) >= names.size(); });
+        std::sort(indices.begin(), indices.end());
+        indices.erase(std::unique(indices.begin(), indices.end()), indices.end());
+        if (indices.empty())
+            return;
+
+        // By id: the dialog runs events, and a removal landing meanwhile
+        // shifts the indices.
+        std::vector<application::service::ModelId> ids;
+        const auto                                 allIds = model_viewer_->GetModelIds();
+        for (const int index : indices)
+            ids.push_back(allIds[static_cast<std::size_t>(index)]);
+
+        if (platform::settings::SettingsRegistry::getInstance().isOn(kConfirmDeleteSetting))
+        {
+            const wxString message =
+                indices.size() == 1
+                    ? tr("dialogs.delete_model.one", {{"name", names[static_cast<std::size_t>(indices.front())]}})
+                    : tr("dialogs.delete_model.many", {{"count", wxString::Format("%zu", indices.size())}});
+            const bool confirmed = confirm_delete_ ? confirm_delete_(message) : ui::dialogs::confirm(this, message);
+            if (!confirmed)
+                return;
+        }
+
+        // Last first: a removal can apply at once and shift the models after it.
+        std::vector<int> current;
+        const auto       nowIds = model_viewer_->GetModelIds();
+        for (const auto id : ids)
+            if (const auto found = std::find(nowIds.begin(), nowIds.end(), id); found != nowIds.end())
+                current.push_back(static_cast<int>(found - nowIds.begin()));
+        std::sort(current.begin(), current.end());
+        for (auto index = current.rbegin(); index != current.rend(); ++index)
+            model_viewer_->RemoveModel(*index);
+        model_viewer_->ClearSelection();
+    }
+
+    void MainWindow::SyncTargetToSelection()
+    {
+        if (model_viewer_ == nullptr || transform_toolbar_ == nullptr)
+            return;
+        const auto selected = model_viewer_->GetSelectedIndices();
+        transform_toolbar_->SetSelectionCount(selected.size());
+        if (selected.empty())
+            transform_toolbar_->SetTargetIndex(application::service::SceneService::kAllModels);
+        else if (selected.size() == 1)
+            transform_toolbar_->SetTargetIndex(selected.front());
+        else
+            transform_toolbar_->SetTargetIndex(ui::framework::occt::ModelViewerPanel::kSelectionTarget);
+    }
 
     void MainWindow::ShowModelManagement()
     {

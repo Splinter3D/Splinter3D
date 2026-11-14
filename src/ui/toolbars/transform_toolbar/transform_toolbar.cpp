@@ -217,23 +217,65 @@ namespace ui::toolbars
 
     void TransformToolbar::SetTargets(const wxArrayString& modelNames)
     {
-        const wxString previous = move_target_combo_->GetStringSelection();
+        const int      previousTarget = GetTargetIndex();
+        const wxString previous       = move_target_combo_->GetStringSelection();
+        model_names_                  = modelNames;
 
+        int target = -1;
+        if (previousTarget == -2)
+            target = -2;
+        else if (const int found = model_names_.Index(previous); previousTarget >= 0 && found != wxNOT_FOUND)
+            target = found;
+        FillTargets(target);
+    }
+
+    void TransformToolbar::SetSelectionCount(std::size_t count)
+    {
+        selection_count_ = count;
+        FillTargets(GetTargetIndex());
+    }
+
+    void TransformToolbar::FillTargets(int target)
+    {
+        const bool hasSelectionEntry = selection_count_ >= 2;
         for (wxComboBox* combo : {move_target_combo_, rotate_target_combo_})
         {
             combo->Clear();
             combo->Append(tr("toolbar.transform.all_models"));
-            combo->Append(modelNames);
-
-            const int previousIndex = combo->FindString(previous);
-            combo->SetSelection(previousIndex != wxNOT_FOUND ? previousIndex : 0);
+            combo->Append(model_names_);
+            if (hasSelectionEntry)
+                combo->Append(tr("toolbar.transform.selected", {{"count", wxString::Format("%zu", selection_count_)}}));
         }
+        SetTargetIndex(target);
     }
 
     int TransformToolbar::GetTargetIndex() const
     {
         const int selection = move_target_combo_->GetSelection();
-        return selection <= 0 ? -1 : selection - 1;
+        if (selection <= 0)
+            return -1;
+        if (selection_count_ >= 2 && static_cast<std::size_t>(selection) == model_names_.size() + 1)
+            return -2;
+        return selection - 1;
+    }
+
+    void TransformToolbar::SetTargetIndex(int index)
+    {
+        int entry = 0;
+        if (index == -2 && selection_count_ >= 2)
+            entry = static_cast<int>(model_names_.size()) + 1;
+        else if (index >= 0 && static_cast<std::size_t>(index) < model_names_.size())
+            entry = index + 1;
+        move_target_combo_->SetSelection(entry);
+        rotate_target_combo_->SetSelection(entry);
+    }
+
+    void TransformToolbar::CloseActiveTool()
+    {
+        move_button_->SetValue(false);
+        rotate_button_->SetValue(false);
+        HideFieldsPanels();
+        NotifyActiveToolChanged();
     }
 
     void TransformToolbar::SetOnTargetChanged(std::function<void(int)> callback)

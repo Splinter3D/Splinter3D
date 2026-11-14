@@ -21,6 +21,9 @@
     "tasks": {
       "auto_open": "Open the tasks panel when a task starts"
     },
+    "models": {
+      "confirm_delete": "Confirm before deleting a model"
+    },
     "import": {
       "precision": "Mesh precision",
       "precision_single": "Single (float)",
@@ -36,6 +39,8 @@
       "model_management": "Model management",
       "fullscreen": "Fullscreen",
       "quit": "Quit",
+      "delete_model": "Delete model",
+      "deselect": "Close the tool and deselect",
       "press": "Press keys\u2026",
       "none": "None",
       "reset_tooltip": "Back to the default shortcut",
@@ -73,7 +78,8 @@
     "transform": {
       "move": "Move",
       "rotate": "Rotate",
-      "all_models": "All models"
+      "all_models": "All models",
+      "selected": "{count} selected"
     }
   },
   "tasks": {
@@ -122,7 +128,11 @@
     "number": "Number:",
     "open_file": "Open file",
     "all_files": "All files (*.*)|*.*",
-    "please_wait": "Please wait"
+    "please_wait": "Please wait",
+    "delete_model": {
+      "one": "Delete \"{name}\"?",
+      "many": "Delete {count} models?"
+    }
   },
   "viewer": {
     "import": {

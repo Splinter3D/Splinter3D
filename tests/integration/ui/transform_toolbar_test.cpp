@@ -151,3 +151,59 @@ TEST_CASE_METHOD(ToolbarFixture, "TransformToolbar: SetTargets keeps the selecte
     toolbar->SetTargets(names);
     CHECK(toolbar->GetTargetIndex() == -1);
 }
+
+TEST_CASE_METHOD(ToolbarFixture, "TransformToolbar: a selection of several models gets its own entry", "[integration][ui][toolbar][selection]")
+{
+    toolbar->SetEnabled(true);
+    wxArrayString names;
+    names.Add("a");
+    names.Add("b");
+    names.Add("c");
+    toolbar->SetTargets(names);
+
+    toolbar->SetSelectionCount(2);
+    for (wxComboBox* combo : {moveCombo, rotateCombo})
+    {
+        REQUIRE(combo->GetCount() == 5);
+        CHECK(combo->GetString(4) == "2 selected");
+    }
+
+    toolbar->SetTargetIndex(-2);
+    CHECK(toolbar->GetTargetIndex() == -2);
+    CHECK(rotateCombo->GetSelection() == 4);
+    CHECK(targets.empty()); // set by the program, not picked
+
+    toolbar->SetSelectionCount(3); // relabelled, still chosen
+    CHECK(moveCombo->GetString(4) == "3 selected");
+    CHECK(toolbar->GetTargetIndex() == -2);
+
+    toolbar->SetTargets(names); // models reloaded: the entry stays
+    CHECK(moveCombo->GetCount() == 5);
+    CHECK(toolbar->GetTargetIndex() == -2);
+
+    pick(moveCombo, 4); // picking it reports the group
+    CHECK(targets == std::vector<int>{-2});
+
+    toolbar->SetSelectionCount(1); // gone: back to "All models"
+    CHECK(moveCombo->GetCount() == 4);
+    CHECK(toolbar->GetTargetIndex() == -1);
+
+    toolbar->SetTargetIndex(1);
+    CHECK(toolbar->GetTargetIndex() == 1);
+    CHECK(rotateCombo->GetSelection() == 2);
+    toolbar->SetTargetIndex(-1);
+    CHECK(toolbar->GetTargetIndex() == -1);
+}
+
+TEST_CASE_METHOD(ToolbarFixture, "TransformToolbar: CloseActiveTool closes the open panel", "[integration][ui][toolbar][selection]")
+{
+    toolbar->SetEnabled(true);
+    click(moveButton);
+    REQUIRE(toolbar->GetActiveTool() == ActiveTool::Move);
+    tools.clear();
+
+    toolbar->CloseActiveTool();
+    CHECK(toolbar->GetActiveTool() == ActiveTool::None);
+    CHECK_FALSE(moveButton->GetValue());
+    CHECK(tools == std::vector<ActiveTool>{ActiveTool::None});
+}

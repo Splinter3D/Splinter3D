@@ -38,11 +38,16 @@ namespace ui::framework::wx
           public:
             struct Callbacks
             {
-                std::function<void()>          onNew;
-                std::function<void()>          onOpen;
-                std::function<void()>          onSave;
-                std::function<void()>          onExit;
-                std::function<void()>          onModelManagement;
+                std::function<void()> onNew;
+                std::function<void()> onOpen;
+                std::function<void()> onSave;
+                std::function<void()> onExit;
+                std::function<void()> onModelManagement;
+                // False when nothing was selected (the key goes on to the focused control).
+                std::function<bool()> onDeleteSelection;
+                // Closes the transform tool and clears the selection; false
+                // when there was neither (the key goes on).
+                std::function<bool()>          onDeselect;
                 std::function<void()>          onTransformChanged;
                 std::vector<wxSpinCtrlDouble*> transformControls;
             };

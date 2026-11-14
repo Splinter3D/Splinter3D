@@ -1,9 +1,11 @@
 #include "model_viewer_panel.hpp"
 
 #include "application/tasks/model_tasks.hpp"
+#include "geometry/occt/mesh_pick_index.hpp"
 #include "geometry/occt/transform.hpp"
 #include "platform/benchmark/benchmark.hpp"
 #include "platform/logger/logger.hpp"
+#include "platform/threading/dispatcher.hpp"
 #include "ui/dialogs/dialogs.hpp"
 #include "ui/framework/wx/locale/locale.hpp"
 
@@ -15,6 +17,7 @@
 #include <Aspect_DisplayConnection.hxx>
 #include <Aspect_GraphicDeviceDefinitionError.hxx>
 #include <BRep_Builder.hxx>
+#include <Bnd_Box.hxx>
 #include <OpenGl_GraphicDriver.hxx>
 #include <Precision.hxx>
 #include <TopoDS_Vertex.hxx>
@@ -33,10 +36,18 @@
 #include <V3d_Viewer.hxx>
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <filesystem>
+#include <gp.hxx>
 #include <gp_Ax2.hxx>
+#include <gp_Dir.hxx>
+#include <gp_Lin.hxx>
 #include <gp_Pnt.hxx>
 #include <gp_Trsf.hxx>
+#include <limits>
+#include <map>
+#include <memory>
+#include <mutex>
 #include <optional>
 #include <vector>
 #include <wx/dcclient.h>
@@ -54,11 +65,19 @@ namespace ui::framework::occt
 {
     namespace
     {
-        // wxString -> path without going through the narrow locale encoding
-        // (ToStdString()), which loses non-ASCII characters on Windows.
-        // AIS_InteractiveContext::Display()'s "no selection mode".
+        // AIS_InteractiveContext::Display()'s "no selection mode": models are
+        // picked by Viewer::pick(), not OCCT's selection.
         constexpr int kNoSelection = -1;
 
+        // A press and release closer than this (pixels, on each axis) is a
+        // click; further, the press was an orbit.
+        constexpr int kClickSlop = 4;
+
+        // How far a selected model's colour goes toward white.
+        constexpr double kHighlightLightening = 0.35;
+
+        // wxString -> path without going through the narrow locale encoding
+        // (ToStdString()), which loses non-ASCII characters on Windows.
         std::filesystem::path toPath(const wxString& value)
         {
             const std::string utf8 = value.utf8_string();
@@ -186,8 +205,9 @@ namespace ui::framework::occt
 
                 // Straight to shaded, with no selection mode: displaying in the
                 // default (wireframe) mode first builds a hidden presentation of
-                // every edge, and models are never picked (only the gizmo is),
-                // so they need no selection structures either.
+                // every edge, and OCCT's picking structures for a large mesh take
+                // seconds and gigabytes on this thread. Clicks use a
+                // MeshPickIndex built in the background instead (see pick()).
                 context_->Display(presentation, AIS_Shaded, kNoSelection, false);
                 context_->UpdateCurrentViewer();
                 // A background import can land mid-orbit or mid-drag: don't
@@ -201,6 +221,7 @@ namespace ui::framework::occt
             platform::logger::clog("[viewer] displayed '", model.name, "' (", *report, "; import ",
                                    platform::benchmark::formatMilliseconds(model.loadDuration), ", total ",
                                    platform::benchmark::formatMilliseconds(model.loadDuration + display), ")");
+            buildPickIndex(model.id);
             modelsChanged();
         }
 
@@ -211,6 +232,7 @@ namespace ui::framework::occt
             context_->RemoveAll(false);
             presentations_.clear();
             scene_.clear();
+            pickIndices_.clear();
             view_->Redraw();
             modelsChanged();
         }
@@ -219,6 +241,7 @@ namespace ui::framework::occt
         {
             if (const auto index = scene_.indexOf(id))
                 removeAt(static_cast<int>(*index));
+            pickIndices_.erase(id);
             modelsChanged();
         }
 
@@ -237,6 +260,7 @@ namespace ui::framework::occt
             presentation->SetShape(scene_.models()[*index].shape.value());
             context_->Redisplay(presentation, false);
             view_->Redraw();
+            buildPickIndex(id); // new triangles
         }
 
         void setTransform(application::service::ModelId id, const geometry::occt::Transform& transform) override
@@ -248,6 +272,107 @@ namespace ui::framework::occt
         void resize()
         {
             view_->MustBeResized();
+        }
+
+        // How background work hands its result to the UI thread (see
+        // buildPickIndex()); it drops it once the panel is gone.
+        void setRunOnUi(std::function<void(std::function<void()>)> runOnUi)
+        {
+            runOnUi_ = std::move(runOnUi);
+        }
+
+        // The visible model under a canvas point (the nearest one), or -1.
+        // Ignores the gizmo. A model whose pick index is still being built
+        // is hit by its bounding box meanwhile.
+        [[nodiscard]] int pick(const wxPoint& point) const
+        {
+            double x = 0.0, y = 0.0, z = 0.0, dx = 0.0, dy = 0.0, dz = 0.0;
+            view_->ConvertWithProj(point.x, point.y, x, y, z, dx, dy, dz);
+            // Pointing away from the eye: the smallest parameter is the nearest hit.
+            const gp_Lin ray(gp_Pnt(x, y, z), gp_Dir(dx, dy, dz));
+
+            int    found = -1;
+            double best  = std::numeric_limits<double>::infinity();
+            for (std::size_t i = 0; i < presentations_.size(); ++i)
+            {
+                if (!presentations_[i].visible)
+                    continue;
+                const auto&           model = scene_.models()[i];
+                std::optional<double> hit;
+                if (const auto index = pickIndices_.find(model.id); index != pickIndices_.end() && index->second)
+                {
+                    // Into the model's own coordinates (a rigid move keeps distances).
+                    hit = index->second->intersect(ray.Transformed(geometry::occt::toTrsf(model.transform).Inverted()));
+                }
+                else
+                {
+                    Bnd_Box box;
+                    presentations_[i].shape->BoundingBox(box); // world space
+                    if (!box.IsVoid() && !box.IsOut(ray))
+                    {
+                        double xMin = 0.0, yMin = 0.0, zMin = 0.0, xMax = 0.0, yMax = 0.0, zMax = 0.0;
+                        box.Get(xMin, yMin, zMin, xMax, yMax, zMax);
+                        const gp_XYZ centre((xMin + xMax) / 2.0, (yMin + yMax) / 2.0, (zMin + zMax) / 2.0);
+                        hit = (centre - ray.Location().XYZ()).Dot(ray.Direction().XYZ());
+                    }
+                }
+                if (hit && *hit < best)
+                {
+                    best  = *hit;
+                    found = static_cast<int>(i);
+                }
+            }
+            return found;
+        }
+
+        // Whether every model's pick index is built.
+        [[nodiscard]] bool pickIndicesReady() const
+        {
+            return std::all_of(scene_.models().begin(), scene_.models().end(),
+                               [this](const auto& model) { return pickIndices_.contains(model.id); });
+        }
+
+        // Draws a model in a lighter shade of its own colour, or back in it.
+        void setHighlighted(int modelIndex, bool highlighted)
+        {
+            if (!isValidIndex(modelIndex))
+                return;
+            const auto& shape = presentations_[static_cast<std::size_t>(modelIndex)].shape;
+            if (highlighted == shape->HasColor())
+                return;
+            if (!highlighted)
+            {
+                context_->UnsetColor(shape, false);
+                return;
+            }
+            Quantity_Color base;
+            shape->Color(base);
+            const auto lighter = [](double c) { return c + (1.0 - c) * kHighlightLightening; };
+            context_->SetColor(shape, Quantity_Color(lighter(base.Red()), lighter(base.Green()), lighter(base.Blue()), Quantity_TOC_RGB),
+                               false);
+        }
+
+        [[nodiscard]] bool hasDetected() const
+        {
+            return context_->HasDetected();
+        }
+
+        [[nodiscard]] bool isHighlighted(int modelIndex) const
+        {
+            return isValidIndex(modelIndex) && presentations_[static_cast<std::size_t>(modelIndex)].shape->HasColor();
+        }
+
+        [[nodiscard]] wxPoint project(const gp_Pnt& point) const
+        {
+            int x = 0;
+            int y = 0;
+            view_->Convert(point.X(), point.Y(), point.Z(), x, y);
+            return {x, y};
+        }
+
+        void fitAll()
+        {
+            view_->FitAll(0.1, true);
         }
 
         void paint()
@@ -385,8 +510,8 @@ namespace ui::framework::occt
                 context_->Erase(manipulator_, false);
             }
 
-            const bool show = tool != ModelViewerPanel::GizmoTool::None && targetIndex >= 0 &&
-                              static_cast<std::size_t>(targetIndex) < scene_.size();
+            const bool show = tool != ModelViewerPanel::GizmoTool::None &&
+                              (isValidIndex(targetIndex) || targetIndex == ModelViewerPanel::kSelectionTarget);
 
             if (!show)
             {
@@ -440,14 +565,20 @@ namespace ui::framework::occt
         // fall back to camera rotation / model picking.
         bool startGizmoDragIfHit(const wxPoint& point)
         {
-            if (gizmoTool_ == ModelViewerPanel::GizmoTool::None || gizmoTargetIndex_ < 0)
+            if (!hasGizmoTarget())
                 return false;
 
             context_->MoveTo(point.x, point.y, view_, false);
             if (!manipulator_->HasActiveMode())
+            {
+                // A model under the press would stay hover-highlighted (cyan).
+                context_->ClearDetected(false);
                 return false;
+            }
 
-            dragStart_ = scene_.transform(gizmoTargetIndex_);
+            // A group's drag changes its offset; a model's, its placement.
+            dragStart_ = gizmoTargetIndex_ == ModelViewerPanel::kSelectionTarget ? groupOffset_
+                                                                                 : scene_.transform(gizmoTargetIndex_);
 
             manipulator_->StartTransform(point.x, point.y, view_);
             gizmoDragging_ = true;
@@ -499,7 +630,8 @@ namespace ui::framework::occt
                 return;
             context_->SetLocation(presentations_[static_cast<std::size_t>(modelIndex)].shape,
                                   TopLoc_Location(geometry::occt::toTrsf(transform)));
-            positionGizmoAt(transform);
+            if (gizmoTargetIndex_ == modelIndex)
+                positionGizmoAt(transform);
             view_->Redraw();
         }
 
@@ -512,6 +644,39 @@ namespace ui::framework::occt
                                   TopLoc_Location(geometry::occt::toTrsf(scene_.transform(modelIndex))));
             repositionGizmoIfVisible();
             view_->Redraw();
+        }
+
+        // Where the gizmo goes when its target is the selection group: its
+        // centre when the selection changed, moved by the group's offset.
+        void setGroupGizmo(const gp_Pnt& pivot, const geometry::occt::Transform& offset)
+        {
+            groupPivot_  = pivot;
+            groupOffset_ = offset;
+            repositionGizmoIfVisible();
+            view_->Redraw();
+        }
+
+        // Centre of the models' combined bounding box in world space, each
+        // placed at the given transform rather than where it is shown now.
+        [[nodiscard]] gp_Pnt boundsCentre(const std::vector<std::pair<int, geometry::occt::Transform>>& placements) const
+        {
+            Bnd_Box all;
+            for (const auto& [index, transform] : placements)
+            {
+                if (!isValidIndex(index))
+                    continue;
+                Bnd_Box box;
+                presentations_[static_cast<std::size_t>(index)].shape->BoundingBox(box);
+                if (box.IsVoid())
+                    continue;
+                const gp_Trsf shown = geometry::occt::toTrsf(scene_.transform(index));
+                all.Add(box.Transformed(geometry::occt::toTrsf(transform) * shown.Inverted()));
+            }
+            if (all.IsVoid())
+                return gp::Origin();
+            double xMin = 0.0, yMin = 0.0, zMin = 0.0, xMax = 0.0, yMax = 0.0, zMax = 0.0;
+            all.Get(xMin, yMin, zMin, xMax, yMax, zMax);
+            return gp_Pnt((xMin + xMax) / 2.0, (yMin + yMax) / 2.0, (zMin + zMax) / 2.0);
         }
 
         // Ends the current gizmo drag, if any.
@@ -529,6 +694,26 @@ namespace ui::framework::occt
         }
 
       private:
+        // Builds the model's MeshPickIndex on a worker thread; until it is
+        // in, pick() uses its bounding box. A newer build for the same model
+        // (a new mesh) wins over an older one still running.
+        void buildPickIndex(application::service::ModelId id)
+        {
+            const auto* model = scene_.find(id);
+            if (model == nullptr || !runOnUi_)
+                return;
+            pickIndices_.erase(id);
+            const auto generation = ++pickGenerations_[id];
+            platform::threading::Dispatcher::getInstance().submit(
+                "viewer.pick_index", [this, id, generation, shape = model->shape, runOnUi = runOnUi_] {
+                    auto index = geometry::occt::MeshPickIndex::build(shape);
+                    runOnUi([this, id, generation, index = std::move(index)] {
+                        if (pickGenerations_[id] == generation && scene_.find(id) != nullptr)
+                            pickIndices_[id] = index;
+                    });
+                });
+        }
+
         [[nodiscard]] bool isValidIndex(int modelIndex) const noexcept
         {
             return modelIndex >= 0 && static_cast<std::size_t>(modelIndex) < presentations_.size();
@@ -542,16 +727,24 @@ namespace ui::framework::occt
         // target's own rotation instead.
         void repositionGizmoIfVisible()
         {
-            if (gizmoTool_ == ModelViewerPanel::GizmoTool::None || gizmoTargetIndex_ < 0 ||
-                static_cast<std::size_t>(gizmoTargetIndex_) >= scene_.size())
+            if (gizmoTool_ == ModelViewerPanel::GizmoTool::None)
                 return;
+            if (gizmoTargetIndex_ == ModelViewerPanel::kSelectionTarget)
+                positionGizmoAt({groupPivot_.X() + groupOffset_.moveX, groupPivot_.Y() + groupOffset_.moveY,
+                                 groupPivot_.Z() + groupOffset_.moveZ});
+            else if (isValidIndex(gizmoTargetIndex_))
+                positionGizmoAt(scene_.transform(gizmoTargetIndex_));
+        }
 
-            positionGizmoAt(scene_.transform(gizmoTargetIndex_));
+        [[nodiscard]] bool hasGizmoTarget() const noexcept
+        {
+            return gizmoTool_ != ModelViewerPanel::GizmoTool::None &&
+                   (gizmoTargetIndex_ >= 0 || gizmoTargetIndex_ == ModelViewerPanel::kSelectionTarget);
         }
 
         void positionGizmoAt(const geometry::occt::Transform& transform)
         {
-            if (gizmoTool_ == ModelViewerPanel::GizmoTool::None || gizmoTargetIndex_ < 0)
+            if (!hasGizmoTarget())
                 return;
             manipulator_->SetPosition(
                 gp_Ax2(gp_Pnt(transform.moveX, transform.moveY, transform.moveZ), gp::DZ(), gp::DX()));
@@ -580,14 +773,21 @@ namespace ui::framework::occt
         std::vector<Presentation> presentations_;
         double                    scale_ = 1.0;
 
-        occ::handle<AIS_Manipulator> manipulator_;
-        occ::handle<AIS_Shape>       manipulatorProxy_;
-        int                          gizmoTargetIndex_ = -1;
-        ModelViewerPanel::GizmoTool  gizmoTool_        = ModelViewerPanel::GizmoTool::None;
-        bool                         gizmoDragging_    = false;
-        geometry::occt::Transform    dragStart_;
-        std::function<void()>        onModelsChanged_;
-        std::function<bool()>        isInteracting_;
+        occ::handle<AIS_Manipulator>               manipulator_;
+        occ::handle<AIS_Shape>                     manipulatorProxy_;
+        int                                        gizmoTargetIndex_ = -1;
+        ModelViewerPanel::GizmoTool                gizmoTool_        = ModelViewerPanel::GizmoTool::None;
+        bool                                       gizmoDragging_    = false;
+        geometry::occt::Transform                  dragStart_;
+        gp_Pnt                                     groupPivot_;
+        geometry::occt::Transform                  groupOffset_;
+        std::function<void()>                      onModelsChanged_;
+        std::function<bool()>                      isInteracting_;
+        std::function<void(std::function<void()>)> runOnUi_;
+        // Built in the background (see buildPickIndex()); null when the
+        // model has no triangles; absent while building.
+        std::map<application::service::ModelId, std::shared_ptr<const geometry::occt::MeshPickIndex>> pickIndices_;
+        std::map<application::service::ModelId, std::uint64_t>                                        pickGenerations_;
     };
 
     ModelViewerPanel::ModelViewerPanel(wxWindow* parent)
@@ -618,8 +818,9 @@ namespace ui::framework::occt
         // pops up mid-drag): end the drag as if it did.
         canvas_->Bind(wxEVT_MOUSE_CAPTURE_LOST, [this](wxMouseCaptureLostEvent&) {
             releaseGizmo();
-            rotating_ = false;
-            panning_  = false;
+            rotating_      = false;
+            panning_       = false;
+            click_pending_ = false;
         });
 
         // wxBG_STYLE_PAINT must be set on the canvas itself, not just the
@@ -632,6 +833,8 @@ namespace ui::framework::occt
         canvas_->Bind(wxEVT_ERASE_BACKGROUND, [](wxEraseEvent&) { });
         SetBackgroundStyle(wxBG_STYLE_PAINT);
 
+        selection_.setOnChanged([this] { onSelectionChanged(); });
+
         declareSettings();
         precision_subscription_ = platform::settings::SettingsRegistry::getInstance().subscribe(
             kMeshPrecisionSetting, [this](const std::string& value) { onPrecisionChanged(value); });
@@ -641,6 +844,11 @@ namespace ui::framework::occt
 
     ModelViewerPanel::~ModelViewerPanel()
     {
+        {
+            // Background work finishing from now on drops its result.
+            const std::lock_guard lock(mailbox_->mutex);
+            mailbox_->panel = nullptr;
+        }
         // Running work references the scene and the viewer: stop it first.
         tasks_.cancelAllAndWait();
     }
@@ -794,6 +1002,12 @@ namespace ui::framework::occt
         viewer_      = std::make_unique<Viewer>(canvas_, scene_);
         initialized_ = true;
         viewer_->setOnModelsChanged([this] { notifyModelStateChanged(); });
+        mailbox_->panel = this;
+        viewer_->setRunOnUi([mailbox = mailbox_](std::function<void()> callback) {
+            const std::lock_guard lock(mailbox->mutex);
+            if (mailbox->panel != nullptr)
+                mailbox->panel->CallAfter(std::move(callback));
+        });
         viewer_->setIsInteracting([this] { return rotating_ || panning_ || gizmo_dragging_; });
     }
 
@@ -828,6 +1042,91 @@ namespace ui::framework::occt
         if (!initialized_ || viewer_ == nullptr)
             return;
         viewer_->setModelVisibility(modelIndex, visible);
+        if (!visible && modelIndex >= 0 && static_cast<std::size_t>(modelIndex) < scene_.size())
+            selection_.remove(scene_.models()[static_cast<std::size_t>(modelIndex)].id);
+    }
+
+    std::vector<int> ModelViewerPanel::GetSelectedIndices() const
+    {
+        std::vector<int> indices;
+        for (const auto id : selection_.ids())
+            if (const auto index = scene_.indexOf(id))
+                indices.push_back(static_cast<int>(*index));
+        return indices;
+    }
+
+    void ModelViewerPanel::SelectOnly(int modelIndex)
+    {
+        if (isSelectable(modelIndex))
+            selection_.selectOnly(scene_.models()[static_cast<std::size_t>(modelIndex)].id);
+    }
+
+    void ModelViewerPanel::ToggleSelected(int modelIndex)
+    {
+        if (isSelectable(modelIndex))
+            selection_.toggle(scene_.models()[static_cast<std::size_t>(modelIndex)].id);
+    }
+
+    void ModelViewerPanel::ClearSelection()
+    {
+        selection_.clear();
+    }
+
+    void ModelViewerPanel::SetOnSelectionChanged(std::function<void()> callback)
+    {
+        on_selection_changed_ = std::move(callback);
+    }
+
+    void ModelViewerPanel::SetOnBackgroundClicked(std::function<void()> callback)
+    {
+        on_background_clicked_ = std::move(callback);
+    }
+
+    int ModelViewerPanel::PickModelAt(const wxPoint& point) const
+    {
+        if (!initialized_ || viewer_ == nullptr)
+            return -1;
+        return viewer_->pick(point);
+    }
+
+    bool ModelViewerPanel::isSelectable(int modelIndex) const
+    {
+        if (!initialized_ || viewer_ == nullptr || modelIndex < 0 || static_cast<std::size_t>(modelIndex) >= scene_.size())
+            return false;
+        return viewer_->modelVisibility()[static_cast<std::size_t>(modelIndex)];
+    }
+
+    void ModelViewerPanel::handleClick(const wxPoint& point, bool toggle)
+    {
+        const int picked = PickModelAt(point);
+        if (picked >= 0)
+        {
+            if (toggle)
+                ToggleSelected(picked);
+            else
+                SelectOnly(picked);
+        }
+        else if (!toggle)
+        {
+            ClearSelection();
+            if (on_background_clicked_)
+                on_background_clicked_();
+        }
+        if (initialized_)
+            viewer_->paint();
+    }
+
+    void ModelViewerPanel::onSelectionChanged()
+    {
+        resetGroup();
+        if (initialized_ && viewer_ != nullptr)
+        {
+            for (std::size_t i = 0; i < scene_.size(); ++i)
+                viewer_->setHighlighted(static_cast<int>(i), selection_.contains(scene_.models()[i].id));
+            viewer_->paint();
+        }
+        if (on_selection_changed_)
+            on_selection_changed_();
     }
 
     void ModelViewerPanel::RemoveModel(int modelIndex)
@@ -861,7 +1160,21 @@ namespace ui::framework::occt
         if (!initialized_ || viewer_ == nullptr)
             return;
 
-        const geometry::occt::Transform            transform{moveXmm, moveYmm, moveZmm, rotateXdeg, rotateYdeg, rotateZdeg};
+        const geometry::occt::Transform transform{moveXmm, moveYmm, moveZmm, rotateXdeg, rotateYdeg, rotateZdeg};
+        if (targetIndex == kSelectionTarget)
+        {
+            if (!isGroup())
+                return;
+            group_.offset = transform;
+            const gp_Pnt pivot(group_.pivot[0], group_.pivot[1], group_.pivot[2]);
+            viewer_->setGroupGizmo(pivot, transform);
+            // Always from where the models were when the selection changed, so
+            // edits never pile up rounding errors.
+            for (const auto& [id, start] : group_.start)
+                submitMove(id, geometry::occt::placeInGroup(start, pivot, transform));
+            return;
+        }
+
         std::vector<application::service::ModelId> targets;
         if (targetIndex == application::service::SceneService::kAllModels)
             targets = scene_.ids();
@@ -870,14 +1183,18 @@ namespace ui::framework::occt
 
         // Each applies at once, or queues behind a task still changing that model.
         for (const auto id : targets)
-            tasks_.submit(application::tasks::moveTask(scene_, *viewer_, id, transform));
+            submitMove(id, transform);
     }
 
     ModelViewerPanel::TransformValues ModelViewerPanel::GetTransform(int targetIndex) const
     {
+        if (targetIndex == kSelectionTarget)
+            return isGroup() ? group_.offset : TransformValues{};
         // While a drag on a busy model is previewed, show what is previewed.
-        if (pending_drag_ && targetIndex >= 0 && scene_.indexOf(pending_drag_->first) == static_cast<std::size_t>(targetIndex))
-            return pending_drag_->second;
+        if (targetIndex >= 0 && static_cast<std::size_t>(targetIndex) < scene_.size())
+            if (const auto pending = pending_drags_.find(scene_.models()[static_cast<std::size_t>(targetIndex)].id);
+                pending != pending_drags_.end())
+                return pending->second;
         return scene_.transform(targetIndex);
     }
 
@@ -886,6 +1203,8 @@ namespace ui::framework::occt
         if (!initialized_ || viewer_ == nullptr)
             return;
 
+        if (targetIndex == kSelectionTarget && !isGroup())
+            targetIndex = application::service::SceneService::kAllModels; // nothing to show
         viewer_->setGizmoTarget(targetIndex, tool);
     }
 
@@ -901,8 +1220,10 @@ namespace ui::framework::occt
 
     void ModelViewerPanel::notifyModelStateChanged()
     {
+        // Models first: selection listeners then see the current list.
         if (on_model_state_changed_)
             on_model_state_changed_(hasModel());
+        selection_.retainOnly(scene_.ids());
     }
 
     void ModelViewerPanel::onPaint(wxPaintEvent& event)
@@ -931,6 +1252,8 @@ namespace ui::framework::occt
     void ModelViewerPanel::onMouseDown(wxMouseEvent& event)
     {
         last_mouse_position_ = event.GetPosition();
+        // Keys go to the viewport now (e.g. Delete), not a field typed in before.
+        canvas_->SetFocus();
         if (event.LeftDown() && initialized_)
         {
             if (viewer_->startGizmoDragIfHit(last_mouse_position_))
@@ -940,7 +1263,9 @@ namespace ui::framework::occt
                 return;
             }
 
-            rotating_ = true;
+            press_position_ = last_mouse_position_;
+            click_pending_  = true;
+            rotating_       = true;
             viewer_->startRotation(last_mouse_position_);
         }
         if (event.MiddleDown())
@@ -950,19 +1275,79 @@ namespace ui::framework::occt
 
     void ModelViewerPanel::dragGizmoTo(int modelIndex, const geometry::occt::Transform& transform)
     {
+        if (modelIndex == kSelectionTarget)
+        {
+            if (!isGroup())
+                return;
+            group_.offset = transform;
+            const gp_Pnt pivot(group_.pivot[0], group_.pivot[1], group_.pivot[2]);
+            viewer_->setGroupGizmo(pivot, transform);
+            for (const auto& [id, start] : group_.start)
+                dragModelTo(id, geometry::occt::placeInGroup(start, pivot, transform));
+            return;
+        }
         if (modelIndex < 0 || static_cast<std::size_t>(modelIndex) >= scene_.size())
             return;
-        const auto id = scene_.models()[static_cast<std::size_t>(modelIndex)].id;
+        dragModelTo(scene_.models()[static_cast<std::size_t>(modelIndex)].id, transform);
+    }
+
+    void ModelViewerPanel::dragModelTo(application::service::ModelId id, const geometry::occt::Transform& transform)
+    {
         if (tasks_.wouldWait(id))
         {
-            viewer_->previewTransform(modelIndex, transform);
-            pending_drag_.emplace(id, transform);
+            if (const auto index = scene_.indexOf(id))
+                viewer_->previewTransform(static_cast<int>(*index), transform);
+            pending_drags_[id] = transform;
         }
         else
         {
-            pending_drag_.reset();
-            tasks_.submit(application::tasks::moveTask(scene_, *viewer_, id, transform));
+            pending_drags_.erase(id);
+            submitMove(id, transform);
         }
+    }
+
+    void ModelViewerPanel::submitMove(application::service::ModelId id, const geometry::occt::Transform& transform)
+    {
+        queued_moves_[id] = transform;
+        tasks_.submit(application::tasks::moveTask(scene_, *viewer_, id, transform));
+    }
+
+    geometry::occt::Transform ModelViewerPanel::latestTransform(application::service::ModelId id) const
+    {
+        if (const auto pending = pending_drags_.find(id); pending != pending_drags_.end())
+            return pending->second;
+        if (const auto queued = queued_moves_.find(id); queued != queued_moves_.end() && tasks_.wouldWait(id))
+            return queued->second;
+        const auto* model = scene_.find(id);
+        return model != nullptr ? model->transform : geometry::occt::Transform{};
+    }
+
+    void ModelViewerPanel::resetGroup()
+    {
+        group_ = {};
+        if (!initialized_ || viewer_ == nullptr || selection_.size() < 2)
+        {
+            if (initialized_ && viewer_ != nullptr && viewer_->gizmoTargetIndex() == kSelectionTarget)
+                viewer_->setGizmoTarget(application::service::SceneService::kAllModels, GizmoTool::None);
+            return;
+        }
+        // From where the models are headed, so a move still queued isn't undone.
+        std::vector<std::pair<int, geometry::occt::Transform>> placements;
+        for (const int index : GetSelectedIndices())
+        {
+            const auto id        = scene_.models()[static_cast<std::size_t>(index)].id;
+            const auto transform = latestTransform(id);
+            group_.start.emplace_back(id, transform);
+            placements.emplace_back(index, transform);
+        }
+        const gp_Pnt pivot = viewer_->boundsCentre(placements);
+        group_.pivot       = {pivot.X(), pivot.Y(), pivot.Z()};
+        viewer_->setGroupGizmo(pivot, group_.offset);
+    }
+
+    bool ModelViewerPanel::isGroup() const noexcept
+    {
+        return selection_.size() >= 2 && !group_.start.empty();
     }
 
     void ModelViewerPanel::releaseGizmo()
@@ -970,14 +1355,14 @@ namespace ui::framework::occt
         if (gizmo_dragging_ && initialized_)
         {
             viewer_->stopGizmoDrag();
-            // The model was busy: what was previewed becomes a queued move.
-            if (pending_drag_)
+            // A model was busy: what was previewed becomes a queued move.
+            auto pending = std::move(pending_drags_);
+            pending_drags_.clear();
+            for (const auto& [id, transform] : pending)
             {
-                const auto [id, transform] = *pending_drag_;
-                pending_drag_.reset();
                 if (const auto index = scene_.indexOf(id))
                     viewer_->restoreLocation(static_cast<int>(*index));
-                tasks_.submit(application::tasks::moveTask(scene_, *viewer_, id, transform));
+                submitMove(id, transform);
             }
         }
         gizmo_dragging_ = false;
@@ -1004,6 +1389,46 @@ namespace ui::framework::occt
         return initialized_ ? viewer_->cameraEye() : std::array<double, 3>{};
     }
 
+    wxPoint ModelViewerPanel::ProjectToCanvas(const gp_Pnt& point) const
+    {
+        return initialized_ ? viewer_->project(point) : wxPoint();
+    }
+
+    void ModelViewerPanel::FitAll()
+    {
+        if (initialized_)
+            viewer_->fitAll();
+    }
+
+    void ModelViewerPanel::SimulateClick(const wxPoint& point, bool toggle)
+    {
+        if (!initialized_)
+            return;
+        // As onMouseDown()/onMouseUp(): a press on the gizmo is a drag.
+        if (viewer_->startGizmoDragIfHit(point))
+        {
+            gizmo_dragging_ = true;
+            releaseGizmo();
+            return;
+        }
+        handleClick(point, toggle);
+    }
+
+    bool ModelViewerPanel::IsHighlighted(int modelIndex) const
+    {
+        return initialized_ && viewer_->isHighlighted(modelIndex);
+    }
+
+    bool ModelViewerPanel::PickDataReady() const
+    {
+        return initialized_ && viewer_->pickIndicesReady();
+    }
+
+    bool ModelViewerPanel::HasHoverHighlight() const
+    {
+        return initialized_ && viewer_->hasDetected();
+    }
+
     void ModelViewerPanel::SetConfirmConvertLoaded(
         std::function<bool(LoadedModelsQuestion question, std::size_t models)> confirm)
     {
@@ -1022,6 +1447,12 @@ namespace ui::framework::occt
         {
             releaseGizmo();
             rotating_ = false;
+            // Motion events may not come in between (a fast flick): check the release too.
+            const wxPoint release = event.GetPosition();
+            if (click_pending_ && std::abs(release.x - press_position_.x) <= kClickSlop &&
+                std::abs(release.y - press_position_.y) <= kClickSlop)
+                handleClick(release, event.ControlDown()); // Cmd on macOS
+            click_pending_ = false;
         }
         if (event.MiddleUp())
             panning_ = false;
@@ -1057,6 +1488,16 @@ namespace ui::framework::occt
 
         if (!rotating_ && !panning_)
             return;
+
+        // Until the pointer leaves the click zone, this may still be a click:
+        // don't nudge the camera.
+        if (click_pending_)
+        {
+            if (std::abs(position.x - press_position_.x) <= kClickSlop &&
+                std::abs(position.y - press_position_.y) <= kClickSlop)
+                return;
+            click_pending_ = false;
+        }
 
         const int dx = position.x - last_mouse_position_.x;
         const int dy = position.y - last_mouse_position_.y;

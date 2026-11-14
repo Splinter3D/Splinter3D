@@ -48,4 +48,26 @@ TEST_CASE("Performance: importing and displaying a large model", "[.][perf]")
         if (line.find("[scene] imported") != std::string::npos || line.find("[viewer] displayed") != std::string::npos)
             std::cout << line << '\n';
     std::cout << "[perf] loadFile -> shown: " << std::chrono::duration<double>(end - start).count() << " s\n";
+
+    // A click right away: the click data is still being built (bounding box meanwhile).
+    const wxPoint centre(panel->GetClientSize().x / 2, panel->GetClientSize().y / 2);
+    {
+        const auto pickStart = std::chrono::steady_clock::now();
+        const int  picked    = panel->PickModelAt(centre);
+        std::cout << "[perf] pick while building (model " << picked << "): "
+                  << std::chrono::duration<double>(std::chrono::steady_clock::now() - pickStart).count() << " s\n";
+    }
+    const auto indexStart = std::chrono::steady_clock::now();
+    REQUIRE(tests::support::pumpUntil([&] { return panel->PickDataReady(); }, std::chrono::minutes(10)));
+    std::cout << "[perf] click data ready after a further "
+              << std::chrono::duration<double>(std::chrono::steady_clock::now() - indexStart).count() << " s\n";
+
+    for (int pick = 1; pick <= 2; ++pick)
+    {
+        const auto pickStart = std::chrono::steady_clock::now();
+        const int  picked    = panel->PickModelAt(centre);
+        const auto pickEnd   = std::chrono::steady_clock::now();
+        std::cout << "[perf] pick " << pick << " (model " << picked
+                  << "): " << std::chrono::duration<double>(pickEnd - pickStart).count() << " s\n";
+    }
 }

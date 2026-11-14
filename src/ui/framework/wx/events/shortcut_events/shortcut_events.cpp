@@ -6,7 +6,9 @@
 #include <string>
 #include <utility>
 #include <wx/accel.h>
+#include <wx/combobox.h>
 #include <wx/menu.h>
+#include <wx/textentry.h>
 
 namespace ui::framework::wx
 {
@@ -19,7 +21,7 @@ namespace ui::framework::wx
                 const char* key;          // setting key
                 const char* defaultValue; // wxAcceleratorEntry raw string
                 const char* label;        // locale key
-                int         command;      // menu command sent; 0: model management
+                int         command;      // menu command sent; 0: its action (see ShortcutEvents::actions_)
             };
 
             constexpr Shortcut kShortcuts[] = {
@@ -34,11 +36,35 @@ namespace ui::framework::wx
                 {"keys.fullscreen", "F11", "settings.keys.fullscreen", ids::view::kToggleFullscreen},
 #endif
                 {"keys.quit", "Ctrl+Q", "settings.keys.quit", ids::file::kExit},
+#if defined(__WXOSX__)
+                {"keys.delete_model", "Back", "settings.keys.delete_model", 0},
+#else
+                {"keys.delete_model", "Delete", "settings.keys.delete_model", 0},
+#endif
+                {"keys.deselect", "Escape", "settings.keys.deselect", 0},
             };
 
             bool parse(const std::string& value, wxAcceleratorEntry& entry)
             {
                 return !value.empty() && entry.FromString(wxString::FromUTF8(value));
+            }
+
+            // Whether a text field with the focus should get this key rather
+            // than the shortcuts: no Ctrl/Command, Control or Alt, and neither
+            // a function key nor Escape (which edits nothing).
+            bool editsText(const wxKeyEvent& event)
+            {
+                wxWindow* focus = wxWindow::FindFocus();
+                if (dynamic_cast<wxTextEntry*>(focus) == nullptr)
+                    return false;
+                // A read-only combo box (the transform target) is a text entry
+                // nobody types in.
+                if (const auto* combo = dynamic_cast<wxComboBox*>(focus); combo != nullptr && combo->HasFlag(wxCB_READONLY))
+                    return false;
+                if (event.ControlDown() || event.RawControlDown() || event.AltDown())
+                    return false;
+                const int key = event.GetKeyCode();
+                return key != WXK_ESCAPE && (key < WXK_F1 || key > WXK_F24);
             }
         } // namespace
 
@@ -64,6 +90,11 @@ namespace ui::framework::wx
                 event.Skip();
                 return;
             }
+            if (editsText(event))
+            {
+                event.Skip();
+                return;
+            }
 
             const auto& settings = platform::settings::SettingsRegistry::getInstance();
             for (const auto& shortcut : kShortcuts)
@@ -72,8 +103,9 @@ namespace ui::framework::wx
                     continue;
                 if (shortcut.command == 0)
                 {
-                    if (on_model_management_)
-                        on_model_management_();
+                    const auto action = actions_.find(shortcut.key);
+                    if (action == actions_.end() || !action->second || !action->second())
+                        event.Skip();
                     return;
                 }
                 wxCommandEvent command(wxEVT_MENU, shortcut.command);

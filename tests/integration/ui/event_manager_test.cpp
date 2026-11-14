@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 #include <wx/spinctrl.h>
+#include <wx/textentry.h>
 
 namespace ids = ui::framework::wx::ids;
 using tests::support::ScopedFrame;
@@ -34,7 +35,16 @@ namespace
             callbacks.onSave             = [this] { fired.emplace_back("save"); };
             callbacks.onExit             = [this] { fired.emplace_back("exit"); };
             callbacks.onTransformChanged = [this] { fired.emplace_back("transform"); };
-            callbacks.transformControls  = {spin};
+            callbacks.onModelManagement  = [this] { fired.emplace_back("models"); };
+            callbacks.onDeselect         = [this] {
+                fired.emplace_back("deselect");
+                return true;
+            };
+            callbacks.onDeleteSelection = [this] {
+                fired.emplace_back("delete");
+                return somethingToDelete;
+            };
+            callbacks.transformControls = {spin};
 
             manager = std::make_unique<EventManager>(frame.get(), std::move(callbacks));
             manager->bindAll();
@@ -55,6 +65,7 @@ namespace
         wxSpinCtrlDouble*             spin = nullptr;
         std::unique_ptr<EventManager> manager;
         std::vector<std::string>      fired;
+        bool                          somethingToDelete = true;
     };
 } // namespace
 
@@ -145,4 +156,74 @@ TEST_CASE_METHOD(EventManagerFixture, "EventManager: language menu sets the lang
 
     sendMenuCommand(frame.get(), ids::language::kDefault);
     CHECK(settings.get(platform::locale::kLanguageSetting) == "default");
+}
+
+namespace
+{
+#if defined(__WXOSX__)
+    constexpr int kDeleteKey = WXK_BACK;
+#else
+    constexpr int kDeleteKey = WXK_DELETE;
+#endif
+} // namespace
+
+TEST_CASE_METHOD(EventManagerFixture, "EventManager: the delete shortcut calls its action", "[integration][ui][events][shortcuts]")
+{
+    REQUIRE(platform::settings::SettingsRegistry::getInstance().find("keys.delete_model") != nullptr);
+    pressKey(kDeleteKey, false);
+    CHECK(fired == std::vector<std::string>{"delete"});
+
+    fired.clear();
+    pressKey('O', true); // Open, not model management
+    wxKeyEvent models(wxEVT_CHAR_HOOK);
+    models.m_keyCode = 'O';
+    models.SetControlDown(true);
+    models.SetShiftDown(true);
+    models.SetEventObject(frame.get());
+    frame->ProcessWindowEvent(models);
+    CHECK(fired == std::vector<std::string>{"open", "models"});
+}
+
+TEST_CASE_METHOD(EventManagerFixture, "EventManager: bare keys are left to text fields", "[integration][ui][events][shortcuts]")
+{
+    frame.showAndWait();
+    spin->SetFocus();
+    tests::support::pumpEvents();
+    REQUIRE(dynamic_cast<wxTextEntry*>(wxWindow::FindFocus()) != nullptr);
+
+    pressKey(kDeleteKey, false); // edits the field
+    CHECK(fired.empty());
+
+    pressKey('S', true); // a shortcut with a modifier still works there
+    CHECK(fired == std::vector<std::string>{"save"});
+}
+
+TEST_CASE_METHOD(EventManagerFixture, "EventManager: the delete key goes on when there is nothing to delete", "[integration][ui][events][shortcuts]")
+{
+    wxKeyEvent key(wxEVT_CHAR_HOOK);
+    key.m_keyCode = kDeleteKey;
+    key.SetEventObject(frame.get());
+
+    frame->ProcessWindowEvent(key);
+    CHECK_FALSE(key.GetSkipped()); // deleted: handled
+
+    somethingToDelete = false;
+    wxKeyEvent again(key);
+    again.Skip(false);
+    frame->ProcessWindowEvent(again);
+    CHECK(again.GetSkipped()); // nothing selected: the focused control gets it
+}
+
+TEST_CASE_METHOD(EventManagerFixture, "EventManager: Escape deselects, even from a text field", "[integration][ui][events][shortcuts]")
+{
+    REQUIRE(platform::settings::SettingsRegistry::getInstance().find("keys.deselect") != nullptr);
+    pressKey(WXK_ESCAPE, false);
+    CHECK(fired == std::vector<std::string>{"deselect"});
+
+    frame.showAndWait();
+    spin->SetFocus();
+    tests::support::pumpEvents();
+    REQUIRE(dynamic_cast<wxTextEntry*>(wxWindow::FindFocus()) != nullptr);
+    pressKey(WXK_ESCAPE, false);
+    CHECK(fired == std::vector<std::string>{"deselect", "deselect"});
 }

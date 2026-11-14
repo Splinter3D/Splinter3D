@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <functional>
 #include <wx/combobox.h>
 #include <wx/spinctrl.h>
@@ -60,11 +61,32 @@ namespace ui::toolbars
         void SetTargets(const wxArrayString& modelNames);
 
         /**
+         * @brief Shows an extra "{count} selected" entry, after the model
+         * names, while count >= 2 models are selected; removes it otherwise
+         * (falling back to "All models" if it was chosen).
+         */
+        void SetSelectionCount(std::size_t count);
+
+        /**
          * @brief Currently selected target (shared by both panels): -1
-         * means "All models", otherwise a 0-based index into the names
+         * means "All models", -2 the selection entry (see
+         * SetSelectionCount()), otherwise a 0-based index into the names
          * passed to the last SetTargets() call.
          */
         [[nodiscard]] int GetTargetIndex() const;
+
+        /**
+         * @brief Puts both dropdowns on a target (as GetTargetIndex()
+         * numbers them) without invoking the target-changed callback. An
+         * index with no entry selects "All models".
+         */
+        void SetTargetIndex(int index);
+
+        /**
+         * @brief Unpresses both buttons and hides the fields, as clicking
+         * the pressed one would.
+         */
+        void CloseActiveTool();
 
         /**
          * @brief Invoked whenever the user picks a different target in
@@ -158,6 +180,12 @@ namespace ui::toolbars
         // Notifies on_active_tool_changed_ with GetActiveTool().
         void NotifyActiveToolChanged();
 
+        // Rebuilds both dropdowns: "All models", the model names, and the
+        // selection entry if any, then selects `target` (GetTargetIndex()'s numbering).
+        void FillTargets(int target);
+
+        wxArrayString                   model_names_;
+        std::size_t                     selection_count_     = 0;
         wxComboBox*                     move_target_combo_   = nullptr;
         wxComboBox*                     rotate_target_combo_ = nullptr;
         std::function<void(int)>        on_target_changed_;

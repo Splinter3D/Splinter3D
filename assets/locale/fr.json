@@ -21,6 +21,9 @@
     "tasks": {
       "auto_open": "Ouvrir le panneau des t\u00e2ches quand une t\u00e2che d\u00e9marre"
     },
+    "models": {
+      "confirm_delete": "Confirmer avant de supprimer un mod\u00e8le"
+    },
     "import": {
       "precision": "Pr\u00e9cision des maillages",
       "precision_single": "Simple (float)",
@@ -36,6 +39,8 @@
       "model_management": "Gestion des mod\u00e8les",
       "fullscreen": "Plein \u00e9cran",
       "quit": "Quitter",
+      "delete_model": "Supprimer le mod\u00e8le",
+      "deselect": "Fermer l'outil et d\u00e9s\u00e9lectionner",
       "press": "Appuyez sur des touches\u2026",
       "none": "Aucun",
       "reset_tooltip": "Revenir au raccourci par d\u00e9faut",
@@ -73,7 +78,8 @@
     "transform": {
       "move": "D\u00e9placer",
       "rotate": "Pivoter",
-      "all_models": "Tous les mod\u00e8les"
+      "all_models": "Tous les mod\u00e8les",
+      "selected": "{count} s\u00e9lectionn\u00e9s"
     }
   },
   "tasks": {
@@ -122,7 +128,11 @@
     "number": "Nombre :",
     "open_file": "Ouvrir un fichier",
     "all_files": "Tous les fichiers (*.*)|*.*",
-    "please_wait": "Veuillez patienter"
+    "please_wait": "Veuillez patienter",
+    "delete_model": {
+      "one": "Supprimer \u00ab {name} \u00bb ?",
+      "many": "Supprimer {count} mod\u00e8les ?"
+    }
   },
   "viewer": {
     "import": {

@@ -21,6 +21,9 @@
     "tasks": {
       "auto_open": "Abrir el panel de tareas cuando empieza una tarea"
     },
+    "models": {
+      "confirm_delete": "Confirmar antes de eliminar un modelo"
+    },
     "import": {
       "precision": "Precisi\u00f3n de las mallas",
       "precision_single": "Simple (float)",
@@ -36,6 +39,8 @@
       "model_management": "Gesti\u00f3n de modelos",
       "fullscreen": "Pantalla completa",
       "quit": "Salir",
+      "delete_model": "Eliminar modelo",
+      "deselect": "Cerrar la herramienta y deseleccionar",
       "press": "Pulse las teclas\u2026",
       "none": "Ninguno",
       "reset_tooltip": "Volver al atajo predeterminado",
@@ -73,7 +78,8 @@
     "transform": {
       "move": "Mover",
       "rotate": "Rotar",
-      "all_models": "Todos los modelos"
+      "all_models": "Todos los modelos",
+      "selected": "{count} seleccionados"
     }
   },
   "tasks": {
@@ -122,7 +128,11 @@
     "number": "N\u00famero:",
     "open_file": "Abrir archivo",
     "all_files": "Todos los archivos (*.*)|*.*",
-    "please_wait": "Espere un momento"
+    "please_wait": "Espere un momento",
+    "delete_model": {
+      "one": "\u00bfEliminar \u00ab{name}\u00bb?",
+      "many": "\u00bfEliminar {count} modelos?"
+    }
   },
   "viewer": {
     "import": {

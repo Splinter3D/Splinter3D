@@ -1,5 +1,6 @@
 #include "application/tasks/task.hpp"
 #include "geometry/occt/shape.hpp"
+#include "geometry/occt/transform.hpp"
 #include "platform/logger/logger.hpp"
 #include "platform/settings/settings_registry.hpp"
 #include "support/temp_dir.hpp"
@@ -7,9 +8,12 @@
 #include "ui/framework/occt/model_viewer_panel.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <chrono>
+#include <cmath>
 #include <filesystem>
+#include <gp_Pnt.hxx>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -627,4 +631,364 @@ TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: turning B-Reps on import on o
         settings.set(ui::framework::occt::kComputeBRepSetting, "1"); // nothing left to convert
         CHECK(asked == 0);
     }
+}
+
+namespace
+{
+    // Two unit cubes side by side (the second moved to x=3), framed in the view.
+    class SelectionFixture : public ViewerFixture
+    {
+      public:
+        SelectionFixture()
+        {
+            panel->loadFile(kCube);
+            REQUIRE(settle());
+            panel->loadFile(kCube);
+            REQUIRE(settle());
+            panel->setTransform(1, 3, 0, 0, 0, 0, 0);
+            REQUIRE(tests::support::pumpUntil([this] { return panel->PickDataReady(); }));
+            panel->FitAll();
+            panel->SetOnSelectionChanged([this] { ++selectionChanges; });
+            panel->SetOnBackgroundClicked([this] { ++backgroundClicks; });
+        }
+
+        // Where the centre of model i's unit cube shows on the canvas.
+        wxPoint centreOf(int i) const
+        {
+            const auto t = panel->GetTransform(i);
+            return panel->ProjectToCanvas(gp_Pnt(t.moveX + 0.5, t.moveY + 0.5, t.moveZ + 0.5));
+        }
+
+        int selectionChanges = 0;
+        int backgroundClicks = 0;
+    };
+
+    const wxPoint kCorner(2, 2);
+} // namespace
+
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: picking finds the model under a point", "[integration][ui][viewer][selection]")
+{
+    CHECK(panel->PickModelAt(centreOf(0)) == 0);
+    CHECK(panel->PickModelAt(centreOf(1)) == 1);
+    CHECK(panel->PickModelAt(kCorner) == -1);
+}
+
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: clicks select, replace, toggle and clear", "[integration][ui][viewer][selection]")
+{
+    panel->SimulateClick(centreOf(0), false);
+    CHECK(panel->GetSelectedIndices() == std::vector<int>{0});
+    CHECK(panel->IsHighlighted(0));
+    CHECK_FALSE(panel->IsHighlighted(1));
+
+    panel->SimulateClick(centreOf(1), false);
+    CHECK(panel->GetSelectedIndices() == std::vector<int>{1});
+    CHECK_FALSE(panel->IsHighlighted(0));
+    CHECK(panel->IsHighlighted(1));
+
+    panel->SimulateClick(centreOf(0), true);
+    CHECK(panel->GetSelectedIndices() == std::vector<int>{1, 0});
+    panel->SimulateClick(centreOf(1), true);
+    CHECK(panel->GetSelectedIndices() == std::vector<int>{0});
+
+    panel->SimulateClick(kCorner, true); // toggle on nothing: kept
+    CHECK(panel->GetSelectedIndices() == std::vector<int>{0});
+    CHECK(backgroundClicks == 0);
+
+    panel->SimulateClick(kCorner, false);
+    CHECK(panel->GetSelectedIndices().empty());
+    CHECK_FALSE(panel->IsHighlighted(0));
+    CHECK(backgroundClicks == 1);
+    CHECK(selectionChanges == 5);
+}
+
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: click threshold", "[integration][ui][viewer][selection]")
+{
+    auto* canvas = tests::support::findDescendant<wxGLCanvas>(panel);
+    REQUIRE(canvas != nullptr);
+    const wxPoint c0 = centreOf(0);
+
+    // A little jitter is still a click.
+    sendMouse(canvas, wxEVT_LEFT_DOWN, c0.x, c0.y);
+    sendMouse(canvas, wxEVT_MOTION, c0.x + 2, c0.y + 2);
+    sendMouse(canvas, wxEVT_LEFT_UP, c0.x + 2, c0.y + 2);
+    CHECK(panel->GetSelectedIndices() == std::vector<int>{0});
+
+    // Further is an orbit: the selection stays.
+    panel->ClearSelection();
+    sendMouse(canvas, wxEVT_LEFT_DOWN, c0.x, c0.y);
+    sendMouse(canvas, wxEVT_MOTION, c0.x + 10, c0.y);
+    sendMouse(canvas, wxEVT_LEFT_UP, c0.x + 10, c0.y);
+    CHECK(panel->GetSelectedIndices().empty());
+    tests::support::pumpEvents();
+    CHECK_FALSE(canvas->HasCapture());
+}
+
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: hidden models can't be picked and leave the selection", "[integration][ui][viewer][selection]")
+{
+    const wxPoint c0 = centreOf(0);
+    panel->SelectOnly(0);
+    panel->SetModelVisibility(0, false);
+    CHECK(panel->GetSelectedIndices().empty());
+    CHECK(panel->PickModelAt(c0) == -1);
+    panel->SelectOnly(0); // not selectable while hidden
+    CHECK(panel->GetSelectedIndices().empty());
+}
+
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: removed models leave the selection", "[integration][ui][viewer][selection]")
+{
+    panel->SelectOnly(0);
+    panel->ToggleSelected(1);
+    panel->RemoveModel(0);
+    REQUIRE(settle());
+    CHECK(panel->GetSelectedIndices() == std::vector<int>{0}); // the former model 1
+    CHECK(panel->IsHighlighted(0));
+}
+
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: highlight survives a re-display", "[integration][ui][viewer][selection]")
+{
+    panel->SelectOnly(0);
+    panel->FocusModel(1); // erases and re-displays every model
+
+    auto& settings = platform::settings::SettingsRegistry::getInstance();
+    settings.reset(ui::framework::occt::kMeshPrecisionSetting);
+    panel->SetConfirmConvertLoaded([](ModelViewerPanel::LoadedModelsQuestion, std::size_t) { return true; });
+    settings.set(ui::framework::occt::kMeshPrecisionSetting, "double"); // swaps each presentation's shape
+    REQUIRE(settle());
+    settings.reset(ui::framework::occt::kMeshPrecisionSetting);
+    REQUIRE(settle());
+
+    CHECK(panel->IsHighlighted(0));
+    CHECK_FALSE(panel->IsHighlighted(1));
+}
+
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: gizmo hit wins over model pick", "[integration][ui][viewer][selection]")
+{
+    // Put model 1 right behind the middle of the gizmo's X arrow on model 0.
+    const wxPoint origin   = panel->ProjectToCanvas(gp_Pnt(0, 0, 0));
+    const wxPoint unitX    = panel->ProjectToCanvas(gp_Pnt(1, 0, 0));
+    const double  pxPerMm  = std::hypot(unitX.x - origin.x, unitX.y - origin.y);
+    const double  onArrowX = 40.0 / pxPerMm; // the arrow is 80 px long
+    panel->setTransform(1, onArrowX - 0.5, -0.5, -0.5, 0, 0, 0);
+    const wxPoint target = panel->ProjectToCanvas(gp_Pnt(onArrowX, 0, 0));
+    REQUIRE(panel->PickModelAt(target) == 1);
+
+    panel->SelectOnly(0);
+    panel->SetGizmoState(0, ModelViewerPanel::GizmoTool::Move);
+    panel->SimulateClick(target, false);
+
+    CHECK(panel->GetSelectedIndices() == std::vector<int>{0});
+    CHECK(backgroundClicks == 0);
+}
+
+namespace
+{
+    constexpr int kGroup = ModelViewerPanel::kSelectionTarget;
+
+    void requireMove(const ModelViewerPanel::TransformValues& t, double x, double y, double z)
+    {
+        CHECK_THAT(t.moveX, Catch::Matchers::WithinAbs(x, 1e-6));
+        CHECK_THAT(t.moveY, Catch::Matchers::WithinAbs(y, 1e-6));
+        CHECK_THAT(t.moveZ, Catch::Matchers::WithinAbs(z, 1e-6));
+    }
+
+    void requireSamePlacement(const ModelViewerPanel::TransformValues& actual, const ModelViewerPanel::TransformValues& expected)
+    {
+        for (const gp_Pnt& p : {gp_Pnt(0, 0, 0), gp_Pnt(1, 0, 0), gp_Pnt(0, 1, 0), gp_Pnt(0, 0, 1)})
+        {
+            const gp_Pnt a = p.Transformed(geometry::occt::toTrsf(actual));
+            const gp_Pnt e = p.Transformed(geometry::occt::toTrsf(expected));
+            CHECK(a.Distance(e) < 1e-6);
+        }
+    }
+} // namespace
+
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: group move", "[integration][ui][viewer][selection]")
+{
+    panel->SelectOnly(0);
+    panel->ToggleSelected(1);
+    panel->setTransform(kGroup, 10, 0, 0, 0, 0, 0);
+    REQUIRE(settle());
+    requireMove(panel->GetTransform(0), 10, 0, 0);
+    requireMove(panel->GetTransform(1), 13, 0, 0);
+    CHECK(panel->GetTransform(kGroup) == ModelViewerPanel::TransformValues{10, 0, 0, 0, 0, 0});
+}
+
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: group rotate around the shared centre", "[integration][ui][viewer][selection]")
+{
+    // Boxes [0,1]^3 and [3,4]x[0,1]^2: centre (2, 0.5, 0.5).
+    panel->SelectOnly(0);
+    panel->ToggleSelected(1);
+    panel->setTransform(kGroup, 0, 0, 0, 0, 0, 180);
+    REQUIRE(settle());
+    requireMove(panel->GetTransform(0), 4, 1, 0);
+    requireMove(panel->GetTransform(1), 1, 1, 0);
+}
+
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: group offsets combine and survive tool switches", "[integration][ui][viewer][selection]")
+{
+    panel->SelectOnly(0);
+    panel->ToggleSelected(1);
+    panel->SetGizmoState(kGroup, ModelViewerPanel::GizmoTool::Rotate);
+    panel->setTransform(kGroup, 0, 0, 0, 0, 0, 90);
+    REQUIRE(settle());
+    panel->SetGizmoState(kGroup, ModelViewerPanel::GizmoTool::Move);
+    panel->setTransform(kGroup, 5, 0, 0, 0, 0, 90);
+    REQUIRE(settle());
+
+    const gp_Pnt                            pivot(2, 0.5, 0.5);
+    const ModelViewerPanel::TransformValues offset{5, 0, 0, 0, 0, 90};
+    requireSamePlacement(panel->GetTransform(0), geometry::occt::placeInGroup({}, pivot, offset));
+    requireSamePlacement(panel->GetTransform(1), geometry::occt::placeInGroup({3, 0, 0, 0, 0, 0}, pivot, offset));
+    CHECK(panel->GetTransform(kGroup) == offset);
+}
+
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: a selection change resets the group offset", "[integration][ui][viewer][selection]")
+{
+    panel->SelectOnly(0);
+    panel->ToggleSelected(1);
+    panel->setTransform(kGroup, 10, 0, 0, 0, 0, 0);
+    REQUIRE(settle());
+
+    panel->ToggleSelected(1);
+    panel->ToggleSelected(1);
+    CHECK(panel->GetTransform(kGroup) == ModelViewerPanel::TransformValues{});
+    requireMove(panel->GetTransform(0), 10, 0, 0); // the models stay where they went
+
+    panel->setTransform(kGroup, 1, 0, 0, 0, 0, 0); // from the new starting point
+    REQUIRE(settle());
+    requireMove(panel->GetTransform(0), 11, 0, 0);
+}
+
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: a group move on a busy model is queued", "[integration][ui][viewer][selection][tasks]")
+{
+    panel->SelectOnly(0);
+    panel->ToggleSelected(1);
+    const auto holder = hold(panel->GetModelIds()[1]);
+
+    panel->setTransform(kGroup, 10, 0, 0, 0, 0, 0);
+    tests::support::pumpEvents();
+    requireMove(panel->GetTransform(1), 3, 0, 0);
+
+    panel->tasks().cancel(holder);
+    REQUIRE(settle());
+    requireMove(panel->GetTransform(0), 10, 0, 0);
+    requireMove(panel->GetTransform(1), 13, 0, 0);
+}
+
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: dragging the group gizmo", "[integration][ui][viewer][selection]")
+{
+    panel->SelectOnly(0);
+    panel->ToggleSelected(1);
+    panel->SetGizmoState(kGroup, ModelViewerPanel::GizmoTool::Move);
+
+    panel->SimulateGizmoDrag(kGroup, ModelViewerPanel::TransformValues{3, 0, 0, 0, 0, 0});
+    panel->SimulateGizmoRelease();
+    REQUIRE(settle());
+    requireMove(panel->GetTransform(0), 3, 0, 0);
+    requireMove(panel->GetTransform(1), 6, 0, 0);
+    CHECK(panel->GetTransform(kGroup) == ModelViewerPanel::TransformValues{3, 0, 0, 0, 0, 0});
+}
+
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: the group target needs two selected models", "[integration][ui][viewer][selection]")
+{
+    panel->SelectOnly(0);
+    panel->setTransform(kGroup, 10, 0, 0, 0, 0, 0);
+    REQUIRE(settle());
+    requireMove(panel->GetTransform(0), 0, 0, 0);
+    CHECK(panel->GetTransform(kGroup) == ModelViewerPanel::TransformValues{});
+    panel->SetGizmoState(kGroup, ModelViewerPanel::GizmoTool::Move); // nothing to show; harmless
+}
+
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: a new group starts from moves still queued", "[integration][ui][viewer][selection][tasks]")
+{
+    panel->SelectOnly(0);
+    panel->ToggleSelected(1);
+    const auto holder = hold(panel->GetModelIds()[1]);
+    panel->setTransform(kGroup, 10, 0, 0, 0, 0, 0); // model 1's move waits
+
+    panel->ToggleSelected(1); // a new selection: a new starting point
+    panel->ToggleSelected(1);
+    panel->setTransform(kGroup, 0, 5, 0, 0, 0, 0);
+
+    panel->tasks().cancel(holder);
+    REQUIRE(settle());
+    requireMove(panel->GetTransform(0), 10, 5, 0);
+    requireMove(panel->GetTransform(1), 13, 5, 0); // the first move isn't undone
+}
+
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: pressing next to the gizmo leaves no hover highlight", "[integration][ui][viewer][selection]")
+{
+    auto*         canvas = tests::support::findDescendant<wxGLCanvas>(panel);
+    const wxPoint c1     = centreOf(1);
+    REQUIRE(panel->PickModelAt(c1) == 1); // model 1 is pickable from now on
+    panel->SetGizmoState(0, ModelViewerPanel::GizmoTool::Move);
+
+    sendMouse(canvas, wxEVT_LEFT_DOWN, c1.x, c1.y); // misses the gizmo: an orbit starts
+    CHECK_FALSE(panel->HasHoverHighlight());
+    sendMouse(canvas, wxEVT_LEFT_UP, c1.x, c1.y);
+}
+
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: the model in front is picked", "[integration][ui][viewer][selection]")
+{
+    // The view looks along -(1,-1,1): move model 1 straight behind model 0, then in front.
+    panel->setTransform(1, -3, 3, -3, 0, 0, 0);
+    REQUIRE(settle());
+    CHECK(panel->PickModelAt(centreOf(0)) == 0);
+    panel->setTransform(1, 3, -3, 3, 0, 0, 0);
+    REQUIRE(settle());
+    CHECK(panel->PickModelAt(centreOf(0)) == 1);
+}
+
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: click data is rebuilt for a new mesh", "[integration][ui][viewer][selection][settings]")
+{
+    auto& settings = platform::settings::SettingsRegistry::getInstance();
+    settings.reset(ui::framework::occt::kMeshPrecisionSetting);
+    panel->SetConfirmConvertLoaded([](ModelViewerPanel::LoadedModelsQuestion, std::size_t) { return true; });
+    settings.set(ui::framework::occt::kMeshPrecisionSetting, "double");
+    REQUIRE(settle());
+    REQUIRE(tests::support::pumpUntil([this] { return panel->PickDataReady(); }));
+    settings.reset(ui::framework::occt::kMeshPrecisionSetting);
+    REQUIRE(settle());
+    REQUIRE(tests::support::pumpUntil([this] { return panel->PickDataReady(); }));
+
+    CHECK(panel->PickModelAt(centreOf(0)) == 0);
+    CHECK(panel->PickModelAt(centreOf(1)) == 1);
+}
+
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: models are picked again after hiding, showing and focusing", "[integration][ui][viewer][selection]")
+{
+    REQUIRE(panel->PickModelAt(centreOf(0)) == 0);
+    panel->SetModelVisibility(0, false);
+    panel->SetModelVisibility(0, true);
+    CHECK(panel->PickModelAt(centreOf(0)) == 0);
+    panel->FocusModel(1);
+    panel->FitAll();
+    CHECK(panel->PickModelAt(centreOf(0)) == 0);
+    CHECK(panel->PickModelAt(centreOf(1)) == 1);
+}
+
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: a release far from the press is not a click", "[integration][ui][viewer][selection]")
+{
+    auto*         canvas = tests::support::findDescendant<wxGLCanvas>(panel);
+    const wxPoint c0     = centreOf(0);
+    // A fast flick: no motion event between press and release.
+    sendMouse(canvas, wxEVT_LEFT_DOWN, c0.x - 20, c0.y);
+    sendMouse(canvas, wxEVT_LEFT_UP, c0.x, c0.y);
+    CHECK(panel->GetSelectedIndices().empty());
+}
+
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: on a removal listeners hear of the new models before the new selection", "[integration][ui][viewer][selection]")
+{
+    panel->SelectOnly(0);
+    std::vector<std::string> heard;
+    std::size_t              modelsWhenSelectionChanged = 0;
+    panel->SetOnModelStateChanged([&](bool) { heard.emplace_back("models"); });
+    panel->SetOnSelectionChanged([&] {
+        heard.emplace_back("selection");
+        modelsWhenSelectionChanged = panel->GetModelNames().size();
+    });
+    panel->RemoveModel(0);
+    REQUIRE(settle());
+    CHECK(heard == std::vector<std::string>{"models", "selection"});
+    CHECK(modelsWhenSelectionChanged == 1);
 }

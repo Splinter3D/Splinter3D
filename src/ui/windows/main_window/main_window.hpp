@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <functional>
 #include <memory>
+#include <vector>
 
 namespace ui::dialogs
 {
@@ -27,6 +28,8 @@ namespace ui::windows
 {
     /// Whether the tasks panel opens by itself when a task starts ("1"/"0").
     inline constexpr const char* kTasksAutoOpenSetting = "tasks.auto_open";
+    /// Whether deleting models asks first ("1"/"0").
+    inline constexpr const char* kConfirmDeleteSetting = "models.confirm_delete";
 
     /**
      * @brief Main application window.
@@ -43,9 +46,18 @@ namespace ui::windows
         // type: model_management_menu_'s unique_ptr can only be destroyed there.
         ~MainWindow() override;
 
+        /**
+         * @brief Removes these models (indices as the viewer's), after asking
+         * if kConfirmDeleteSetting is on; then nothing is selected. Does
+         * nothing for an empty list.
+         */
+        void DeleteModels(std::vector<int> indices);
+
 #if defined(SPLINTER3D_TESTING)
         /** @brief Test-only: replaces the "quit with tasks pending?" dialog (true = quit). */
         void SetConfirmQuit(std::function<bool(std::size_t pending)> confirm);
+        /** @brief Test-only: replaces the "delete?" dialog (true = delete). */
+        void SetConfirmDelete(std::function<bool(const wxString& message)> confirm);
 #endif
 
       protected:
@@ -67,7 +79,9 @@ namespace ui::windows
         ui::panels::TasksPanel*                  tasks_panel_       = nullptr;
         ui::panels::SettingsPanel*               settings_panel_    = nullptr;
         // Asked before closing with tasks pending; true quits. Empty: a dialog asks.
-        std::function<bool(std::size_t pending)>                 confirm_quit_;
+        std::function<bool(std::size_t pending)> confirm_quit_;
+        // Asked before deleting models; true deletes. Empty: a dialog asks.
+        std::function<bool(const wxString& message)>             confirm_delete_;
         std::unique_ptr<ui::framework::wx::events::EventManager> event_manager_;
         std::unique_ptr<ui::dialogs::ModelManagementDialog>      model_management_menu_;
 
@@ -84,6 +98,9 @@ namespace ui::windows
         // Shows/hides/repositions the viewport's gizmo to match the
         // toolbar's current target and active tool.
         void UpdateGizmoState();
+
+        // Puts the toolbar's target dropdown on the viewer's selection.
+        void SyncTargetToSelection();
 
         void ShowModelManagement();
 
