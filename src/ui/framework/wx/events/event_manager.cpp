@@ -1,5 +1,6 @@
 #include "event_manager.hpp"
 
+#include "history_events/history_events.hpp"
 #include "locale_events/locale_events.hpp"
 #include "menu_events/menu_events.hpp"
 #include "shortcut_events/shortcut_events.hpp"
@@ -40,6 +41,14 @@ namespace ui::framework::wx
                     std::move(callbacks.onExit)));
 
             binders_.emplace_back(
+                std::make_unique<HistoryEvents>(
+                    frame,
+                    std::move(callbacks.onUndo),
+                    std::move(callbacks.onRedo),
+                    std::move(callbacks.canUndo),
+                    std::move(callbacks.canRedo)));
+
+            binders_.emplace_back(
                 std::make_unique<ThemeEvents>(frame));
 
             binders_.emplace_back(
@@ -55,6 +64,7 @@ namespace ui::framework::wx
                         {"keys.delete_model", std::move(callbacks.onDeleteSelection)},
                         {"keys.hide_selection", std::move(callbacks.onHideSelection)},
                         {"keys.duplicate", std::move(callbacks.onDuplicateSelection)},
+                        {"keys.select_all", std::move(callbacks.onSelectAll)},
                         {"keys.deselect", std::move(callbacks.onDeselect)},
                     }));
 

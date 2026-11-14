@@ -34,7 +34,7 @@ namespace
         {
             const auto toggles = childrenOfType(toolbar, wxCLASSINFO(wxToggleButton));
             const auto combos  = childrenOfType(toolbar, wxCLASSINFO(wxComboBox));
-            REQUIRE(toggles.size() == 2);
+            REQUIRE(toggles.size() == 4); // Move, Rotate, then Undo and Redo
             REQUIRE(combos.size() == 2);
             moveButton   = static_cast<wxToggleButton*>(toggles[0]);
             rotateButton = static_cast<wxToggleButton*>(toggles[1]);

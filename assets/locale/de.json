@@ -23,7 +23,7 @@
     },
     "models": {
       "confirm_delete": "Vor dem L\u00f6schen eines Modells nachfragen",
-      "include_hidden": "Ausgeblendete Modelle in Umschalt-Klick-Bereiche der Modellliste einbeziehen"
+      "include_hidden": "Ausgeblendete Modelle in Umschalt-Klick-Bereiche der Modellliste und in Alles ausw\u00e4hlen einbeziehen"
     },
     "import": {
       "precision": "Netzgenauigkeit",
@@ -37,6 +37,8 @@
       "new": "Neu",
       "open": "\u00d6ffnen",
       "save": "Speichern",
+      "undo": "R\u00fckg\u00e4ngig",
+      "redo": "Wiederholen",
       "model_management": "Modellbereich",
       "tasks_panel": "Aufgabenbereich",
       "settings_panel": "Einstellungsbereich",
@@ -45,6 +47,7 @@
       "delete_model": "Modell l\u00f6schen",
       "hide_selection": "Ausgew\u00e4hlte Modelle ausblenden",
       "duplicate": "Ausgew\u00e4hlte Modelle duplizieren",
+      "select_all": "Alle Modelle ausw\u00e4hlen",
       "deselect": "Werkzeug schlie\u00dfen und Auswahl aufheben",
       "press": "Tasten dr\u00fccken\u2026",
       "none": "Keine",
@@ -62,6 +65,11 @@
       "import": "&Importieren...",
       "export": "&Exportieren...",
       "exit": "&Beenden\tAlt+F4"
+    },
+    "edit": {
+      "title": "&Bearbeiten",
+      "undo": "&R\u00fckg\u00e4ngig",
+      "redo": "&Wiederholen"
     },
     "about": {
       "text": "wxWidgets-Demo\nAlle wichtigen Widgets an einem Ort.",
@@ -93,6 +101,12 @@
       "rotate": "Drehen",
       "all_models": "Alle Modelle",
       "selected": "{count} ausgew\u00e4hlt"
+    },
+    "history": {
+      "undo": "R\u00fckg\u00e4ngig",
+      "redo": "Wiederholen",
+      "undo_tooltip": "Die letzte \u00c4nderung an den Modellen r\u00fcckg\u00e4ngig machen",
+      "redo_tooltip": "Die zuletzt r\u00fcckg\u00e4ngig gemachte \u00c4nderung wiederholen"
     }
   },
   "tasks": {
@@ -142,7 +156,7 @@
     "duplicate_tooltip": "Die ausgew\u00e4hlten Modelle an Ort und Stelle kopieren",
     "show_all_tooltip": "Alle Modelle zeigen",
     "include_hidden": "Ausgeblendete einbeziehen",
-    "include_hidden_tooltip": "Umschalt-Klick-Bereiche w\u00e4hlen auch ausgeblendete Modelle aus"
+    "include_hidden_tooltip": "Umschalt-Klick-Bereiche und Alles ausw\u00e4hlen w\u00e4hlen auch ausgeblendete Modelle aus"
   },
   "dialogs": {
     "info": "Info",

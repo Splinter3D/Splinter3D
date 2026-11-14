@@ -28,6 +28,12 @@ namespace ui::framework::wx
                 {"keys.new", "Ctrl+N", "settings.keys.new", ids::file::kNew},
                 {"keys.open", "Ctrl+O", "settings.keys.open", ids::file::kOpen},
                 {"keys.save", "Ctrl+S", "settings.keys.save", ids::file::kSave},
+                {"keys.undo", "Ctrl+Z", "settings.keys.undo", ids::history::kUndo},
+#if defined(__WXMSW__)
+                {"keys.redo", "Ctrl+Y", "settings.keys.redo", ids::history::kRedo},
+#else
+                {"keys.redo", "Ctrl+Shift+Z", "settings.keys.redo", ids::history::kRedo},
+#endif
                 {"keys.model_management", "Ctrl+Shift+O", "settings.keys.model_management", 0},
                 {"keys.tasks_panel", "Ctrl+Shift+T", "settings.keys.tasks_panel", 0},
                 {"keys.settings_panel", "Ctrl+,", "settings.keys.settings_panel", 0},
@@ -45,6 +51,7 @@ namespace ui::framework::wx
 #endif
                 {"keys.hide_selection", "H", "settings.keys.hide_selection", 0},
                 {"keys.duplicate", "Ctrl+D", "settings.keys.duplicate", 0},
+                {"keys.select_all", "Ctrl+A", "settings.keys.select_all", 0},
                 {"keys.deselect", "Escape", "settings.keys.deselect", 0},
             };
 

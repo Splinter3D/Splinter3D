@@ -55,6 +55,16 @@ namespace application::service
         return models_.size() - 1;
     }
 
+    std::size_t SceneService::insert(Model model, std::size_t index)
+    {
+        index   = std::min(index, models_.size());
+        nextId_ = std::max(nextId_, model.id + 1);
+        std::erase(reserved_, model.id);
+        reservedNames_.erase(model.id);
+        models_.insert(models_.begin() + static_cast<std::ptrdiff_t>(index), std::move(model));
+        return index;
+    }
+
     ModelId SceneService::reserveId(std::string pendingName)
     {
         reserved_.push_back(nextId_);

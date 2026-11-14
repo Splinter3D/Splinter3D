@@ -1041,3 +1041,119 @@ TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: on a removal listeners hea
     CHECK(heard == std::vector<std::string>{"models", "selection"});
     CHECK(modelsWhenSelectionChanged == 1);
 }
+
+TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: undo and redo imports, moves and removals", "[integration][ui][viewer][history]")
+{
+    CHECK_FALSE(panel->CanUndo());
+    CHECK_FALSE(panel->CanRedo());
+    panel->loadFile(kCube);
+    REQUIRE(settle());
+    panel->loadFile(kCube);
+    REQUIRE(settle());
+    const auto ids = panel->GetModelIds();
+    panel->setTransform(1, 5, 0, 0, 0, 0, 0);
+    panel->SetModelVisibility(1, false); // not an edit
+    panel->RemoveModel(0);
+    REQUIRE(settle());
+    REQUIRE(panel->GetModelNames() == std::vector<wxString>{"cube.stl (2)"});
+
+    REQUIRE(panel->Undo()); // the removal: back where it was, as it was
+    CHECK(panel->GetModelNames() == std::vector<wxString>{"cube.stl", "cube.stl (2)"});
+    CHECK(panel->GetModelIds() == ids);
+    CHECK(panel->GetModelVisibility() == std::vector<bool>{true, false});
+    CHECK(panel->GetTransform(1).moveX == 5.0);
+    REQUIRE(panel->Undo()); // the move
+    CHECK(panel->GetTransform(1).moveX == 0.0);
+    REQUIRE(panel->Undo()); // the second import
+    CHECK(panel->GetModelNames() == std::vector<wxString>{"cube.stl"});
+    REQUIRE(panel->Undo()); // the first
+    CHECK_FALSE(panel->hasModel());
+    CHECK_FALSE(panel->CanUndo());
+    CHECK_FALSE(panel->Undo());
+
+    for (int step = 0; step < 4; ++step)
+        REQUIRE(panel->Redo());
+    CHECK_FALSE(panel->CanRedo());
+    CHECK(panel->GetModelNames() == std::vector<wxString>{"cube.stl (2)"});
+    CHECK(panel->GetModelIds() == std::vector<application::service::ModelId>{ids[1]});
+    CHECK(panel->GetTransform(0).moveX == 5.0);
+    CHECK(panel->GetModelVisibility() == std::vector<bool>{false});
+
+    // The models put back are real: they export.
+    tests::support::TempDir tmp;
+    REQUIRE(panel->Undo());
+    REQUIRE(panel->exportFile(tmp.path() / "out.stl"));
+    REQUIRE(settle());
+    CHECK(std::filesystem::exists(tmp.path() / "out.stl"));
+}
+
+TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: a burst of field edits and a gizmo drag are one step each", "[integration][ui][viewer][history]")
+{
+    panel->loadFile(kCube);
+    REQUIRE(settle());
+
+    panel->setTransform(0, 1, 0, 0, 0, 0, 0);
+    panel->setTransform(0, 2, 0, 0, 0, 0, 0);
+    panel->setTransform(0, 3, 0, 0, 0, 0, 0);
+    panel->setTransform(0, 3, 0, 0, 0, 0, 0); // no change: no step
+    REQUIRE(panel->Undo());
+    CHECK(panel->GetTransform(0).moveX == 0.0);
+    REQUIRE(panel->CanRedo());
+
+    panel->SimulateGizmoDrag(0, {4, 0, 0, 0, 0, 0});
+    CHECK_FALSE(panel->CanUndo()); // not mid-drag
+    panel->SimulateGizmoDrag(0, {6, 0, 0, 0, 0, 0});
+    panel->SimulateGizmoRelease();
+    CHECK_FALSE(panel->CanRedo()); // the drag replaced it
+    CHECK(panel->GetTransform(0).moveX == 6.0);
+
+    REQUIRE(panel->Undo());
+    CHECK(panel->GetTransform(0).moveX == 0.0);
+    REQUIRE(panel->Redo());
+    CHECK(panel->GetTransform(0).moveX == 6.0);
+}
+
+TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: no undo while a task still changes a model", "[integration][ui][viewer][history][tasks]")
+{
+    panel->loadFile(kCube);
+    REQUIRE(settle());
+
+    const auto holder = hold(panel->GetModelIds().front());
+    CHECK_FALSE(panel->CanUndo());
+    CHECK_FALSE(panel->Undo());
+    CHECK(panel->hasModel());
+
+    panel->tasks().cancel(holder);
+    REQUIRE(settle());
+    CHECK(panel->CanUndo());
+}
+
+TEST_CASE_METHOD(SelectionFixture, "ModelViewerPanel: undo a duplication, a group move and clearing the scene", "[integration][ui][viewer][history][selection]")
+{
+    REQUIRE(panel->DuplicateModels({0, 1}, 2).size() == 4);
+    REQUIRE(panel->Undo()); // every copy at once
+    CHECK(panel->GetModelNames() == std::vector<wxString>{"cube.stl", "cube.stl (2)"});
+
+    panel->SelectOnly(0);
+    panel->ToggleSelected(1);
+    panel->setTransform(kGroup, 10, 0, 0, 0, 0, 0);
+    REQUIRE(settle());
+    REQUIRE(panel->Undo());
+    requireMove(panel->GetTransform(0), 0, 0, 0);
+    requireMove(panel->GetTransform(1), 3, 0, 0);
+    // The group starts again from where the models are back.
+    CHECK(panel->GetTransform(kGroup) == ModelViewerPanel::TransformValues{});
+    panel->setTransform(kGroup, 1, 0, 0, 0, 0, 0);
+    requireMove(panel->GetTransform(1), 4, 0, 0);
+
+    panel->newFile();
+    REQUIRE(settle());
+    REQUIRE_FALSE(panel->hasModel());
+    REQUIRE(panel->Undo());
+    CHECK(panel->GetModelNames() == std::vector<wxString>{"cube.stl", "cube.stl (2)"});
+    requireMove(panel->GetTransform(1), 4, 0, 0);
+    // Put back models can be picked again.
+    REQUIRE(tests::support::pumpUntil([this] { return panel->PickDataReady(); }));
+    panel->FitAll();
+    CHECK(panel->PickModelAt(centreOf(1)) == 1);
+}

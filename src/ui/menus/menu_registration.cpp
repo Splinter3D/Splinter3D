@@ -1,5 +1,6 @@
 #include "menu_registration.hpp"
 
+#include "menu_edit/menu_edit.hpp"
 #include "menu_file/menu_file.hpp"
 #include "menu_registry.hpp"
 #include "ui/framework/wx/ids/ids.hpp"
@@ -20,6 +21,10 @@ namespace ui::menus
         registry.Register(ui::framework::wx::ids::menus::kFile,
                           []() {
                               return new MenuFile();
+                          });
+        registry.Register(ui::framework::wx::ids::menus::kEdit,
+                          []() {
+                              return new MenuEdit();
                           });
     }
 

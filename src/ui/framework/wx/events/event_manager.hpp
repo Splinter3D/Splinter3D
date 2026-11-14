@@ -19,6 +19,7 @@ namespace ui::framework::wx
          * Each binder handles one specific category of events:
          *
          * - MenuEvents       : File/Edit/Help menus
+         * - HistoryEvents    : Undo/redo (menu, buttons, shortcuts)
          * - ThemeEvents      : Theme switching
          * - LocaleEvents     : Language switching
          * - ShortcutEvents   : Keyboard shortcuts
@@ -42,6 +43,11 @@ namespace ui::framework::wx
                 std::function<void()> onOpen;
                 std::function<void()> onSave;
                 std::function<void()> onExit;
+                std::function<void()> onUndo;
+                std::function<void()> onRedo;
+                // Whether there is something to undo / redo now (enables the menu items and buttons).
+                std::function<bool()> canUndo;
+                std::function<bool()> canRedo;
                 // Each opens its side dock page, or closes it when it is the open one.
                 std::function<void()> onModelsPanel;
                 std::function<void()> onTasksPanel;
@@ -52,6 +58,9 @@ namespace ui::framework::wx
                 std::function<bool()> onHideSelection;
                 // Duplicates the selected models; false when nothing was selected (the key goes on).
                 std::function<bool()> onDuplicateSelection;
+                // Selects every model; false when there is none, or a text field
+                // has the focus (the key goes on: it selects the text).
+                std::function<bool()> onSelectAll;
                 // Closes the transform tool and clears the selection; false
                 // when there was neither (the key goes on).
                 std::function<bool()>          onDeselect;

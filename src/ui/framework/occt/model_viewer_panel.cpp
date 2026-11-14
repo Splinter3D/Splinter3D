@@ -51,6 +51,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 #include <wx/dcclient.h>
@@ -237,6 +238,25 @@ namespace ui::framework::occt
             scene_.clear();
             pickIndices_.clear();
             view_->Redraw();
+            modelsChanged();
+        }
+
+        // Puts a model back exactly as it was (see SceneService::insert())
+        // at index, shown or not; the camera stays where it is.
+        void insertModel(const application::service::SceneService::Model& model, std::size_t index, bool visible)
+        {
+            index = scene_.insert(model, index);
+            // A handle at once: passing a raw pointer makes a temporary handle that frees it.
+            const occ::handle<AIS_Shape> presentation = new AIS_Shape(scene_.models()[index].shape.value());
+            presentation->Attributes()->SetAutoTriangulation(false);
+            context_->SetLocation(presentation, TopLoc_Location(geometry::occt::toTrsf(model.transform)));
+            presentations_.insert(presentations_.begin() + static_cast<std::ptrdiff_t>(index), {presentation, visible});
+            if (gizmoTargetIndex_ >= static_cast<int>(index))
+                ++gizmoTargetIndex_;
+            if (visible)
+                context_->Display(presentation, AIS_Shaded, kNoSelection, false);
+            view_->Redraw();
+            buildPickIndex(model.id);
             modelsChanged();
         }
 
@@ -890,6 +910,8 @@ namespace ui::framework::occt
         try
         {
             initializeViewer();
+            if (!scene_.empty())
+                recordEdit();
             tasks_.submit(application::tasks::clearTask(scene_, *viewer_));
         }
         catch (const std::exception& error)
@@ -978,6 +1000,11 @@ namespace ui::framework::occt
             const auto& settings = platform::settings::SettingsRegistry::getInstance();
             auto        task     = application::tasks::importTask(scene_, *viewer_, path,
                                                                   toPrecision(settings.get(kMeshPrecisionSetting)));
+            // The step is the model coming in, when it does.
+            task.apply = [this, apply = std::move(task.apply)] {
+                recordEdit();
+                apply();
+            };
             if (settings.isOn(kComputeBRepSetting))
             {
                 // Once the model is in (a failed import converts nothing).
@@ -1226,6 +1253,8 @@ namespace ui::framework::occt
         for (const int index : modelIndices)
             if (index >= 0 && static_cast<std::size_t>(index) < scene_.size())
                 sources.push_back(scene_.models()[static_cast<std::size_t>(index)].id);
+        if (!sources.empty() && copies > 0)
+            recordEdit();
         for (int copy = 0; copy < copies; ++copy)
             for (const auto id : sources)
             {
@@ -1250,15 +1279,115 @@ namespace ui::framework::occt
 
     void ModelViewerPanel::RemoveModel(int modelIndex)
     {
+        RemoveModels({modelIndex});
+    }
+
+    void ModelViewerPanel::RemoveModels(const std::vector<int>& modelIndices)
+    {
         if (!initialized_ || viewer_ == nullptr)
             return;
-        if (modelIndex < 0 || static_cast<std::size_t>(modelIndex) >= scene_.size())
+        // By id: a removal can apply at once and shift the models after it.
+        std::vector<application::service::ModelId> ids;
+        for (const int index : modelIndices)
+            if (index >= 0 && static_cast<std::size_t>(index) < scene_.size())
+                ids.push_back(scene_.models()[static_cast<std::size_t>(index)].id);
+        if (ids.empty())
         {
             notifyModelStateChanged(); // nothing to remove; listeners still resync
             return;
         }
-        tasks_.submit(application::tasks::removeTask(
-            scene_, *viewer_, scene_.models()[static_cast<std::size_t>(modelIndex)].id));
+        recordEdit();
+        for (const auto id : ids)
+            tasks_.submit(application::tasks::removeTask(scene_, *viewer_, id));
+    }
+
+    bool ModelViewerPanel::CanUndo() const
+    {
+        return canUseHistory() && history_.canUndo();
+    }
+
+    bool ModelViewerPanel::CanRedo() const
+    {
+        return canUseHistory() && history_.canRedo();
+    }
+
+    bool ModelViewerPanel::Undo()
+    {
+        if (!canUseHistory())
+            return false;
+        const auto state = history_.undo(captureState());
+        if (!state)
+            return false;
+        restoreState(*state);
+        return true;
+    }
+
+    bool ModelViewerPanel::Redo()
+    {
+        if (!canUseHistory())
+            return false;
+        const auto state = history_.redo(captureState());
+        if (!state)
+            return false;
+        restoreState(*state);
+        return true;
+    }
+
+    bool ModelViewerPanel::canUseHistory() const
+    {
+        if (!initialized_ || viewer_ == nullptr || gizmo_dragging_)
+            return false;
+        // A move still queued would land after the restore, and undo it.
+        const auto ids = scene_.ids();
+        return std::none_of(ids.begin(), ids.end(), [this](application::service::ModelId id) { return tasks_.wouldWait(id); });
+    }
+
+    application::commands::History::State ModelViewerPanel::captureState() const
+    {
+        application::commands::History::State state{scene_.models(), GetModelVisibility()};
+        for (auto& model : state.models)
+        {
+            model.transform = latestTransform(model.id);
+            model.brep.reset(); // not kept: no need to copy it
+        }
+        return state;
+    }
+
+    void ModelViewerPanel::recordEdit(std::string mergeKey)
+    {
+        history_.record(captureState(), std::move(mergeKey));
+    }
+
+    void ModelViewerPanel::restoreState(const application::commands::History::State& state)
+    {
+        for (const auto id : scene_.ids())
+            if (std::none_of(state.models.begin(), state.models.end(),
+                             [id](const application::service::SceneService::Model& model) { return model.id == id; }))
+                viewer_->removeModel(id);
+
+        // The models both have are in the same order: putting the others
+        // back at their index in turn restores the order.
+        const bool computeBRep = platform::settings::SettingsRegistry::getInstance().isOn(kComputeBRepSetting);
+        for (std::size_t i = 0; i < state.models.size(); ++i)
+        {
+            const auto& model   = state.models[i];
+            const auto* current = scene_.find(model.id);
+            if (current == nullptr)
+            {
+                viewer_->insertModel(model, i, i >= state.visibility.size() || state.visibility[i]);
+                if (computeBRep)
+                    application::tasks::submitConversion(tasks_, scene_, *viewer_, model.id);
+            }
+            else if (current->transform != model.transform)
+                viewer_->setTransform(model.id, model.transform);
+        }
+        pending_drags_.clear();
+        queued_moves_.clear();
+
+        resetGroup(); // the selected models moved
+        if (on_gizmo_changed_)
+            on_gizmo_changed_();
+        viewer_->paint();
     }
 
     void ModelViewerPanel::FocusModel(int modelIndex)
@@ -1282,8 +1411,12 @@ namespace ui::framework::occt
         const geometry::occt::Transform transform{moveXmm, moveYmm, moveZmm, rotateXdeg, rotateYdeg, rotateZdeg};
         if (targetIndex == kSelectionTarget)
         {
-            if (!isGroup())
+            if (!isGroup() || group_.offset == transform)
                 return;
+            std::string key = "move:selection";
+            for (const auto& [id, start] : group_.start)
+                key += ":" + std::to_string(id);
+            recordEdit(std::move(key));
             group_.offset = transform;
             const gp_Pnt pivot(group_.pivot[0], group_.pivot[1], group_.pivot[2]);
             viewer_->setGroupGizmo(pivot, transform);
@@ -1299,6 +1432,14 @@ namespace ui::framework::occt
             targets = scene_.ids();
         else if (targetIndex >= 0 && static_cast<std::size_t>(targetIndex) < scene_.size())
             targets.push_back(scene_.models()[static_cast<std::size_t>(targetIndex)].id);
+
+        if (std::all_of(targets.begin(), targets.end(),
+                        [&](application::service::ModelId id) { return latestTransform(id) == transform; }))
+            return; // e.g. the fields showing what was just undone
+        std::string key = "move";
+        for (const auto id : targets)
+            key += ":" + std::to_string(id);
+        recordEdit(std::move(key));
 
         // Each applies at once, or queues behind a task still changing that model.
         for (const auto id : targets)
@@ -1394,6 +1535,9 @@ namespace ui::framework::occt
 
     void ModelViewerPanel::dragGizmoTo(int modelIndex, const geometry::occt::Transform& transform)
     {
+        // The whole drag is one step, from where the models were before it.
+        if (!std::exchange(gizmo_recorded_, true))
+            recordEdit();
         if (modelIndex == kSelectionTarget)
         {
             if (!isGroup())
@@ -1485,6 +1629,7 @@ namespace ui::framework::occt
             }
         }
         gizmo_dragging_ = false;
+        gizmo_recorded_ = false;
     }
 
 #if defined(SPLINTER3D_TESTING)

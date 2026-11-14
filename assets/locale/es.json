@@ -23,7 +23,7 @@
     },
     "models": {
       "confirm_delete": "Confirmar antes de eliminar un modelo",
-      "include_hidden": "Incluir los modelos ocultos en los rangos con May\u00fas-clic de la lista de modelos"
+      "include_hidden": "Incluir los modelos ocultos en los rangos con May\u00fas-clic de la lista de modelos y en Seleccionar todo"
     },
     "import": {
       "precision": "Precisi\u00f3n de las mallas",
@@ -37,6 +37,8 @@
       "new": "Nuevo",
       "open": "Abrir",
       "save": "Guardar",
+      "undo": "Deshacer",
+      "redo": "Rehacer",
       "model_management": "Panel de modelos",
       "tasks_panel": "Panel de tareas",
       "settings_panel": "Panel de ajustes",
@@ -45,6 +47,7 @@
       "delete_model": "Eliminar modelo",
       "hide_selection": "Ocultar los modelos seleccionados",
       "duplicate": "Duplicar los modelos seleccionados",
+      "select_all": "Seleccionar todos los modelos",
       "deselect": "Cerrar la herramienta y deseleccionar",
       "press": "Pulse las teclas\u2026",
       "none": "Ninguno",
@@ -62,6 +65,11 @@
       "import": "&Importar...",
       "export": "&Exportar...",
       "exit": "&Salir\tAlt+F4"
+    },
+    "edit": {
+      "title": "&Edici\u00f3n",
+      "undo": "&Deshacer",
+      "redo": "&Rehacer"
     },
     "about": {
       "text": "Demo de wxWidgets\nTodos los widgets principales en un solo lugar.",
@@ -93,6 +101,12 @@
       "rotate": "Rotar",
       "all_models": "Todos los modelos",
       "selected": "{count} seleccionados"
+    },
+    "history": {
+      "undo": "Deshacer",
+      "redo": "Rehacer",
+      "undo_tooltip": "Deshacer el \u00faltimo cambio en los modelos",
+      "redo_tooltip": "Rehacer el \u00faltimo cambio deshecho"
     }
   },
   "tasks": {
@@ -142,7 +156,7 @@
     "duplicate_tooltip": "Copiar los modelos seleccionados en su sitio",
     "show_all_tooltip": "Mostrar todos los modelos",
     "include_hidden": "Incluir ocultos",
-    "include_hidden_tooltip": "Los rangos con May\u00fas-clic tambi\u00e9n seleccionan los modelos ocultos"
+    "include_hidden_tooltip": "Los rangos con May\u00fas-clic y Seleccionar todo tambi\u00e9n seleccionan los modelos ocultos"
   },
   "dialogs": {
     "info": "Informaci\u00f3n",

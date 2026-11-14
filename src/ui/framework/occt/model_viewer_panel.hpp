@@ -1,5 +1,6 @@
 #pragma once
 
+#include "application/commands/history.hpp"
 #include "application/service/scene_service.hpp"
 #include "application/service/selection.hpp"
 #include "application/tasks/task_manager.hpp"
@@ -13,6 +14,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 #include <wx/glcanvas.h>
@@ -111,6 +113,8 @@ namespace ui::framework::occt
         [[nodiscard]] std::vector<bool> GetModelVisibility() const;
         void                            SetModelVisibility(int modelIndex, bool visible);
         void                            RemoveModel(int modelIndex);
+        // Removes these models (one undo step).
+        void RemoveModels(const std::vector<int>& modelIndices);
         // Adds copies of these models where they are (same shape, placement,
         // B-Rep and visibility; named after them, see SceneService::baseName),
         // copies times over. Returns the copies' indices, in the order added.
@@ -155,6 +159,17 @@ namespace ui::framework::occt
         // (same indexing as setTransform). All-zero if targetIndex is -1
         // or out of range.
         [[nodiscard]] TransformValues GetTransform(int targetIndex) const;
+
+        // Undo/redo of the edits to the scene: imports, moves (a gizmo drag,
+        // or a burst of changes to the same target's fields, is one step),
+        // removals, duplications and clearing it. Hiding a model, its mesh
+        // precision and its B-Rep are not edits. Not while a task still
+        // changes a model (an import still running doesn't count) or a
+        // gizmo is being dragged. Undo()/Redo() return false when they can't.
+        [[nodiscard]] bool CanUndo() const;
+        [[nodiscard]] bool CanRedo() const;
+        bool               Undo();
+        bool               Redo();
 
         // What changing an import setting asks about the models already loaded.
         enum class LoadedModelsQuestion
@@ -221,6 +236,15 @@ namespace ui::framework::occt
       private:
         void notifyModelStateChanged();
 
+        // The scene as undo/redo keeps it, each model where it is headed (see latestTransform()).
+        [[nodiscard]] application::commands::History::State captureState() const;
+        // Records the scene before an edit (see History::record()).
+        void recordEdit(std::string mergeKey = {});
+        // Puts the scene in a state undo/redo handed back: removes the models
+        // it doesn't have, puts back those it has, where they were.
+        void               restoreState(const application::commands::History::State& state);
+        [[nodiscard]] bool canUseHistory() const;
+
         // A click (not a drag) at point; toggle = Cmd/Ctrl held.
         void handleClick(const wxPoint& point, bool toggle);
         // Redraws the highlights and tells on_selection_changed_.
@@ -272,6 +296,7 @@ namespace ui::framework::occt
         bool                    rotating_       = false;
         bool                    panning_        = false;
         bool                    gizmo_dragging_ = false;
+        bool                    gizmo_recorded_ = false; // this drag's undo step is recorded
         wxPoint                 last_mouse_position_;
         // Where the left button went down, and whether its release would
         // still be a click (it hasn't moved further than a few pixels).
@@ -298,6 +323,7 @@ namespace ui::framework::occt
         };
 
         Group                                                         group_;
+        application::commands::History                                history_;
         std::optional<ModelsSnapshot>                                 adopted_;
         std::function<bool(LoadedModelsQuestion, std::size_t models)> confirm_convert_loaded_;
         platform::settings::Subscription                              precision_subscription_;

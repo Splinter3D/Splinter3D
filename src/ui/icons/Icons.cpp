@@ -33,7 +33,7 @@ namespace ui::icons
         }();
     } // namespace
 
-    wxBitmapBundle MakeIcon(const char* pathsSvg)
+    wxBitmapBundle MakeIcon(const char* pathsSvg, int size)
     {
         const wxColour    c = wxSystemSettings::GetColour(wxSYS_COLOUR_LISTBOXTEXT);
         const std::string svg =
@@ -45,7 +45,7 @@ namespace ui::icons
 
         // A bundle, not a bitmap: rendered at the display's scale (a 1x
         // bitmap is blurred on Retina, and misplaced in list rows).
-        return wxBitmapBundle::FromSVG(svg.c_str(), wxSize(svgIconSize, svgIconSize));
+        return wxBitmapBundle::FromSVG(svg.c_str(), wxSize(size, size));
     }
 
     std::vector<wxBitmapBundle> ListIcons()

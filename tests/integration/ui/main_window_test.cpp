@@ -909,3 +909,127 @@ TEST_CASE_METHOD(LanguageWindowFixture, "MainWindow: no question when the langua
 
     CHECK(asked.empty());
 }
+
+TEST_CASE_METHOD(MainWindowFixture, "MainWindow: Edit menu, buttons and shortcuts undo and redo", "[integration][ui][main_window][history]")
+{
+    wxMenuBar* menuBar = window->GetMenuBar();
+    REQUIRE(menuBar->FindMenu("Edit") != wxNOT_FOUND);
+    wxMenuItem* undoItem = menuBar->FindItem(ids::history::kUndo);
+    wxMenuItem* redoItem = menuBar->FindItem(ids::history::kRedo);
+    REQUIRE(undoItem != nullptr);
+    REQUIRE(redoItem != nullptr);
+    CHECK(undoItem->GetItemLabel().AfterFirst('\t') == "Ctrl+Z");
+
+    auto* undoButton = toolbar->GetUndoButton();
+    auto* redoButton = toolbar->GetRedoButton();
+    REQUIRE(undoButton != nullptr);
+    REQUIRE(redoButton != nullptr);
+    const auto refresh = [this] { window->UpdateWindowUI(wxUPDATE_UI_RECURSE); };
+    const auto click   = [](wxToggleButton* button) {
+        button->SetValue(true);
+        wxCommandEvent event(wxEVT_TOGGLEBUTTON, button->GetId());
+        event.SetEventObject(button);
+        event.SetInt(1);
+        button->HandleWindowEvent(event);
+        CHECK_FALSE(button->GetValue()); // pops back up
+    };
+    const auto press = [this](int keyCode, bool shift) {
+        wxKeyEvent event(wxEVT_CHAR_HOOK);
+        event.m_keyCode = keyCode;
+        event.SetControlDown(true);
+        event.SetShiftDown(shift);
+        event.SetEventObject(window.get());
+        window->ProcessWindowEvent(event);
+    };
+
+    refresh();
+    CHECK_FALSE(undoButton->IsEnabled());
+    CHECK_FALSE(redoButton->IsEnabled());
+
+    REQUIRE(viewer->loadFile(kCube));
+    REQUIRE(settle());
+    refresh();
+    CHECK(undoButton->IsEnabled());
+    CHECK_FALSE(redoButton->IsEnabled());
+
+    click(undoButton);
+    CHECK_FALSE(viewer->hasModel());
+    refresh();
+    CHECK_FALSE(undoButton->IsEnabled());
+    CHECK(redoButton->IsEnabled());
+    CHECK_FALSE(findDescendant<wxToggleButton>(toolbar)->IsEnabled());
+
+    click(redoButton);
+    CHECK(viewer->hasModel());
+    CHECK(findDescendant<wxToggleButton>(toolbar)->IsEnabled()); // the toolbar follows the models
+
+    press('Z', false);
+    CHECK_FALSE(viewer->hasModel());
+#if defined(__WXMSW__)
+    press('Y', false);
+#else
+    press('Z', true);
+#endif
+    CHECK(viewer->hasModel());
+
+    sendMenuCommand(window.get(), ids::history::kUndo);
+    CHECK_FALSE(viewer->hasModel());
+    sendMenuCommand(window.get(), ids::history::kUndo); // nothing left: harmless
+    CHECK_FALSE(viewer->hasModel());
+}
+
+TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: undoing a deletion of several models is one step", "[integration][ui][main_window][selection][history]")
+{
+    viewer->SelectOnly(0);
+    viewer->ToggleSelected(1);
+    window->DeleteModels(viewer->GetSelectedIndices());
+    REQUIRE(settle());
+    REQUIRE_FALSE(viewer->hasModel());
+
+    REQUIRE(viewer->Undo());
+    CHECK(viewer->GetModelNames() == std::vector<wxString>{"cube.stl", "cube.stl (2)"});
+    CHECK(combo->GetCount() == 3); // the dropdown lists them again
+}
+
+TEST_CASE_METHOD(SelectionWindowFixture, "MainWindow: Ctrl/Cmd+A selects every model, but not from a text field", "[integration][ui][main_window][selection][shortcuts]")
+{
+    REQUIRE(platform::settings::SettingsRegistry::getInstance().get("keys.select_all") == "Ctrl+A");
+    const auto pressA = [this] {
+        wxKeyEvent key(wxEVT_CHAR_HOOK);
+        key.m_keyCode = 'A';
+        key.SetControlDown(true);
+        key.SetEventObject(window.get());
+        window->ProcessWindowEvent(key);
+    };
+
+    openMove(); // shows the fields
+    toolbar->GetMoveX()->SetFocus();
+    tests::support::pumpEvents();
+    REQUIRE(dynamic_cast<wxTextEntry*>(wxWindow::FindFocus()) != nullptr);
+    pressA();
+    CHECK(viewer->GetSelectedIndices().empty()); // the field's text instead
+
+    viewer->SetFocus();
+    tests::support::pumpEvents();
+    pressA();
+    CHECK(viewer->GetSelectedIndices() == std::vector<int>{0, 1});
+    CHECK(toolbar->GetTargetIndex() == ModelViewerPanel::kSelectionTarget);
+
+    // Hidden models only with "include hidden" on.
+    auto& settings = platform::settings::SettingsRegistry::getInstance();
+    REQUIRE_FALSE(settings.isOn(ui::panels::kIncludeHiddenSetting));
+    viewer->SetModelVisibility(1, false);
+    viewer->ClearSelection();
+    pressA();
+    CHECK(viewer->GetSelectedIndices() == std::vector<int>{0});
+
+    settings.set(ui::panels::kIncludeHiddenSetting, "1");
+    pressA();
+    CHECK(viewer->GetSelectedIndices() == std::vector<int>{0, 1});
+    settings.reset(ui::panels::kIncludeHiddenSetting);
+
+    viewer->SetModelVisibility(0, false); // nothing visible: nothing to select
+    viewer->ClearSelection();
+    pressA();
+    CHECK(viewer->GetSelectedIndices().empty());
+}

@@ -26,9 +26,13 @@ namespace ui::icons
     inline constexpr const char* settingsSvg =
         "<path d='M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3'/>"
         "<path d='M14 2v4M8 10v4M16 18v4'/>";
+    inline constexpr const char* undoSvg =
+        "<path d='M9 14 4 9l5-5'/><path d='M4 9h10.5a5.5 5.5 0 0 1 0 11H11'/>";
+    inline constexpr const char* redoSvg =
+        "<path d='m15 14 5-5-5-5'/><path d='M20 9H9.5a5.5 5.5 0 0 0 0 11H13'/>";
 
-    /** @brief The icon at svgIconSize DIPs, sharp at any display scale. */
-    wxBitmapBundle MakeIcon(const char* pathsSvg);
+    /** @brief The icon at size DIPs, sharp at any display scale. */
+    wxBitmapBundle MakeIcon(const char* pathsSvg, int size = svgIconSize);
     /** @brief The list icons, indexed by IconIndex (for wxListCtrl::SetSmallImages). */
     std::vector<wxBitmapBundle> ListIcons();
 } // namespace ui::icons

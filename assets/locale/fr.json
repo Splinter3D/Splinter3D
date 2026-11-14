@@ -23,7 +23,7 @@
     },
     "models": {
       "confirm_delete": "Confirmer avant de supprimer un mod\u00e8le",
-      "include_hidden": "Inclure les mod\u00e8les masqu\u00e9s dans les plages Maj-clic de la liste des mod\u00e8les"
+      "include_hidden": "Inclure les mod\u00e8les masqu\u00e9s dans les plages Maj-clic de la liste des mod\u00e8les et dans Tout s\u00e9lectionner"
     },
     "import": {
       "precision": "Pr\u00e9cision des maillages",
@@ -37,6 +37,8 @@
       "new": "Nouveau",
       "open": "Ouvrir",
       "save": "Enregistrer",
+      "undo": "Annuler",
+      "redo": "R\u00e9tablir",
       "model_management": "Panneau des mod\u00e8les",
       "tasks_panel": "Panneau des t\u00e2ches",
       "settings_panel": "Panneau des param\u00e8tres",
@@ -45,6 +47,7 @@
       "delete_model": "Supprimer le mod\u00e8le",
       "hide_selection": "Masquer les mod\u00e8les s\u00e9lectionn\u00e9s",
       "duplicate": "Dupliquer les mod\u00e8les s\u00e9lectionn\u00e9s",
+      "select_all": "S\u00e9lectionner tous les mod\u00e8les",
       "deselect": "Fermer l'outil et d\u00e9s\u00e9lectionner",
       "press": "Appuyez sur des touches\u2026",
       "none": "Aucun",
@@ -62,6 +65,11 @@
       "import": "&Importer...",
       "export": "&Exporter...",
       "exit": "&Quitter\tAlt+F4"
+    },
+    "edit": {
+      "title": "&\u00c9dition",
+      "undo": "&Annuler",
+      "redo": "&R\u00e9tablir"
     },
     "about": {
       "text": "D\u00e9mo wxWidgets\nTous les principaux widgets au m\u00eame endroit.",
@@ -93,6 +101,12 @@
       "rotate": "Pivoter",
       "all_models": "Tous les mod\u00e8les",
       "selected": "{count} s\u00e9lectionn\u00e9s"
+    },
+    "history": {
+      "undo": "Annuler",
+      "redo": "R\u00e9tablir",
+      "undo_tooltip": "Annuler la derni\u00e8re modification des mod\u00e8les",
+      "redo_tooltip": "R\u00e9tablir la derni\u00e8re modification annul\u00e9e"
     }
   },
   "tasks": {
@@ -142,7 +156,7 @@
     "duplicate_tooltip": "Copier les mod\u00e8les s\u00e9lectionn\u00e9s sur place",
     "show_all_tooltip": "Afficher tous les mod\u00e8les",
     "include_hidden": "Inclure les masqu\u00e9s",
-    "include_hidden_tooltip": "Les plages Maj-clic s\u00e9lectionnent aussi les mod\u00e8les masqu\u00e9s"
+    "include_hidden_tooltip": "Les plages Maj-clic et Tout s\u00e9lectionner s\u00e9lectionnent aussi les mod\u00e8les masqu\u00e9s"
   },
   "dialogs": {
     "info": "Information",

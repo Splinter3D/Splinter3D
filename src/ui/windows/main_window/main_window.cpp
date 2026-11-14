@@ -20,11 +20,13 @@
 #include <string>
 #include <utility>
 #include <wx/app.h>
+#include <wx/combobox.h>
 #include <wx/iconbndl.h>
 #include <wx/image.h>
 #include <wx/msgdlg.h>
 #include <wx/numdlg.h>
 #include <wx/stdpaths.h>
+#include <wx/textentry.h>
 
 using ui::framework::wx::locale::tr;
 
@@ -92,6 +94,7 @@ namespace ui::windows
         auto* menuBar = new wxMenuBar();
 
         InitMenuBarEntry(menuBar, ui::framework::wx::ids::menus::kFile, tr("menu.file.title"));
+        InitMenuBarEntry(menuBar, ui::framework::wx::ids::menus::kEdit, tr("menu.edit.title"));
 
         SetMenuBar(menuBar);
     }
@@ -271,7 +274,17 @@ namespace ui::windows
             if (model_viewer_ != nullptr)
                 model_viewer_->saveFile();
         };
-        callbacks.onExit            = [this] { Close(); };
+        callbacks.onExit = [this] { Close(); };
+        callbacks.onUndo = [this] {
+            if (model_viewer_ != nullptr)
+                model_viewer_->Undo();
+        };
+        callbacks.onRedo = [this] {
+            if (model_viewer_ != nullptr)
+                model_viewer_->Redo();
+        };
+        callbacks.canUndo           = [this] { return model_viewer_ != nullptr && model_viewer_->CanUndo(); };
+        callbacks.canRedo           = [this] { return model_viewer_ != nullptr && model_viewer_->CanRedo(); };
         callbacks.onModelsPanel     = [this] { ToggleDockPage(models_panel_); };
         callbacks.onTasksPanel      = [this] { ToggleDockPage(tasks_panel_); };
         callbacks.onSettingsPanel   = [this] { ToggleDockPage(settings_panel_); };
@@ -291,6 +304,26 @@ namespace ui::windows
             if (model_viewer_ == nullptr || model_viewer_->GetSelectedIndices().empty())
                 return false;
             DuplicateModels(model_viewer_->GetSelectedIndices());
+            return true;
+        };
+        callbacks.onSelectAll = [this] {
+            // In a text field, it selects the text (a read-only combo box has none).
+            wxWindow* const focus = wxWindow::FindFocus();
+            if (dynamic_cast<wxTextEntry*>(focus) != nullptr)
+                if (const auto* combo = dynamic_cast<wxComboBox*>(focus); combo == nullptr || !combo->HasFlag(wxCB_READONLY))
+                    return false;
+            if (model_viewer_ == nullptr)
+                return false;
+            // Hidden models too only when the models page's "include hidden" is on.
+            const bool       includeHidden = platform::settings::SettingsRegistry::getInstance().isOn(ui::panels::kIncludeHiddenSetting);
+            const auto       visibility    = model_viewer_->GetModelVisibility();
+            std::vector<int> all;
+            for (std::size_t index = 0; index < visibility.size(); ++index)
+                if (includeHidden || visibility[index])
+                    all.push_back(static_cast<int>(index));
+            if (all.empty())
+                return false;
+            model_viewer_->Select(all);
             return true;
         };
         callbacks.onDeselect = [this] {
@@ -493,8 +526,7 @@ namespace ui::windows
             if (const auto found = std::find(nowIds.begin(), nowIds.end(), id); found != nowIds.end())
                 current.push_back(static_cast<int>(found - nowIds.begin()));
         std::sort(current.begin(), current.end());
-        for (auto index = current.rbegin(); index != current.rend(); ++index)
-            model_viewer_->RemoveModel(*index);
+        model_viewer_->RemoveModels(current);
         model_viewer_->ClearSelection();
     }
 

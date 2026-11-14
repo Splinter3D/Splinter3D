@@ -96,6 +96,8 @@ namespace ui::framework::wx
          * - +600 to +699 : Panel identifiers
          * - +700 to +799 : Toolbar identifiers
          * - +800 to +899 : Menu identifiers
+         * - +900 to +999 : Layout identifiers
+         * - +1000 to +1099 : History actions
          */
         namespace app
         {
@@ -180,6 +182,20 @@ namespace ui::framework::wx
         } // namespace debug
 
         /**
+         * @brief Undo/redo of the edits to the scene.
+         *
+         * Not wxID_UNDO/wxID_REDO: a focused text field handles those
+         * itself (its own text's undo), and these must always reach the
+         * frame.
+         */
+        namespace history
+        {
+            constexpr int kUndo = app::kBase + 1000;
+            constexpr int kRedo = app::kBase + 1001;
+
+        } // namespace history
+
+        /**
          * @brief Panel identifiers.
          *
          * Used as keys into ui::panels::PanelRegistry (see
@@ -226,6 +242,7 @@ namespace ui::framework::wx
         namespace menus
         {
             constexpr int kFile = app::kBase + 800;
+            constexpr int kEdit = app::kBase + 801;
 
         } // namespace menus
 

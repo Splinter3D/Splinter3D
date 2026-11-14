@@ -75,6 +75,15 @@ namespace application::service
                         platform::benchmark::Duration loadDuration = {});
 
         /**
+         * @brief Puts a model back exactly as it was (id, name, placement,
+         * ...) at index (the end if past it), e.g. to undo its removal. Its
+         * name is kept as is: the caller makes sure no other model has it.
+         *
+         * @return Index of the model.
+         */
+        std::size_t insert(Model model, std::size_t index);
+
+        /**
          * @brief name without the " (2)", " (3)", ... add() appends to tell
          * models apart: what a copy of that model is named after.
          */

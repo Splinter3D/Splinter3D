@@ -1,6 +1,8 @@
 #include "transform_toolbar.hpp"
 
+#include "ui/framework/wx/ids/ids.hpp"
 #include "ui/framework/wx/locale/locale.hpp"
+#include "ui/icons/Icons.hpp"
 
 #include <cmath>
 #include <memory>
@@ -143,6 +145,16 @@ namespace ui::toolbars
 
         rotate_button_ = MakeToggle(MakeRotateIcon(iconColour), tr("toolbar.transform.rotate"));
         buttonsRow->Add(rotate_button_, 0, wxALIGN_CENTER_VERTICAL | wxALL, 6);
+
+        // At the right end. Their clicks and enabled state go through the
+        // frame (see HistoryEvents).
+        buttonsRow->AddStretchSpacer();
+        undo_button_ = MakeHistoryButton(ui::framework::wx::ids::history::kUndo, ui::icons::undoSvg,
+                                         tr("toolbar.history.undo"), tr("toolbar.history.undo_tooltip"));
+        buttonsRow->Add(undo_button_, 0, wxALIGN_CENTER_VERTICAL | wxALL, 6);
+        redo_button_ = MakeHistoryButton(ui::framework::wx::ids::history::kRedo, ui::icons::redoSvg,
+                                         tr("toolbar.history.redo"), tr("toolbar.history.redo_tooltip"));
+        buttonsRow->Add(redo_button_, 0, wxALIGN_CENTER_VERTICAL | wxALL, 6);
 
         move_panel_ = MakeFieldsPanel("mm", -100000.0, 100000.0, 0.5, 2,
                                       move_target_combo_, move_x_, move_y_, move_z_);
@@ -332,6 +344,21 @@ namespace ui::toolbars
         auto* button = new wxToggleButton(this, wxID_ANY, label, wxDefaultPosition,
                                           wxSize(kButtonSide, kButtonSide));
         button->SetBitmap(icon, wxTOP);
+        return button;
+    }
+
+    wxToggleButton* TransformToolbar::MakeHistoryButton(int id, const char* iconSvg, const wxString& label, const wxString& tooltip)
+    {
+        // A toggle button only to look like Move and Rotate: it pops back up
+        // at once, and its click goes on to the frame.
+        auto* button = new wxToggleButton(this, id, label, wxDefaultPosition, wxSize(kButtonSide, kButtonSide));
+        button->SetBitmap(ui::icons::MakeIcon(iconSvg, kIconSize), wxTOP);
+        button->SetToolTip(tooltip);
+        button->Bind(wxEVT_TOGGLEBUTTON, [button](wxCommandEvent& event) {
+            button->SetValue(false);
+            event.Skip();
+        });
+        button->Disable(); // until there is something to undo or redo
         return button;
     }
 

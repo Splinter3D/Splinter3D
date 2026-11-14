@@ -24,6 +24,10 @@ namespace ui::toolbars
      * toolbar's own height; it never blocks input to the rest of the
      * window.
      *
+     * Undo and Redo buttons, shaped like them, sit at the right end: they
+     * send ids::history commands to the frame, which also enables them
+     * (wxEVT_UPDATE_UI).
+     *
      * Both buttons start disabled: callers should enable them (SetEnabled)
      * once a model is loaded, and disable them again once it isn't. This
      * bar has no idea whether a model is loaded - that decision belongs to
@@ -153,10 +157,23 @@ namespace ui::toolbars
             return rotate_z_;
         }
 
+        [[nodiscard]] wxToggleButton* GetUndoButton() const
+        {
+            return undo_button_;
+        }
+
+        [[nodiscard]] wxToggleButton* GetRedoButton() const
+        {
+            return redo_button_;
+        }
+
       private:
         // Creates the square icon-on-top toggle button used to show/hide a
         // group's fields panel ("Move" / "Rotate").
         wxToggleButton* MakeToggle(const wxBitmap& icon, const wxString& label);
+
+        // A button shaped like the toggles, sending command `id` (Undo / Redo).
+        wxToggleButton* MakeHistoryButton(int id, const char* iconSvg, const wxString& label, const wxString& tooltip);
 
         // Builds the embedded panel with the "target" dropdown and the
         // "X/Y/Z fields + unit" for one tool. outTarget receives the
@@ -199,6 +216,8 @@ namespace ui::toolbars
 
         wxToggleButton* move_button_   = nullptr;
         wxToggleButton* rotate_button_ = nullptr;
+        wxToggleButton* undo_button_   = nullptr;
+        wxToggleButton* redo_button_   = nullptr;
 
         wxPanel* move_panel_   = nullptr;
         wxPanel* rotate_panel_ = nullptr;

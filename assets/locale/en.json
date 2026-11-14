@@ -23,7 +23,7 @@
     },
     "models": {
       "confirm_delete": "Confirm before deleting a model",
-      "include_hidden": "Include hidden models in Shift-click ranges of the models list"
+      "include_hidden": "Include hidden models in Shift-click ranges of the models list and in Select all"
     },
     "import": {
       "precision": "Mesh precision",
@@ -37,6 +37,8 @@
       "new": "New",
       "open": "Open",
       "save": "Save",
+      "undo": "Undo",
+      "redo": "Redo",
       "model_management": "Models panel",
       "tasks_panel": "Tasks panel",
       "settings_panel": "Settings panel",
@@ -45,6 +47,7 @@
       "delete_model": "Delete model",
       "hide_selection": "Hide the selected models",
       "duplicate": "Duplicate the selected models",
+      "select_all": "Select every model",
       "deselect": "Close the tool and deselect",
       "press": "Press keys\u2026",
       "none": "None",
@@ -62,6 +65,11 @@
       "import": "&Import...",
       "export": "&Export...",
       "exit": "E&xit\tAlt+F4"
+    },
+    "edit": {
+      "title": "&Edit",
+      "undo": "&Undo",
+      "redo": "&Redo"
     },
     "about": {
       "text": "wxWidgets Demo\nAll major widgets in one place.",
@@ -93,6 +101,12 @@
       "rotate": "Rotate",
       "all_models": "All models",
       "selected": "{count} selected"
+    },
+    "history": {
+      "undo": "Undo",
+      "redo": "Redo",
+      "undo_tooltip": "Undo the last change to the models",
+      "redo_tooltip": "Redo the last undone change"
     }
   },
   "tasks": {
@@ -142,7 +156,7 @@
     "duplicate_tooltip": "Copy the selected models in place",
     "show_all_tooltip": "Show every model",
     "include_hidden": "Include hidden",
-    "include_hidden_tooltip": "Shift-click ranges also select hidden models"
+    "include_hidden_tooltip": "Shift-click ranges and Select all also select hidden models"
   },
   "dialogs": {
     "info": "Info",

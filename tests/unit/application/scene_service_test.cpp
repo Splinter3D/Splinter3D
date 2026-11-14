@@ -164,6 +164,30 @@ TEST_CASE("SceneService: clear removes every model", "[application][scene]")
     CHECK(scene.names() == std::vector<std::string>{"a"});
 }
 
+TEST_CASE("SceneService: insert puts a model back as it was", "[application][scene]")
+{
+    SceneService scene;
+    scene.add("a", Shape{});
+    scene.add("a", Shape{});
+    scene.add("c", Shape{});
+    scene.setTransform(1, Transform{5, 0, 0, 0, 0, 0});
+    const SceneService::Model removed = scene.models()[1];
+    REQUIRE(scene.remove(1));
+
+    CHECK(scene.insert(removed, 1) == 1);
+    CHECK(scene.names() == std::vector<std::string>{"a", "a (2)", "c"});
+    CHECK(scene.ids() == std::vector<application::service::ModelId>{1, 2, 3});
+    CHECK(scene.transform(1) == Transform{5, 0, 0, 0, 0, 0});
+
+    // Past the end: appended. Later ids never reuse one put back.
+    SceneService::Model far = removed;
+    far.id                  = 9;
+    far.name                = "far";
+    CHECK(scene.insert(far, 42) == 3);
+    scene.add("next", Shape{});
+    CHECK(scene.models().back().id == 10);
+}
+
 TEST_CASE("SceneService: saveSTL", "[application][scene]")
 {
     tests::support::TempDir tmp;
