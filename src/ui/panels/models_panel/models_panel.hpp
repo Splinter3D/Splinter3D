@@ -1,5 +1,7 @@
 #pragma once
 
+#include "platform/settings/settings_registry.hpp"
+
 #include <functional>
 #include <vector>
 #include <wx/button.h>
@@ -8,6 +10,9 @@
 
 namespace ui::panels
 {
+    /// Whether Shift-click ranges in the models list take hidden models too ("1"/"0").
+    inline constexpr const char* kIncludeHiddenSetting = "models.include_hidden";
+
     /**
      * @brief Lists the models, one row each: name, visibility (eye) and delete
      * (trash) icons; double-clicking a row focuses that model. A side dock page.
@@ -61,7 +66,8 @@ namespace ui::panels
         // Act on the selection, enabled while there is one.
         std::vector<wxButton*> selection_buttons_;
         Actions                actions_;
-        int                    anchor_         = -1;    // where a Shift-click range starts: the last row clicked
-        bool                   include_hidden_ = false; // in Shift-click ranges
+        int                    anchor_ = -1; // where a Shift-click range starts: the last row clicked
+        // Keeps the "Include hidden" checkbox on kIncludeHiddenSetting.
+        platform::settings::Subscription include_hidden_subscription_;
     };
 } // namespace ui::panels

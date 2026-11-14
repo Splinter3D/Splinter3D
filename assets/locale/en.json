@@ -22,7 +22,8 @@
       "auto_open": "Open the tasks panel when a task starts"
     },
     "models": {
-      "confirm_delete": "Confirm before deleting a model"
+      "confirm_delete": "Confirm before deleting a model",
+      "include_hidden": "Include hidden models in Shift-click ranges of the models list"
     },
     "import": {
       "precision": "Mesh precision",

@@ -1,3 +1,4 @@
+#include "platform/settings/settings_registry.hpp"
 #include "support/wx_helpers.hpp"
 #include "ui/icons/Icons.hpp"
 #include "ui/panels/models_panel/models_panel.hpp"
@@ -275,4 +276,33 @@ TEST_CASE_METHOD(ModelsFixture, "ModelsPanel: with \"Include hidden\", ranges ta
     include->ProcessWindowEvent(event);
     click(3, false, true);
     CHECK(selected == std::vector<int>{0, 1, 2, 3});
+}
+
+TEST_CASE_METHOD(ModelsFixture, "ModelsPanel: \"Include hidden\" is a saved setting", "[integration][ui][models][settings]")
+{
+    auto& settings = platform::settings::SettingsRegistry::getInstance();
+    REQUIRE(settings.find(ui::panels::kIncludeHiddenSetting) != nullptr);
+    CHECK(settings.get(ui::panels::kIncludeHiddenSetting) == "0");
+    auto* include = findDescendant<wxCheckBox>(panel);
+    REQUIRE(include != nullptr);
+
+    include->SetValue(true);
+    wxCommandEvent event(wxEVT_CHECKBOX, include->GetId());
+    event.SetInt(1);
+    event.SetEventObject(include);
+    include->ProcessWindowEvent(event);
+    CHECK(settings.get(ui::panels::kIncludeHiddenSetting) == "1");
+
+    settings.set(ui::panels::kIncludeHiddenSetting, "0"); // e.g. from the settings panel
+    CHECK_FALSE(include->GetValue());
+    visible = {true, false, true, true};
+    panel->RefreshModelRows();
+    click(0);
+    click(2, false, true);
+    CHECK(selected == std::vector<int>{0, 2});
+
+    settings.set(ui::panels::kIncludeHiddenSetting, "1");
+    CHECK(include->GetValue());
+    click(2, false, true);
+    CHECK(selected == std::vector<int>{0, 1, 2});
 }

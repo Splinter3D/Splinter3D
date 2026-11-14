@@ -22,7 +22,8 @@
       "auto_open": "Abrir el panel de tareas cuando empieza una tarea"
     },
     "models": {
-      "confirm_delete": "Confirmar antes de eliminar un modelo"
+      "confirm_delete": "Confirmar antes de eliminar un modelo",
+      "include_hidden": "Incluir los modelos ocultos en los rangos con May\u00fas-clic de la lista de modelos"
     },
     "import": {
       "precision": "Precisi\u00f3n de las mallas",

@@ -22,7 +22,8 @@
       "auto_open": "Ouvrir le panneau des t\u00e2ches quand une t\u00e2che d\u00e9marre"
     },
     "models": {
-      "confirm_delete": "Confirmer avant de supprimer un mod\u00e8le"
+      "confirm_delete": "Confirmer avant de supprimer un mod\u00e8le",
+      "include_hidden": "Inclure les mod\u00e8les masqu\u00e9s dans les plages Maj-clic de la liste des mod\u00e8les"
     },
     "import": {
       "precision": "Pr\u00e9cision des maillages",

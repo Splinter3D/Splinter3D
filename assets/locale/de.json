@@ -22,7 +22,8 @@
       "auto_open": "Aufgabenbereich \u00f6ffnen, wenn eine Aufgabe startet"
     },
     "models": {
-      "confirm_delete": "Vor dem L\u00f6schen eines Modells nachfragen"
+      "confirm_delete": "Vor dem L\u00f6schen eines Modells nachfragen",
+      "include_hidden": "Ausgeblendete Modelle in Umschalt-Klick-Bereiche der Modellliste einbeziehen"
     },
     "import": {
       "precision": "Netzgenauigkeit",

@@ -64,9 +64,17 @@ namespace ui::panels
         });
         buttons->Add(showAll, 0, wxRIGHT | wxBOTTOM, 4);
 
+        // A saved setting (also in the settings panel): declared here, where it is used.
+        using platform::settings::SettingsRegistry;
         auto* includeHidden = new wxCheckBox(this, wxID_ANY, tr("models.include_hidden"));
         includeHidden->SetToolTip(tr("models.include_hidden_tooltip"));
-        includeHidden->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent& event) { include_hidden_ = event.IsChecked(); });
+        include_hidden_subscription_ = SettingsRegistry::getInstance().add(
+            {kIncludeHiddenSetting, "settings.section.general", "settings.models.include_hidden", "", platform::settings::Kind::Toggle, "0", {}},
+            [includeHidden](const std::string& value) { includeHidden->SetValue(value == "1"); });
+        includeHidden->SetValue(SettingsRegistry::getInstance().isOn(kIncludeHiddenSetting));
+        includeHidden->Bind(wxEVT_CHECKBOX, [](wxCommandEvent& event) {
+            SettingsRegistry::getInstance().set(kIncludeHiddenSetting, event.IsChecked() ? "1" : "0");
+        });
 
         auto* layout = new wxBoxSizer(wxVERTICAL);
         layout->Add(title, 0, wxALL, 8);
@@ -143,7 +151,7 @@ namespace ui::panels
             const auto       visibility = actions_.visibility();
             std::vector<int> range;
             for (int r = std::min(anchor_, row); r <= std::max(anchor_, row); ++r)
-                if (include_hidden_ || (static_cast<std::size_t>(r) < visibility.size() && visibility[static_cast<std::size_t>(r)]))
+                if (platform::settings::SettingsRegistry::getInstance().isOn(kIncludeHiddenSetting) || (static_cast<std::size_t>(r) < visibility.size() && visibility[static_cast<std::size_t>(r)]))
                     range.push_back(r);
             actions_.select(std::move(range)); // the anchor stays, for the next Shift-click
             return;
