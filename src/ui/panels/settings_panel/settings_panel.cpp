@@ -31,7 +31,8 @@ namespace ui::panels
         {
             std::vector<std::string> keys;
             for (const auto& setting : SettingsRegistry::getInstance().settings())
-                keys.push_back(setting.key);
+                if (!setting.section.empty())
+                    keys.push_back(setting.key);
             return keys;
         }
     } // namespace
@@ -74,7 +75,7 @@ namespace ui::panels
         const auto&              settings = SettingsRegistry::getInstance().settings();
         std::vector<std::string> sections;
         for (const auto& setting : settings)
-            if (std::find(sections.begin(), sections.end(), setting.section) == sections.end())
+            if (!setting.section.empty() && std::find(sections.begin(), sections.end(), setting.section) == sections.end())
                 sections.push_back(setting.section);
 
         for (const auto& section : sections)

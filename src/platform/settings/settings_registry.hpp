@@ -30,7 +30,7 @@ namespace platform::settings
     struct Setting
     {
         std::string         key;     // also its key in the settings file, e.g. "tasks.auto_open"
-        std::string         section; // locale key of the heading it is listed under
+        std::string         section; // locale key of the heading it is listed under; empty: not listed in the settings panel
         std::string         label;   // locale key
         std::string         note;    // locale key of a hint shown under it (e.g. "applies after restart"); may be empty
         Kind                kind = Kind::Toggle;

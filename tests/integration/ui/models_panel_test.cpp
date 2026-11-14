@@ -293,7 +293,7 @@ TEST_CASE_METHOD(ModelsFixture, "ModelsPanel: \"Include hidden\" is a saved sett
     include->ProcessWindowEvent(event);
     CHECK(settings.get(ui::panels::kIncludeHiddenSetting) == "1");
 
-    settings.set(ui::panels::kIncludeHiddenSetting, "0"); // e.g. from the settings panel
+    settings.set(ui::panels::kIncludeHiddenSetting, "0"); // e.g. from another models panel
     CHECK_FALSE(include->GetValue());
     visible = {true, false, true, true};
     panel->RefreshModelRows();

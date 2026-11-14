@@ -189,6 +189,15 @@ TEST_CASE_METHOD(SettingsFixture, "SettingsPanel: settings declared later show o
     CHECK(findAll<wxCheckBox>(panel).size() == 2);
 }
 
+TEST_CASE_METHOD(SettingsFixture, "SettingsPanel: a setting without a section is not listed", "[integration][ui][settings]")
+{
+    settings.add({"test.unlisted", "", "settings.import.compute_brep", "", Kind::Toggle, "0", {}});
+    panel->Hide();
+    panel->Show();
+    pumpEvents();
+    CHECK(findAll<wxCheckBox>(panel).size() == 1);
+}
+
 TEST_CASE("Key binds: Command and Control are told apart on macOS", "[integration][ui][settings]")
 {
     wxKeyEvent command(wxEVT_CHAR_HOOK);

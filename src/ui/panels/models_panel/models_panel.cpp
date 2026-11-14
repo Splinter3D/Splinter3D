@@ -64,12 +64,12 @@ namespace ui::panels
         });
         buttons->Add(showAll, 0, wxRIGHT | wxBOTTOM, 4);
 
-        // A saved setting (also in the settings panel): declared here, where it is used.
+        // A saved setting, only edited here: no section keeps it out of the settings panel.
         using platform::settings::SettingsRegistry;
         auto* includeHidden = new wxCheckBox(this, wxID_ANY, tr("models.include_hidden"));
         includeHidden->SetToolTip(tr("models.include_hidden_tooltip"));
         include_hidden_subscription_ = SettingsRegistry::getInstance().add(
-            {kIncludeHiddenSetting, "settings.section.general", "settings.models.include_hidden", "", platform::settings::Kind::Toggle, "0", {}},
+            {kIncludeHiddenSetting, "", "models.include_hidden", "", platform::settings::Kind::Toggle, "0", {}},
             [includeHidden](const std::string& value) { includeHidden->SetValue(value == "1"); });
         includeHidden->SetValue(SettingsRegistry::getInstance().isOn(kIncludeHiddenSetting));
         includeHidden->Bind(wxEVT_CHECKBOX, [](wxCommandEvent& event) {
