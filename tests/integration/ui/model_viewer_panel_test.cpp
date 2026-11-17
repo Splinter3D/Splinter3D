@@ -496,11 +496,18 @@ TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: an import finishing mid-orbit
     sendMouse(canvas, wxEVT_MIDDLE_UP, 160, 140);
     const auto panned = panel->CameraEye();
 
+    // Once the press grabs the mouse, GTK sends the canvas the real pointer's
+    // motion, which would orbit the camera: the press alone is the orbit here.
+    int        realMotions = 0;
+    const auto swallow     = [&realMotions](wxMouseEvent&) { ++realMotions; };
+    canvas->Bind(wxEVT_MOTION, swallow);
     sendMouse(canvas, wxEVT_LEFT_DOWN, 100, 100); // orbiting...
     panel->loadFile(kCube);
     REQUIRE(settle()); // ...when the import lands
+    INFO("pointer motions swallowed: " << realMotions);
     CHECK(panel->CameraEye() == panned);
     sendMouse(canvas, wxEVT_LEFT_UP, 100, 100);
+    canvas->Unbind(wxEVT_MOTION, swallow);
 }
 
 TEST_CASE_METHOD(ViewerFixture, "ModelViewerPanel: importing never converts to a B-Rep", "[integration][ui][viewer][tasks]")

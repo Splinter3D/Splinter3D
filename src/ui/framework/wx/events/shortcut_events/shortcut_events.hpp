@@ -13,6 +13,13 @@ namespace ui::framework::wx
     namespace events
     {
         /**
+         * @brief Whether window is a field the user types in: a text entry
+         * other than a read-only combo box, or a spin control (which, on GTK,
+         * is not a wxTextEntry).
+         */
+        bool isTypingField(wxWindow* window);
+
+        /**
          * @brief Handles application keyboard shortcuts.
          *
          * Each shortcut is a KeyBind setting ("keys.save", default Ctrl+S, ...;

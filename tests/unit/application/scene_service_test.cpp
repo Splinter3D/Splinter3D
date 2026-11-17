@@ -180,10 +180,10 @@ TEST_CASE("SceneService: insert puts a model back as it was", "[application][sce
     CHECK(scene.transform(1) == Transform{5, 0, 0, 0, 0, 0});
 
     // Past the end: appended. Later ids never reuse one put back.
-    SceneService::Model far = removed;
-    far.id                  = 9;
-    far.name                = "far";
-    CHECK(scene.insert(far, 42) == 3);
+    SceneService::Model distant = removed;
+    distant.id                  = 9;
+    distant.name                = "far";
+    CHECK(scene.insert(distant, 42) == 3);
     scene.add("next", Shape{});
     CHECK(scene.models().back().id == 10);
 }

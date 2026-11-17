@@ -50,13 +50,13 @@ TEST_CASE("Shape::fromSTL: imports in double precision on request", "[geometry][
 {
     const std::string format = GENERATE("ascii", "binary");
     CAPTURE(format);
-    using Precision = geometry::occt::Shape::Precision;
+    using geometry::occt::Shape;
 
-    const auto single = geometry::occt::Shape::fromSTL(kAssets / "stl" / format / "cube.stl");
-    const auto dbl    = geometry::occt::Shape::fromSTL(kAssets / "stl" / format / "cube.stl", {}, {}, Precision::Double);
+    const auto single = Shape::fromSTL(kAssets / "stl" / format / "cube.stl");
+    const auto dbl    = Shape::fromSTL(kAssets / "stl" / format / "cube.stl", {}, {}, Shape::Precision::Double);
 
-    CHECK(single.precision() == Precision::Single);
-    CHECK(dbl.precision() == Precision::Double);
+    CHECK(single.precision() == Shape::Precision::Single);
+    CHECK(dbl.precision() == Shape::Precision::Double);
     REQUIRE(dbl.mesh()->NbNodes() == single.mesh()->NbNodes());
     for (int i = 1; i <= dbl.mesh()->NbNodes(); ++i)
         CHECK(dbl.mesh()->Node(i).IsEqual(single.mesh()->Node(i), 0.0));

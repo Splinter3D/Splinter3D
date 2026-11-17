@@ -4,6 +4,7 @@
 #include "support/temp_dir.hpp"
 #include "support/wx_helpers.hpp"
 #include "ui/framework/wx/events/event_manager.hpp"
+#include "ui/framework/wx/events/shortcut_events/shortcut_events.hpp"
 #include "ui/framework/wx/ids/ids.hpp"
 #include "ui/framework/wx/theme/theme_manager.hpp"
 
@@ -11,7 +12,6 @@
 #include <string>
 #include <vector>
 #include <wx/spinctrl.h>
-#include <wx/textentry.h>
 
 namespace ids = ui::framework::wx::ids;
 using tests::support::ScopedFrame;
@@ -198,9 +198,9 @@ TEST_CASE_METHOD(EventManagerFixture, "EventManager: each side dock page has a s
 TEST_CASE_METHOD(EventManagerFixture, "EventManager: bare keys are left to text fields", "[integration][ui][events][shortcuts]")
 {
     frame.showAndWait();
-    spin->SetFocus();
-    tests::support::pumpEvents();
-    REQUIRE(dynamic_cast<wxTextEntry*>(wxWindow::FindFocus()) != nullptr);
+    if (!tests::support::focusAndWait(spin))
+        SKIP("the window manager never activated the test frame");
+    REQUIRE(ui::framework::wx::events::isTypingField(wxWindow::FindFocus()));
 
     pressKey(kDeleteKey, false); // edits the field
     CHECK(fired.empty());
@@ -232,9 +232,9 @@ TEST_CASE_METHOD(EventManagerFixture, "EventManager: Escape deselects, even from
     CHECK(fired == std::vector<std::string>{"deselect"});
 
     frame.showAndWait();
-    spin->SetFocus();
-    tests::support::pumpEvents();
-    REQUIRE(dynamic_cast<wxTextEntry*>(wxWindow::FindFocus()) != nullptr);
+    if (!tests::support::focusAndWait(spin))
+        SKIP("the window manager never activated the test frame");
+    REQUIRE(ui::framework::wx::events::isTypingField(wxWindow::FindFocus()));
     pressKey(WXK_ESCAPE, false);
     CHECK(fired == std::vector<std::string>{"deselect", "deselect"});
 }

@@ -18,7 +18,9 @@ namespace ui::widgets
                 case WXK_SHIFT:
                 case WXK_ALT:
                 case WXK_CONTROL:
+#if defined(__WXOSX__) // elsewhere WXK_RAW_CONTROL == WXK_CONTROL
                 case WXK_RAW_CONTROL:
+#endif
                 case WXK_WINDOWS_LEFT:
                 case WXK_WINDOWS_RIGHT:
                 case WXK_WINDOWS_MENU:

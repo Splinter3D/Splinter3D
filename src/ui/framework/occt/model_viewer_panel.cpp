@@ -1091,6 +1091,17 @@ namespace ui::framework::occt
         }
         if (initialized_)
             showAdoptedModels();
+        else // once shown, without waiting for a first paint, which may never come (Windows)
+            CallAfter([this] {
+                try
+                {
+                    initializeViewer();
+                }
+                catch (const std::exception& error)
+                {
+                    wxLogError("%s", tr("viewer.error.init", {{"error", wxString::FromUTF8(error.what())}}));
+                }
+            });
     }
 
     void ModelViewerPanel::showAdoptedModels()

@@ -8,6 +8,7 @@
 #include <wx/accel.h>
 #include <wx/combobox.h>
 #include <wx/menu.h>
+#include <wx/spinctrl.h>
 #include <wx/textentry.h>
 
 namespace ui::framework::wx
@@ -65,12 +66,7 @@ namespace ui::framework::wx
             // a function key nor Escape (which edits nothing).
             bool editsText(const wxKeyEvent& event)
             {
-                wxWindow* focus = wxWindow::FindFocus();
-                if (dynamic_cast<wxTextEntry*>(focus) == nullptr)
-                    return false;
-                // A read-only combo box (the transform target) is a text entry
-                // nobody types in.
-                if (const auto* combo = dynamic_cast<wxComboBox*>(focus); combo != nullptr && combo->HasFlag(wxCB_READONLY))
+                if (!isTypingField(wxWindow::FindFocus()))
                     return false;
                 if (event.ControlDown() || event.RawControlDown() || event.AltDown())
                     return false;
@@ -78,6 +74,18 @@ namespace ui::framework::wx
                 return key != WXK_ESCAPE && (key < WXK_F1 || key > WXK_F24);
             }
         } // namespace
+
+        bool isTypingField(wxWindow* window)
+        {
+            if (dynamic_cast<wxSpinCtrlBase*>(window) != nullptr)
+                return true;
+            if (dynamic_cast<wxTextEntry*>(window) == nullptr)
+                return false;
+            // A read-only combo box (the transform target) is a text entry
+            // nobody types in.
+            const auto* combo = dynamic_cast<wxComboBox*>(window);
+            return combo == nullptr || !combo->HasFlag(wxCB_READONLY);
+        }
 
         void ShortcutEvents::bind()
         {

@@ -3,6 +3,7 @@
 #include "core/utils/data_root.hpp"
 #include "core/utils/version.hpp"
 #include "platform/locale/locale_manager.hpp"
+#include "ui/framework/wx/events/shortcut_events/shortcut_events.hpp"
 #include "ui/framework/wx/ids/ids.hpp"
 #include "ui/framework/wx/locale/locale.hpp"
 #include "ui/icons/Icons.hpp"
@@ -20,13 +21,11 @@
 #include <string>
 #include <utility>
 #include <wx/app.h>
-#include <wx/combobox.h>
 #include <wx/iconbndl.h>
 #include <wx/image.h>
 #include <wx/msgdlg.h>
 #include <wx/numdlg.h>
 #include <wx/stdpaths.h>
-#include <wx/textentry.h>
 
 using ui::framework::wx::locale::tr;
 
@@ -308,10 +307,8 @@ namespace ui::windows
         };
         callbacks.onSelectAll = [this] {
             // In a text field, it selects the text (a read-only combo box has none).
-            wxWindow* const focus = wxWindow::FindFocus();
-            if (dynamic_cast<wxTextEntry*>(focus) != nullptr)
-                if (const auto* combo = dynamic_cast<wxComboBox*>(focus); combo == nullptr || !combo->HasFlag(wxCB_READONLY))
-                    return false;
+            if (ui::framework::wx::events::isTypingField(wxWindow::FindFocus()))
+                return false;
             if (model_viewer_ == nullptr)
                 return false;
             // Hidden models too only when the models page's "include hidden" is on.

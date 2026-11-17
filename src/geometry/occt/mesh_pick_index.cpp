@@ -187,8 +187,8 @@ namespace geometry::occt
 
         // Where the line enters a node's box (-infinity..+infinity), or nothing.
         const auto enter = [&](const Node& node) -> std::optional<double> {
-            double near = -std::numeric_limits<double>::infinity();
-            double far  = std::numeric_limits<double>::infinity();
+            double tMin = -std::numeric_limits<double>::infinity();
+            double tMax = std::numeric_limits<double>::infinity();
             for (int axis = 0; axis < 3; ++axis)
             {
                 const double o  = origin.Coord(axis + 1);
@@ -205,12 +205,12 @@ namespace geometry::occt
                 double t1 = (hi - o) / d;
                 if (t0 > t1)
                     std::swap(t0, t1);
-                near = std::max(near, t0);
-                far  = std::min(far, t1);
-                if (near > far)
+                tMin = std::max(tMin, t0);
+                tMax = std::min(tMax, t1);
+                if (tMin > tMax)
                     return std::nullopt;
             }
-            return near;
+            return tMin;
         };
 
         std::vector<std::uint32_t> stack{0};

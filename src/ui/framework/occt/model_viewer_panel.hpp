@@ -100,7 +100,8 @@ namespace ui::framework::occt
         // Adds a snapshot's models with their ids, names, placements,
         // B-Reps and visibility, selects what it had selected, and puts the
         // camera where it was (else frames every model). Waits for the
-        // viewport to exist (its first paint) if it doesn't yet.
+        // viewport to exist if it doesn't yet: until its first paint, or the
+        // next event loop pass, whichever comes first.
         void AdoptModels(ModelsSnapshot snapshot);
 
         // Display names of every currently loaded model, in load order.
