@@ -5,6 +5,7 @@
     "section": {
       "general": "Allgemein",
       "import": "Import",
+      "viewer": "Ansicht",
       "keys": "Tastenk\u00fcrzel"
     },
     "general": {
@@ -31,6 +32,9 @@
       "precision_note": "Einfache Genauigkeit halbiert den Speicher (STL-Dateien speichern floats); doppelte erh\u00e4lt die Genauigkeit \u00fcber Transformationen hinweg.",
       "compute_brep": "B-Reps beim Import berechnen",
       "compute_brep_note": "Konvertiert jedes importierte Modell im Hintergrund; bei gro\u00dfen Netzen langsam und speicherintensiv."
+    },
+    "viewer": {
+      "smooth_shading": "Glatte Schattierung"
     },
     "keys": {
       "new": "Neu",

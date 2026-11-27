@@ -28,6 +28,7 @@ namespace ui::framework::occt
     // Settings the viewer declares (see platform::settings::SettingsRegistry).
     inline constexpr const char* kMeshPrecisionSetting = "import.mesh_precision"; // "single" or "double"
     inline constexpr const char* kComputeBRepSetting   = "import.compute_brep";   // convert each import to a B-Rep
+    inline constexpr const char* kSmoothShadingSetting = "viewer.smooth_shading";
 
     class ModelViewerPanel final : public wxPanel
     {
@@ -225,6 +226,8 @@ namespace ui::framework::occt
         [[nodiscard]] bool PickDataReady() const;
         // Test-only: whether OCCT is hover-highlighting something.
         [[nodiscard]] bool HasHoverHighlight() const;
+        // Test-only: whether smooth shading is applied to model presentations.
+        [[nodiscard]] bool IsSmoothShadingEnabled() const;
 
         // Test-only: replaces the "convert loaded models too?" dialog shown
         // when an import setting changes (true = convert).
@@ -329,6 +332,7 @@ namespace ui::framework::occt
         std::function<bool(LoadedModelsQuestion, std::size_t models)> confirm_convert_loaded_;
         platform::settings::Subscription                              precision_subscription_;
         platform::settings::Subscription                              brep_subscription_;
+        platform::settings::Subscription                              smooth_shading_subscription_;
 
         // Lets background work post back to this panel only while it exists.
         struct Mailbox

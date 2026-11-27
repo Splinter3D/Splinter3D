@@ -19,6 +19,7 @@
 #include <BRep_Builder.hxx>
 #include <Bnd_Box.hxx>
 #include <Graphic3d_Camera.hxx>
+#include <Graphic3d_TypeOfShadingModel.hxx>
 #include <OpenGl_GraphicDriver.hxx>
 #include <Precision.hxx>
 #include <TopoDS_Vertex.hxx>
@@ -101,6 +102,7 @@ namespace ui::framework::occt
             auto& settings = platform::settings::SettingsRegistry::getInstance();
             settings.add({kMeshPrecisionSetting, "settings.section.import", "settings.import.precision", "settings.import.precision_note", Kind::Choice, "single", {{"single", "settings.import.precision_single"}, {"double", "settings.import.precision_double"}}});
             settings.add({kComputeBRepSetting, "settings.section.import", "settings.import.compute_brep", "settings.import.compute_brep_note", Kind::Toggle, "0", {}});
+            settings.add({kSmoothShadingSetting, "settings.section.viewer", "settings.viewer.smooth_shading", "", Kind::Toggle, "1", {}});
         }
     } // namespace
 
@@ -284,6 +286,21 @@ namespace ui::framework::occt
             context_->Redisplay(presentation, false);
             view_->Redraw();
             buildPickIndex(id); // new triangles
+        }
+
+        void setSmoothShading(bool enabled)
+        {
+            if (smoothShading_ == enabled)
+                return;
+            smoothShading_ = enabled;
+            view_->SetShadingModel(enabled ? Graphic3d_TypeOfShadingModel_Phong
+                                           : Graphic3d_TypeOfShadingModel_PhongFacet);
+            view_->Redraw();
+        }
+
+        [[nodiscard]] bool isSmoothShadingEnabled() const noexcept
+        {
+            return view_->ShadingModel() == Graphic3d_TypeOfShadingModel_Phong;
         }
 
         void setTransform(application::service::ModelId id, const geometry::occt::Transform& transform) override
@@ -819,6 +836,7 @@ namespace ui::framework::occt
         // One entry per scene model, at the same index.
         std::vector<Presentation> presentations_;
         double                    scale_ = 1.0;
+        bool                      smoothShading_ = true;
 
         occ::handle<AIS_Manipulator>               manipulator_;
         occ::handle<AIS_Shape>                     manipulatorProxy_;
@@ -887,6 +905,11 @@ namespace ui::framework::occt
             kMeshPrecisionSetting, [this](const std::string& value) { onPrecisionChanged(value); });
         brep_subscription_ = platform::settings::SettingsRegistry::getInstance().subscribe(
             kComputeBRepSetting, [this](const std::string& value) { onComputeBRepChanged(value); });
+        smooth_shading_subscription_ = platform::settings::SettingsRegistry::getInstance().subscribe(
+            kSmoothShadingSetting, [this](const std::string& value) {
+                if (initialized_ && viewer_ != nullptr)
+                    viewer_->setSmoothShading(value == "1");
+            });
     }
 
     ModelViewerPanel::~ModelViewerPanel()
@@ -1054,6 +1077,7 @@ namespace ui::framework::occt
         // going dark and flickering during interaction.
         canvas_->SetCurrent(*context_);
         viewer_      = std::make_unique<Viewer>(canvas_, scene_);
+        viewer_->setSmoothShading(platform::settings::SettingsRegistry::getInstance().isOn(kSmoothShadingSetting));
         initialized_ = true;
         viewer_->setOnModelsChanged([this] { notifyModelStateChanged(); });
         mailbox_->panel = this;
@@ -1702,6 +1726,11 @@ namespace ui::framework::occt
     bool ModelViewerPanel::HasHoverHighlight() const
     {
         return initialized_ && viewer_->hasDetected();
+    }
+
+    bool ModelViewerPanel::IsSmoothShadingEnabled() const
+    {
+        return initialized_ && viewer_->isSmoothShadingEnabled();
     }
 
     void ModelViewerPanel::SetConfirmConvertLoaded(

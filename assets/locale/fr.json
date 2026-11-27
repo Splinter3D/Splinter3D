@@ -5,6 +5,7 @@
     "section": {
       "general": "G\u00e9n\u00e9ral",
       "import": "Import",
+      "viewer": "Affichage",
       "keys": "Raccourcis clavier"
     },
     "general": {
@@ -31,6 +32,9 @@
       "precision_note": "La simple pr\u00e9cision divise la m\u00e9moire par deux (les fichiers STL stockent des floats) ; la double conserve la pr\u00e9cision au fil des transformations.",
       "compute_brep": "Calculer les B-Reps \u00e0 l'import",
       "compute_brep_note": "Convertit chaque mod\u00e8le import\u00e9 en arri\u00e8re-plan ; lent et gourmand en m\u00e9moire sur les gros maillages."
+    },
+    "viewer": {
+      "smooth_shading": "Lissage des surfaces"
     },
     "keys": {
       "new": "Nouveau",

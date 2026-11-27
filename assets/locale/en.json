@@ -5,6 +5,7 @@
     "section": {
       "general": "General",
       "import": "Import",
+      "viewer": "Viewer",
       "keys": "Keyboard shortcuts"
     },
     "general": {
@@ -31,6 +32,9 @@
       "precision_note": "Single halves the memory (STL files hold floats); double keeps precision through transformations.",
       "compute_brep": "Compute B-Reps on import",
       "compute_brep_note": "Converts each imported model in the background; slow and memory-heavy on large meshes."
+    },
+    "viewer": {
+      "smooth_shading": "Smooth shading"
     },
     "keys": {
       "new": "New",

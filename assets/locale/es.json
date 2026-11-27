@@ -5,6 +5,7 @@
     "section": {
       "general": "General",
       "import": "Importaci\u00f3n",
+      "viewer": "Visor",
       "keys": "Atajos de teclado"
     },
     "general": {
@@ -31,6 +32,9 @@
       "precision_note": "La precisi\u00f3n simple reduce la memoria a la mitad (los archivos STL guardan floats); la doble conserva la precisi\u00f3n a trav\u00e9s de las transformaciones.",
       "compute_brep": "Calcular B-Reps al importar",
       "compute_brep_note": "Convierte cada modelo importado en segundo plano; lento y costoso en memoria con mallas grandes."
+    },
+    "viewer": {
+      "smooth_shading": "Sombreado suave"
     },
     "keys": {
       "new": "Nuevo",
