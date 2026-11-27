@@ -84,6 +84,14 @@ function Import-VcvarsEnvironment([string]$Arch = 'x64') {
   Log-Milestone 'MSVC environment imported.'
 }
 
+function Get-VcvarsArch([string]$TargetTriplet) {
+  $hostArch = if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64' -or $env:PROCESSOR_ARCHITEW6432 -eq 'ARM64') { 'arm64' } else { 'x64' }
+  $targetArch = if ($TargetTriplet -match '^arm64-') { 'arm64' } elseif ($TargetTriplet -match '^x86-') { 'x86' } else { 'x64' }
+  if ($hostArch -eq $targetArch) { return $hostArch }
+  return "${hostArch}_${targetArch}"
+}
+$VcvarsArch = Get-VcvarsArch $Triplet
+
 function Run-As-Administrator {
   $current = [Security.Principal.WindowsIdentity]::GetCurrent()
   $principal = New-Object Security.Principal.WindowsPrincipal($current)
@@ -136,7 +144,7 @@ $LogInfoMsg = $null
 ## Import MSVC environment before attempting to install via vcpkg (required for detect_compiler)
 if ($SetupMSVC) {
   Log-Action 'Importing MSVC environment (pre-install)'
-  try { Import-VcvarsEnvironment -Arch 'x64'; Log-Milestone 'MSVC environment imported (pre-install)' } catch { Log-Warn ("Import-VcvarsEnvironment failed: {0}" -f $_) }
+  try { Import-VcvarsEnvironment -Arch $VcvarsArch; Log-Milestone 'MSVC environment imported (pre-install)' } catch { Log-Warn ("Import-VcvarsEnvironment failed: {0}" -f $_) }
 }
 
 ## Install dependencies using manifest mode when a vcpkg.json manifest exists.
@@ -264,7 +272,7 @@ if (Test-Path $jsonPath) {
   Log-Warn ("vcpkg.json not found at {0}; no dependencies installed." -f $jsonPath)
 }
 
-if ($SetupMSVC) { Import-VcvarsEnvironment -Arch 'x64' }
+if ($SetupMSVC) { Import-VcvarsEnvironment -Arch $VcvarsArch }
 Pop-Location
 
 Write-Host 'vcpkg install complete; run build.ps1 to configure and build'
