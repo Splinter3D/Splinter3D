@@ -835,7 +835,7 @@ namespace ui::framework::occt
 
         // One entry per scene model, at the same index.
         std::vector<Presentation> presentations_;
-        double                    scale_ = 1.0;
+        double                    scale_         = 1.0;
         bool                      smoothShading_ = true;
 
         occ::handle<AIS_Manipulator>               manipulator_;
@@ -1076,7 +1076,7 @@ namespace ui::framework::occt
         // OCCT's lighting set up), which showed up as the view randomly
         // going dark and flickering during interaction.
         canvas_->SetCurrent(*context_);
-        viewer_      = std::make_unique<Viewer>(canvas_, scene_);
+        viewer_ = std::make_unique<Viewer>(canvas_, scene_);
         viewer_->setSmoothShading(platform::settings::SettingsRegistry::getInstance().isOn(kSmoothShadingSetting));
         initialized_ = true;
         viewer_->setOnModelsChanged([this] { notifyModelStateChanged(); });
