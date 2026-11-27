@@ -1,5 +1,7 @@
 #include "locale_manager.hpp"
 
+#include "platform/settings/settings_registry.hpp"
+
 #include <algorithm>
 #include <cstdlib>
 #include <fstream>
@@ -34,6 +36,19 @@ namespace platform::locale
     std::string LocaleManager::getLanguage() const
     {
         return m_currentLanguage;
+    }
+
+    void LocaleManager::useSettings(settings::SettingsRegistry& settings)
+    {
+        settings.add({kLanguageSetting, "settings.section.general", "settings.general.language", "settings.general.restart", settings::Kind::Choice, "default", {{"default", "settings.general.language_system"}, {"en", "settings.languages.en"}, {"fr", "settings.languages.fr"}, {"de", "settings.languages.de"}, {"es", "settings.languages.es"}}});
+        const std::string language = settings.get(kLanguageSetting);
+        if (language != "default")
+            setLanguage(language);
+    }
+
+    std::string LocaleManager::resolve(const std::string& setting)
+    {
+        return validateLanguage(setting == "default" ? detectSystemLanguage() : setting);
     }
 
     std::string LocaleManager::gettext(
@@ -171,6 +186,24 @@ namespace platform::locale
 #endif
 
         return "en";
+    }
+
+    std::string tr(
+        const std::string&                                         key,
+        std::initializer_list<std::pair<std::string, std::string>> args)
+    {
+        std::string text = LocaleManager::get().gettext(key);
+
+        for (const auto& [name, value] : args)
+        {
+            const std::string placeholder = "{" + name + "}";
+
+            for (std::size_t at = text.find(placeholder); at != std::string::npos;
+                 at             = text.find(placeholder, at + value.size()))
+                text.replace(at, placeholder.size(), value);
+        }
+
+        return text;
     }
 
 } // namespace platform::locale

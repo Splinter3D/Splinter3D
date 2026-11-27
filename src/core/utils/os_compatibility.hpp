@@ -2,6 +2,7 @@
  * Cross-platform OS compatibility helpers
  * - disable/restore terminal echo for Ctrl-C display
  * - install simple signal/console handlers that set an atomic flag
+ * - make GTK use X11, which the OCCT viewer needs on Linux
  */
 
 #pragma once
@@ -126,6 +127,22 @@ namespace core::utils
     inline void restoreTerminal()
     { }
 #endif
+
+    /**
+     * @brief Makes GTK use its X11 backend (XWayland under Wayland), unless
+     * GDK_BACKEND is already set.
+     *
+     * The OCCT viewer renders into the canvas' X11 window (Xw_Window); with
+     * GTK's Wayland backend there is none, so importing a model fails with
+     * "Xw_Window, given invalid X window". Call before wxWidgets initializes
+     * GTK (wxEntry / wxEntryStart). No-op outside Linux.
+     */
+    inline void preferX11Backend()
+    {
+#if defined(__linux__)
+        setenv("GDK_BACKEND", "x11", 0);
+#endif
+    }
 
 } // namespace core::utils
 

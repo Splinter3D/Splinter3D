@@ -8,6 +8,7 @@ function(apply_compiler_warnings target)
                 /permissive-
                 /EHsc
                 /Zc:__cplusplus
+                /utf-8
                 /wd4275
                 /wd4251
                 /wd4201

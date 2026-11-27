@@ -42,7 +42,7 @@ jobs:
             install_command: ./.github/workflows/scripts/Linux/install.sh "$WORKSPACE"
             build_command: |
               ./scripts/build.sh --ci --releasemode --tests
-              ./scripts/build.sh --ci --releasemode
+              ./scripts/build.sh --ci --releasemode --release
               bash ./.github/workflows/scripts/Linux/package-linux.sh
             verify_command: |
               package=$(ls output/splinter3D-*-linux-x64.tar.xz 2>/dev/null | head -1)
@@ -60,7 +60,7 @@ jobs:
             install_command: ./.github/workflows/scripts/Linux/install.sh "$WORKSPACE"
             build_command: |
               ./scripts/build.sh --ci --releasemode --tests
-              ./scripts/build.sh --ci --releasemode
+              ./scripts/build.sh --ci --releasemode --release
               bash ./.github/workflows/scripts/Linux/package-linux.sh
             verify_command: |
               package=$(ls output/splinter3D-*-linux-arm64.tar.xz 2>/dev/null | head -1)
@@ -78,7 +78,7 @@ jobs:
             install_command: ./.github/workflows/scripts/MacOS/install.sh "$WORKSPACE"
             build_command: |
               ./scripts/build.sh --ci --releasemode --tests
-              ./scripts/build.sh --ci --releasemode
+              ./scripts/build.sh --ci --releasemode --release
               bash ./.github/workflows/scripts/MacOS/package-macos.sh
             verify_command: |
               package=$(ls output/splinter3D-*-macos-arm64.dmg 2>/dev/null | head -1)
@@ -96,7 +96,7 @@ jobs:
             install_command: pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/Windows/install.ps1 $env:WORKSPACE -Triplet x64-windows-release
             build_command: |
               pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/build.ps1 --ci --releasemode --tests
-              pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/build.ps1 --ci --releasemode
+              pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/build.ps1 --ci --releasemode --release
               pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/Windows/package-windows.ps1 -ProjectRoot $env:WORKSPACE
             verify_command: |
               $zip = Get-ChildItem -Path "$env:WORKSPACE/output" -Filter 'splinter3D-*-windows-x64.zip' -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -116,7 +116,7 @@ jobs:
             install_command: pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/Windows/install.ps1 $env:WORKSPACE -Triplet arm64-windows-release
             build_command: |
               pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/build.ps1 --ci --releasemode --tests
-              pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/build.ps1 --ci --releasemode
+              pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/build.ps1 --ci --releasemode --release
               pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/workflows/scripts/Windows/package-windows.ps1 -ProjectRoot $env:WORKSPACE
             verify_command: |
               $zip = Get-ChildItem -Path "$env:WORKSPACE/output" -Filter 'splinter3D-*-windows-arm64.zip' -ErrorAction SilentlyContinue | Select-Object -First 1

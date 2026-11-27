@@ -104,3 +104,48 @@ TEST_CASE("withRotationDelta: adds the signed angle to the dragged axis", "[geom
         CHECK(geometry::occt::withRotationDelta(start, 2, translationOnly) == start);
     }
 }
+
+namespace
+{
+    void requireSameMapping(const gp_Trsf& actual, const gp_Trsf& expected)
+    {
+        for (const gp_Pnt& point : {gp_Pnt(0, 0, 0), gp_Pnt(1, 0, 0), gp_Pnt(0, 1, 0), gp_Pnt(0, 0, 1), gp_Pnt(3, -2, 5)})
+        {
+            const gp_Pnt want = point.Transformed(expected);
+            requirePoint(point.Transformed(actual), want.X(), want.Y(), want.Z());
+        }
+    }
+
+    gp_Trsf translation(double x, double y, double z)
+    {
+        gp_Trsf trsf;
+        trsf.SetTranslation(gp_Vec(x, y, z));
+        return trsf;
+    }
+} // namespace
+
+TEST_CASE("fromTrsf: inverts toTrsf", "[geometry][transform]")
+{
+    for (const Transform& transform : {Transform{10, 20, 30, 15, -40, 70}, Transform{0, 0, 0, 0, 90, 30}, Transform{}})
+    {
+        const gp_Trsf trsf = geometry::occt::toTrsf(transform);
+        requireSameMapping(geometry::occt::toTrsf(geometry::occt::fromTrsf(trsf)), trsf);
+    }
+}
+
+TEST_CASE("placeInGroup: rotates around the pivot, then moves", "[geometry][transform]")
+{
+    using geometry::occt::placeInGroup;
+
+    requirePoint(apply(placeInGroup({}, gp_Pnt(10, 0, 0), {0, 0, 0, 0, 0, 90}), gp_Pnt(0, 0, 0)), 10, -10, 0);
+    requirePoint(apply(placeInGroup({}, gp_Pnt(10, 0, 0), {5, 0, 0, 0, 0, 90}), gp_Pnt(0, 0, 0)), 15, -10, 0);
+
+    const Transform start{1, 2, 3, 0, 0, 45};
+    const gp_Pnt    pivot(4, 4, 0);
+    const Transform offset{7, 0, 0, 30, 0, 0};
+    const gp_Trsf   expected = translation(7, 0, 0) * translation(4, 4, 0) * geometry::occt::toTrsf({0, 0, 0, 30, 0, 0}) *
+                               translation(-4, -4, 0) * geometry::occt::toTrsf(start);
+    requireSameMapping(geometry::occt::toTrsf(placeInGroup(start, pivot, offset)), expected);
+
+    requireSameMapping(geometry::occt::toTrsf(placeInGroup(start, pivot, {})), geometry::occt::toTrsf(start));
+}

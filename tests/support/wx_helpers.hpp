@@ -39,6 +39,41 @@ namespace tests::support
     }
 
     /**
+     * @brief Gives window the keyboard focus and waits for it to arrive.
+     *
+     * @return false when its frame never becomes active, so no focus can be
+     * had: on GTK, focus only follows SetFocus() once the window manager
+     * activates the frame, which focus-stealing prevention may refuse.
+     */
+    inline bool focusAndWait(wxWindow* window)
+    {
+        wxGetTopLevelParent(window)->Raise();
+        window->SetFocus();
+        return pumpUntil([window] {
+            wxWindow* focus = wxWindow::FindFocus();
+            return focus != nullptr && (focus == window || window->IsDescendant(focus));
+        });
+    }
+
+    /**
+     * @brief Pumps events until window's client size stops changing: GTK
+     * lays windows out asynchronously, after the call that changed them.
+     *
+     * @return Whether it settled before the timeout.
+     */
+    inline bool pumpUntilLaidOut(wxWindow* window)
+    {
+        wxSize size   = window->GetClientSize();
+        int    stable = 0;
+        return pumpUntil([&] {
+            const wxSize now = window->GetClientSize();
+            stable           = now == size ? stable + 1 : 0;
+            size             = now;
+            return stable >= 5;
+        });
+    }
+
+    /**
      * @brief Returns the first descendant of root (depth first) of type T, or
      * nullptr.
      */

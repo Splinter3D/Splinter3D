@@ -15,7 +15,7 @@ target_compile_definitions(${SPLINTER3D_LIB_TARGET_NAME} PUBLIC SPLINTER3D_TESTI
 #######################################
 
 set(SPLINTER3D_TEST_ASSETS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets")
-set(SPLINTER3D_TEST_LOCALE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/locale")
+set(SPLINTER3D_TEST_LOCALE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets/locale")
 
 # Builds every suite at once: `cmake --build build --target splinter3D_tests`
 # (what scripts/build.sh --tests builds).

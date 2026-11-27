@@ -63,8 +63,8 @@ namespace ui::framework::wx
         {
             ui::dialogs::info(
                 frame_,
-                locale::tr("wxWidgets Demo\nAll major widgets in one place."),
-                locale::tr("About"));
+                locale::tr("menu.about.text"),
+                locale::tr("menu.about.title"));
         }
 
     } // namespace events

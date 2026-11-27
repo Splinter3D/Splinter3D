@@ -1,3 +1,5 @@
+#include "core/utils/os_compatibility.hpp"
+
 #include <catch2/reporters/catch_reporter_event_listener.hpp>
 #include <catch2/reporters/catch_reporter_registrars.hpp>
 #include <cstdio>
@@ -26,6 +28,7 @@ namespace
             static char* argv[]        = {programName, nullptr};
             int          argc          = 1;
 
+            core::utils::preferX11Backend(); // same as app::WxApp: the viewer needs an X11 window
             wxApp::SetInstance(new wxApp());
             if (!wxEntryStart(argc, argv) || !wxTheApp->CallOnInit())
                 throw std::runtime_error("Failed to initialize wxWidgets (is a display available? "

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <functional>
 #include <wx/combobox.h>
 #include <wx/spinctrl.h>
@@ -22,6 +23,10 @@ namespace ui::toolbars
      * model). Embedding the fields means showing them only changes the
      * toolbar's own height; it never blocks input to the rest of the
      * window.
+     *
+     * Undo and Redo buttons, shaped like them, sit at the right end: they
+     * send ids::history commands to the frame, which also enables them
+     * (wxEVT_UPDATE_UI).
      *
      * Both buttons start disabled: callers should enable them (SetEnabled)
      * once a model is loaded, and disable them again once it isn't. This
@@ -60,11 +65,32 @@ namespace ui::toolbars
         void SetTargets(const wxArrayString& modelNames);
 
         /**
+         * @brief Shows an extra "{count} selected" entry, after the model
+         * names, while count >= 2 models are selected; removes it otherwise
+         * (falling back to "All models" if it was chosen).
+         */
+        void SetSelectionCount(std::size_t count);
+
+        /**
          * @brief Currently selected target (shared by both panels): -1
-         * means "All models", otherwise a 0-based index into the names
+         * means "All models", -2 the selection entry (see
+         * SetSelectionCount()), otherwise a 0-based index into the names
          * passed to the last SetTargets() call.
          */
         [[nodiscard]] int GetTargetIndex() const;
+
+        /**
+         * @brief Puts both dropdowns on a target (as GetTargetIndex()
+         * numbers them) without invoking the target-changed callback. An
+         * index with no entry selects "All models".
+         */
+        void SetTargetIndex(int index);
+
+        /**
+         * @brief Unpresses both buttons and hides the fields, as clicking
+         * the pressed one would.
+         */
+        void CloseActiveTool();
 
         /**
          * @brief Invoked whenever the user picks a different target in
@@ -85,6 +111,12 @@ namespace ui::toolbars
         };
 
         [[nodiscard]] ActiveTool GetActiveTool() const;
+
+        /**
+         * @brief Presses tool's button and shows its fields, as clicking it
+         * would (None: CloseActiveTool()). Does nothing while disabled.
+         */
+        void OpenTool(ActiveTool tool);
 
         /**
          * @brief Invoked whenever the active tool changes (a panel is
@@ -125,10 +157,23 @@ namespace ui::toolbars
             return rotate_z_;
         }
 
+        [[nodiscard]] wxToggleButton* GetUndoButton() const
+        {
+            return undo_button_;
+        }
+
+        [[nodiscard]] wxToggleButton* GetRedoButton() const
+        {
+            return redo_button_;
+        }
+
       private:
         // Creates the square icon-on-top toggle button used to show/hide a
         // group's fields panel ("Move" / "Rotate").
         wxToggleButton* MakeToggle(const wxBitmap& icon, const wxString& label);
+
+        // A button shaped like the toggles, sending command `id` (Undo / Redo).
+        wxToggleButton* MakeHistoryButton(int id, const char* iconSvg, const wxString& label, const wxString& tooltip);
 
         // Builds the embedded panel with the "target" dropdown and the
         // "X/Y/Z fields + unit" for one tool. outTarget receives the
@@ -158,6 +203,12 @@ namespace ui::toolbars
         // Notifies on_active_tool_changed_ with GetActiveTool().
         void NotifyActiveToolChanged();
 
+        // Rebuilds both dropdowns: "All models", the model names, and the
+        // selection entry if any, then selects `target` (GetTargetIndex()'s numbering).
+        void FillTargets(int target);
+
+        wxArrayString                   model_names_;
+        std::size_t                     selection_count_     = 0;
         wxComboBox*                     move_target_combo_   = nullptr;
         wxComboBox*                     rotate_target_combo_ = nullptr;
         std::function<void(int)>        on_target_changed_;
@@ -165,6 +216,8 @@ namespace ui::toolbars
 
         wxToggleButton* move_button_   = nullptr;
         wxToggleButton* rotate_button_ = nullptr;
+        wxToggleButton* undo_button_   = nullptr;
+        wxToggleButton* redo_button_   = nullptr;
 
         wxPanel* move_panel_   = nullptr;
         wxPanel* rotate_panel_ = nullptr;

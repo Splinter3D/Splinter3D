@@ -92,17 +92,12 @@ mkdir -p "$STAGING_DIR/bin"
 cp "$SPLINTER_EXE" "$STAGING_DIR/bin/splinter3D"
 chmod +x "$STAGING_DIR/bin/splinter3D"
 
-# Copy locale
-if [[ -d "${PROJECT_ROOT}/locale" ]]; then
-    msg "Copying locale files..."
-    cp -r "${PROJECT_ROOT}/locale" "$STAGING_DIR/locale"
-    find "$STAGING_DIR/locale" -name "*.po" -delete 2>/dev/null || true
-fi
-
 # Copy assets
 if [[ -d "${PROJECT_ROOT}/assets" ]]; then
     msg "Copying assets..."
     cp -r "${PROJECT_ROOT}/assets" "$STAGING_DIR/assets"
+    # Optional large STLs (scripts/fetch-assets.py) are never shipped
+    rm -rf "${STAGING_DIR:?}/assets/stl/large"
 fi
 
 # Copy documentation

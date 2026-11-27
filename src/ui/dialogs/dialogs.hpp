@@ -1,4 +1,6 @@
 #pragma once
+#include "ui/framework/wx/locale/locale.hpp"
+
 #include <functional>
 #include <optional>
 #include <wx/colordlg.h>
@@ -27,7 +29,7 @@ namespace ui::dialogs
      */
     inline void info(wxWindow*       parent,
                      const wxString& msg,
-                     const wxString& title = _("Info"))
+                     const wxString& title = ui::framework::wx::locale::tr("dialogs.info"))
     {
         wxMessageBox(
             msg,
@@ -53,7 +55,7 @@ namespace ui::dialogs
      */
     inline void warning(wxWindow*       parent,
                         const wxString& msg,
-                        const wxString& title = _("Warning"))
+                        const wxString& title = ui::framework::wx::locale::tr("dialogs.warning"))
     {
         wxMessageBox(
             msg,
@@ -79,7 +81,7 @@ namespace ui::dialogs
      */
     inline void error(wxWindow*       parent,
                       const wxString& msg,
-                      const wxString& title = _("Error"))
+                      const wxString& title = ui::framework::wx::locale::tr("dialogs.error"))
     {
         wxMessageBox(
             msg,
@@ -112,7 +114,7 @@ namespace ui::dialogs
      */
     inline bool confirm(wxWindow*       parent,
                         const wxString& msg,
-                        const wxString& title = _("Question"))
+                        const wxString& title = ui::framework::wx::locale::tr("dialogs.question"))
     {
         return wxMessageBox(
                    msg,
@@ -149,7 +151,7 @@ namespace ui::dialogs
     inline std::optional<wxString> askText(
         wxWindow*       parent,
         const wxString& prompt,
-        const wxString& title        = _("Input"),
+        const wxString& title        = ui::framework::wx::locale::tr("dialogs.input"),
         const wxString& defaultValue = "")
     {
         wxTextEntryDialog dlg(
@@ -195,7 +197,7 @@ namespace ui::dialogs
     inline std::optional<long> askInteger(
         wxWindow*       parent,
         const wxString& prompt,
-        const wxString& title        = _("Input"),
+        const wxString& title        = ui::framework::wx::locale::tr("dialogs.input"),
         long            defaultValue = 0,
         long            min          = 0,
         long            max          = 1000)
@@ -203,7 +205,7 @@ namespace ui::dialogs
         wxNumberEntryDialog dlg(
             parent,
             prompt,
-            _("Number:"),
+            ui::framework::wx::locale::tr("dialogs.number"),
             title,
             defaultValue,
             min,
@@ -269,8 +271,8 @@ namespace ui::dialogs
      */
     inline std::optional<wxString> openFile(
         wxWindow*       parent,
-        const wxString& title  = _("Open file"),
-        const wxString& filter = _("All files (*.*)|*.*"))
+        const wxString& title  = ui::framework::wx::locale::tr("dialogs.open_file"),
+        const wxString& filter = ui::framework::wx::locale::tr("dialogs.all_files"))
     {
         wxFileDialog dlg(
             parent,
@@ -321,7 +323,7 @@ namespace ui::dialogs
     {
         wxProgressDialog dlg(
             title,
-            _("Please wait"),
+            ui::framework::wx::locale::tr("dialogs.please_wait"),
             steps,
             parent,
             wxPD_AUTO_HIDE |

@@ -1,6 +1,7 @@
 #include "locale_events.hpp"
 
-#include "platform/preference/preference_manager.hpp"
+#include "platform/locale/locale_manager.hpp"
+#include "platform/settings/settings_registry.hpp"
 #include "ui/framework/wx/ids/ids.hpp"
 
 namespace ui::framework::wx
@@ -27,12 +28,8 @@ namespace ui::framework::wx
                         wxEVT_MENU,
 
                         [this, language](wxCommandEvent&) {
-                            auto config =
-                                platform::preference::PreferenceManager::load();
-
-                            config.language = language;
-
-                            platform::preference::PreferenceManager::save(config);
+                            platform::settings::SettingsRegistry::getInstance().set(
+                                platform::locale::kLanguageSetting, language);
 
                             if (on_language_changed_)
                             {

@@ -8,7 +8,7 @@ import subprocess
 import time
 import unittest
 
-from splinter3d_e2e import IS_LINUX, IS_WINDOWS, binary_path
+from splinter3d_e2e import IS_LINUX, IS_WINDOWS, app_env, binary_path
 
 STARTUP_SECONDS = 8
 SHUTDOWN_SECONDS = 10
@@ -17,7 +17,7 @@ SHUTDOWN_SECONDS = 10
 @unittest.skipIf(IS_LINUX and not os.environ.get("DISPLAY"), "needs a display (run under xvfb-run)")
 class GuiStartup(unittest.TestCase):
     def start(self) -> subprocess.Popen:
-        process = subprocess.Popen([str(binary_path())], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        process = subprocess.Popen([str(binary_path())], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=app_env())
         self.addCleanup(self.stop, process)
         time.sleep(STARTUP_SECONDS)
         exited = process.poll()

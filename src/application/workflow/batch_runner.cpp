@@ -1,5 +1,6 @@
 #include "batch_runner.hpp"
 
+#include "application/tasks/model_tasks.hpp"
 #include "geometry/occt/path.hpp"
 
 #include <array>
@@ -62,7 +63,18 @@ namespace application::workflow
     BatchRunner::BatchRunner(service::SceneService& scene, std::ostream& log)
         : _scene(scene)
         , _log(log)
+        , _editor(scene)
     { }
+
+    void BatchRunner::_run(tasks::Task task)
+    {
+        const tasks::TaskId id       = _tasks.submit(std::move(task));
+        const auto          snapshot = _tasks.snapshot(id);
+        if (!snapshot || snapshot->state != tasks::TaskState::Failed)
+            return;
+        _tasks.dismiss(id);
+        throw StepError(snapshot->error);
+    }
 
     BatchRunner::Result BatchRunner::runFile(const std::filesystem::path& scriptPath)
     {
@@ -115,8 +127,9 @@ namespace application::workflow
             {
                 if (action == "open")
                 {
-                    const auto        path  = resolve(args, baseDir);
-                    const std::size_t index = _scene.load(path);
+                    const auto path = resolve(args, baseDir);
+                    _run(tasks::importTask(_scene, _editor, path));
+                    const std::size_t index = _scene.size() - 1;
                     _log << "[batch] " << prefix << ": open " << geometry::occt::toUtf8(path) << " -> model " << index << " '"
                          << _scene.models()[index].name << "' in "
                          << platform::benchmark::formatMilliseconds(_scene.models()[index].loadDuration) << "\n";
@@ -125,11 +138,15 @@ namespace application::workflow
                 {
                     if (!args.is_object())
                         throw StepError("expected an object");
-                    const auto move   = vector3(args, "move");
-                    const auto rotate = vector3(args, "rotate");
-                    const int  index  = target(args);
-                    if (!_scene.setTransform(index, {move[0], move[1], move[2], rotate[0], rotate[1], rotate[2]}))
+                    const auto                      move   = vector3(args, "move");
+                    const auto                      rotate = vector3(args, "rotate");
+                    const int                       index  = target(args);
+                    const geometry::occt::Transform transform{move[0], move[1], move[2], rotate[0], rotate[1], rotate[2]};
+                    const bool                      all = index == service::SceneService::kAllModels;
+                    if (_scene.empty() || (!all && (index < 0 || static_cast<std::size_t>(index) >= _scene.size())))
                         throw StepError("no such target (" + std::to_string(_scene.size()) + " model(s) loaded)");
+                    for (const auto id : all ? _scene.ids() : std::vector<service::ModelId>{_scene.models()[static_cast<std::size_t>(index)].id})
+                        _run(tasks::moveTask(_scene, _editor, id, transform));
                     _log << "[batch] " << prefix << ": transform "
                          << (index == service::SceneService::kAllModels ? std::string("all") : std::to_string(index))
                          << "\n";
@@ -137,14 +154,14 @@ namespace application::workflow
                 else if (action == "export")
                 {
                     const auto path = resolve(args, baseDir);
-                    if (!_scene.saveSTL(path))
-                        throw StepError("could not export to " + geometry::occt::toUtf8(path) +
-                                        (_scene.empty() ? " (no model loaded)" : ""));
+                    if (_scene.empty())
+                        throw StepError("could not export to " + geometry::occt::toUtf8(path) + " (no model loaded)");
+                    _run(tasks::exportTask(_scene, path));
                     _log << "[batch] " << prefix << ": export " << geometry::occt::toUtf8(path) << "\n";
                 }
                 else if (action == "clear")
                 {
-                    _scene.clear();
+                    _run(tasks::clearTask(_scene, _editor));
                     _log << "[batch] " << prefix << ": clear\n";
                 }
                 else

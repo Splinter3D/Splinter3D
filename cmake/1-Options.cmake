@@ -48,6 +48,10 @@ endif()
 
 #######################################
 
+option(ENABLE_RELEASE_BUILD "Make a release build (SPLINTER3D_RELEASE_BUILD) instead of a dev build" OFF)
+
+#######################################
+
 option(ENABLE_TESTS "Enable building tests" OFF)
 option(ENABLE_COVERAGE "Instrument the library and tests for code coverage" OFF)
 

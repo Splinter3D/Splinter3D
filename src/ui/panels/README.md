@@ -109,3 +109,58 @@ That's the whole loop - no other file needs to change.
 around purely to show the pattern end-to-end. Safe to delete - along with
 its `Register(...)` call in `panel_registration.cpp` and its id in
 `ids.hpp` - once a first real panel exists.
+
+## Side dock
+
+`ui/panels/side_dock/` (`SideDock`, id `panels::kSideDock`) sits on the right
+of the viewer: a strip of toggle buttons, one per page, and the open page (at
+most one) beside it. `AddPage(page, icon, label)` adds a page (created as a
+child of the dock) and its icon button, the label as tooltip (or as text when
+the icon is null). A button opens its page or closes it.
+
+Pages can also open themselves: `RequestOpen(page)` opens it if nothing is
+open, and `ReleaseOpen(page)` closes it again - unless the user opened it by
+hand (the button or `Open()`), in which case it stays until closed by hand.
+Once the user has closed the dock by hand (the button or `Close()`), requests
+no longer open it; the user can still open it.
+
+## Tasks panel
+
+`ui/panels/tasks_panel/` (`TasksPanel`, id `panels::kTasks`) lists the
+background tasks of an `application::tasks::TaskManager` as cards (name,
+progress bar, status, Cancel or Dismiss), or a placeholder when there is none.
+`attach(manager)` makes it follow that manager; `SetOnBusyChanged` reports its
+first card appearing and its last one going. `MainWindow` adds it as a
+`SideDock` page and turns those reports into `RequestOpen` / `ReleaseOpen`, so
+it pops up while tasks run and closes after, unless opened by hand - and no
+longer pops up once the user has closed it.
+Auto-opening can be turned off with the `tasks.auto_open` setting.
+
+## Settings panel
+
+`ui/panels/settings_panel/` (`SettingsPanel`, id `panels::kSettings`) is the
+dock's second page. It lists every setting declared in
+`platform::settings::SettingsRegistry`, grouped by section in declaration
+order: a checkbox per Toggle, a drop-down per Choice, and per KeyBind a
+`ui::widgets::KeyBindButton` (click, then press the combination; Escape
+cancels) with a reset button. Combinations used twice are flagged. They are
+stored as `wxAcceleratorEntry` raw strings where `Ctrl` is the primary
+modifier (Command on macOS) and `RawCtrl` the macOS Control key; on macOS they
+show as symbols (`⌃⌥⇧⌘`). Settings
+declared after it was built show the next time it is shown.
+
+To add a setting, declare it where it is used and read it from there:
+
+```cpp
+auto& settings = platform::settings::SettingsRegistry::getInstance();
+subscription_  = settings.add({"my.key", "settings.section.general", "settings.my.label", "",
+                               platform::settings::Kind::Toggle, "1", {}},
+                              [this](const std::string& value) { /* react */ });
+if (settings.isOn("my.key")) { ... }
+```
+
+Current settings: language (`LocaleManager`, applies after a restart), tasks
+auto-open (`MainWindow`), mesh precision and B-Rep on import
+(`ModelViewerPanel`, which offers to convert the loaded models when the
+precision changes or B-Reps on import are turned on), and the keyboard shortcuts (`ShortcutEvents`, also shown on the File
+menu items).

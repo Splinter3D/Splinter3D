@@ -53,3 +53,26 @@ TEST_CASE("MainWindow: File > Exit closes the window", "[integration][ui][main_w
 
     REQUIRE(pumpUntil([&alive] { return !alive; }));
 }
+
+TEST_CASE("WindowEvents: a close vetoed by another handler keeps the frame", "[integration][ui][events]")
+{
+    auto*              frame = new wxFrame(nullptr, wxID_ANY, "Veto test");
+    wxWeakRef<wxFrame> alive(frame);
+    // Bound before the EventManager's handler, so it runs after it.
+    frame->Bind(wxEVT_CLOSE_WINDOW, [](wxCloseEvent& event) {
+        if (event.CanVeto())
+            event.Veto();
+        else
+            event.Skip();
+    });
+    ui::framework::wx::events::EventManager manager(frame);
+    manager.bindAll();
+    frame->Show();
+
+    frame->Close();
+    tests::support::pumpEvents();
+    CHECK(alive);
+
+    frame->Close(true); // can't be vetoed
+    REQUIRE(pumpUntil([&alive] { return !alive; }));
+}

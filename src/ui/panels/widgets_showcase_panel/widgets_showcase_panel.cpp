@@ -1,5 +1,6 @@
 #include "widgets_showcase_panel.hpp"
 
+#include "ui/framework/wx/locale/locale.hpp"
 #include "ui/widgets/button/button.hpp"
 #include "ui/widgets/check_box/check_box.hpp"
 #include "ui/widgets/combo_box/combo_box.hpp"
@@ -10,6 +11,8 @@
 #include "ui/widgets/spin_input/spin_input.hpp"
 #include "ui/widgets/text_input/text_input.hpp"
 #include "ui/widgets/toggle_button/toggle_button.hpp"
+
+using ui::framework::wx::locale::tr;
 
 namespace ui::panels
 {
@@ -23,23 +26,23 @@ namespace ui::panels
         // wxWidgets control - that's the pointer the sizer needs.
 
         auto* button = ui::widgets::Button(this)
-                           .setLabel("Button")
-                           .setTooltip("A plain button")
+                           .setLabel(tr("showcase.button"))
+                           .setTooltip(tr("showcase.button_tooltip"))
                            .build();
         sizer->Add(button, 0, wxEXPAND | wxALL, 4);
 
         auto* checkBox = ui::widgets::CheckBox(this)
-                             .setLabel("CheckBox")
+                             .setLabel(tr("showcase.check_box"))
                              .build();
         sizer->Add(checkBox, 0, wxEXPAND | wxALL, 4);
 
         wxArrayString comboChoices;
-        comboChoices.Add("Option A");
-        comboChoices.Add("Option B");
-        comboChoices.Add("Option C");
+        comboChoices.Add(tr("showcase.option_a"));
+        comboChoices.Add(tr("showcase.option_b"));
+        comboChoices.Add(tr("showcase.option_c"));
 
         auto* comboBox = ui::widgets::ComboBox(this)
-                             .setPlaceholder("Pick an option")
+                             .setPlaceholder(tr("showcase.combo_placeholder"))
                              .setChoices(comboChoices)
                              .build();
         sizer->Add(comboBox, 0, wxEXPAND | wxALL, 4);
@@ -51,9 +54,9 @@ namespace ui::panels
         sizer->Add(gauge, 0, wxEXPAND | wxALL, 4);
 
         wxArrayString listChoices;
-        listChoices.Add("Item 1");
-        listChoices.Add("Item 2");
-        listChoices.Add("Item 3");
+        listChoices.Add(tr("showcase.item_1"));
+        listChoices.Add(tr("showcase.item_2"));
+        listChoices.Add(tr("showcase.item_3"));
 
         auto* listBox = ui::widgets::ListBox(this)
                             .setChoices(listChoices)
@@ -67,7 +70,7 @@ namespace ui::panels
         radioChoices.Add("C");
 
         auto* radioBox = ui::widgets::RadioBox(this)
-                             .setTitle("RadioBox")
+                             .setTitle(tr("showcase.radio_box"))
                              .setChoices(radioChoices)
                              .build();
         sizer->Add(radioBox, 0, wxEXPAND | wxALL, 4);
@@ -85,12 +88,12 @@ namespace ui::panels
         sizer->Add(spinInput, 0, wxEXPAND | wxALL, 4);
 
         auto* textInput = ui::widgets::TextInput(this)
-                              .setHint("Type here")
+                              .setHint(tr("showcase.text_hint"))
                               .build();
         sizer->Add(textInput, 0, wxEXPAND | wxALL, 4);
 
         auto* toggleButton = ui::widgets::ToggleButton(this)
-                                 .setLabel("ToggleButton")
+                                 .setLabel(tr("showcase.toggle_button"))
                                  .build();
         sizer->Add(toggleButton, 0, wxEXPAND | wxALL, 4);
 

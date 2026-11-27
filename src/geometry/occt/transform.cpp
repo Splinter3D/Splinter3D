@@ -4,6 +4,7 @@
 #include <gp_Ax1.hxx>
 #include <gp_Dir.hxx>
 #include <gp_Pnt.hxx>
+#include <gp_Quaternion.hxx>
 #include <gp_Vec.hxx>
 #include <numbers>
 
@@ -29,6 +30,26 @@ namespace geometry::occt
 
         return translation * rotationAround(gp::DZ(), transform.rotateZ) * rotationAround(gp::DY(), transform.rotateY) *
                rotationAround(gp::DX(), transform.rotateX);
+    }
+
+    Transform fromTrsf(const gp_Trsf& trsf)
+    {
+        double x = 0.0;
+        double y = 0.0;
+        double z = 0.0;
+        trsf.GetRotation().GetEulerAngles(gp_Extrinsic_XYZ, x, y, z);
+        const gp_XYZ& move = trsf.TranslationPart();
+        return {move.X(), move.Y(), move.Z(), x * kRadToDeg, y * kRadToDeg, z * kRadToDeg};
+    }
+
+    Transform placeInGroup(const Transform& start, const gp_Pnt& pivot, const Transform& offset)
+    {
+        gp_Trsf toPivot;
+        toPivot.SetTranslation(gp_Vec(pivot.XYZ()));
+        const Transform rotation{0.0, 0.0, 0.0, offset.rotateX, offset.rotateY, offset.rotateZ};
+        gp_Trsf         move;
+        move.SetTranslation(gp_Vec(offset.moveX, offset.moveY, offset.moveZ));
+        return fromTrsf(move * toPivot * toTrsf(rotation) * toPivot.Inverted() * toTrsf(start));
     }
 
     Transform withTranslationDelta(Transform start, const gp_XYZ& delta)

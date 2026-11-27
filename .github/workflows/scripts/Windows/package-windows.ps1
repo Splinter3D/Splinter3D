@@ -1,5 +1,5 @@
 # Packages a Windows build for distribution: finds the built splinter3D.exe (and its DLLs)
-# under $BuildDirName, stages it with locale/assets/docs, then zips it into
+# under $BuildDirName, stages it with assets/docs, then zips it into
 # $OutDirName/splinter3D-<version>-windows-<arch>.zip alongside a .sha256 file.
 # Version is auto-detected from `git describe --tags`.
 param(
@@ -102,9 +102,10 @@ foreach ($d in $dlls) {
   Copy-Item -Path $d.FullName -Destination (Join-Path $binDir $d.Name) -Force
 }
 
-# Copy locale and assets
-if (Test-Path (Join-Path $ProjectRoot 'locale')) { Copy-Item -Path (Join-Path $ProjectRoot 'locale') -Destination (Join-Path $staging 'locale') -Recurse -Force }
+# Copy assets (locale/ lives inside)
 if (Test-Path (Join-Path $ProjectRoot 'assets')) { Copy-Item -Path (Join-Path $ProjectRoot 'assets') -Destination (Join-Path $staging 'assets') -Recurse -Force }
+# Optional large STLs (scripts/fetch-assets.py) are never shipped
+Remove-Item -Path (Join-Path $staging 'assets/stl/large') -Recurse -Force -ErrorAction SilentlyContinue
 
 # Copy documentation
 foreach ($f in @('README.md','LICENSE*')) {
