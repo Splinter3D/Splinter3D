@@ -1,3 +1,37 @@
+## v0.3.0-rc.1 (2026-11-27)
+
+### Feat
+
+- adding smooth settings
+- edition history
+- make select hidden a persistant setting
+- better model managment
+- windows reloading for language change
+- model selection
+- add settings panel
+- side dock
+- optional asset manifest
+- improved assets downloader output formatting
+- add optional downloads for big models
+- compute model B-rep lazily, load stl in parallel
+- make ui run in its own thread, and operations dispatched by the new dispatcher module
+- thread dispatcher
+- advanced benchmark module
+
+### Fix
+
+- fix unit tests on windows and linux for pr #174
+- remove include hidden setting from settings pannel
+- fullscreen shortcut
+- improved trackpad zoom reliability on MacOS
+- use locale throught project
+- optional assets manifest formatting
+- check if manifest exists in fetch assets
+- get more metrics for model import
+- **linux**: use GLX for the wx GL canvas and force GDK X11 backend
+- concurrent export to a single path
+- avoid polluting dispatcher profile with unit tests
+
 ## v0.2.1 (2026-11-11)
 
 ### Fix
